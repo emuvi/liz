@@ -4,7 +4,7 @@ description = "LuaWizard - Features a bunch of functionalities for lua scripts i
 repository = "https://github.com/emuvi/liz/"
 authors = ["Éverton M. Vieira"]
 license = "LGPL-3.0-only"
-version = "0.1.0"
+version = "0.1.1"
 edition = "2018"
 
 [dependencies]

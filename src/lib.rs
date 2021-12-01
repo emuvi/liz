@@ -3,7 +3,7 @@ use std::error::Error;
 use std::path::Path;
 use std::path::PathBuf;
 
-mod tools;
+pub mod tools;
 
 pub type LizError = Box<dyn Error + Send + Sync>;
 
