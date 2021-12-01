@@ -40,6 +40,14 @@ pub fn cmd<A: AsRef<str>, P: AsRef<Path>>(
 	Ok((res, out))
 }
 
+pub fn cp_old(origin: &str, destiny: &str) -> Result<(), LizError> -> {
+	let destiny_path = std::path::Path::new(destiny);
+	if destiny_path.exists() {
+		let destiny_old = format!("{}_old", destiny);
+		std::fs::rename(destiny, destiny_old)?;
+	}
+}
+
 pub fn cp(origin: &str, destiny: &str) -> Result<(), LizError> {
 	if std::fs::metadata(origin)?.is_dir() {
 		copy_directory(origin, destiny)?;
