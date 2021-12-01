@@ -29,7 +29,7 @@ pub fn cmd<A: AsRef<str>, P: AsRef<Path>>(
 	let out = out.trim();
 	let out = String::from(out);
 	let res = child.wait()?.code().unwrap_or(0);
-	if print {
+	if print && !out.is_empty() {
 		println!("{}", out);
 	}
 	if throw && res != 0 {
@@ -53,15 +53,6 @@ pub fn rn(origin: &str, destiny: &str) -> Result<(), LizError> {
 	Ok(fs::rename(origin, destiny)?)
 }
 
-pub fn cp_old(origin: &str, destiny: &str) -> Result<(), LizError> {
-	if has(destiny) {
-		let destiny_old = format!("{}_old", destiny);
-		rm(&destiny_old)?;
-		rn(destiny, &destiny_old)?;
-	}
-	cp(origin, destiny)
-}
-
 pub fn cp(origin: &str, destiny: &str) -> Result<(), LizError> {
 	if isdir(origin) {
 		copy_directory(origin, destiny)?;
@@ -69,6 +60,26 @@ pub fn cp(origin: &str, destiny: &str) -> Result<(), LizError> {
 		copy_file(origin, destiny)?;
 	}
 	Ok(())
+}
+
+pub fn cp_tmp(origin: &str, destiny: &str) -> Result<(), LizError> {
+	if has(destiny) {
+		let mut temp_name: String = destiny
+			.chars()
+			.map(|x| match x {
+				'\\' => '_',
+				'/' => '_',
+				_ => x,
+			})
+			.collect();
+		let mut destiny_tmp = std::env::temp_dir().join(&temp_name);
+		while destiny_tmp.exists() {
+			temp_name.push_str("_");
+			destiny_tmp = std::env::temp_dir().join(&temp_name);
+		}
+		fs::rename(destiny, destiny_tmp)?;
+	}
+	cp(origin, destiny)
 }
 
 fn copy_directory(origin: impl AsRef<Path>, destiny: impl AsRef<Path>) -> Result<(), LizError> {

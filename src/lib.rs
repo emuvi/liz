@@ -111,10 +111,10 @@ fn wiz_injection(ctx: Context) -> Result<(), LizError> {
     })?;
     wiz.set("rn", rn)?;
 
-    let cp_old = ctx.create_function(|_, (origin, destiny): (String, String)| {
-        to_lua(tools::cp_old(&origin, &destiny))
+    let cp_tmp = ctx.create_function(|_, (origin, destiny): (String, String)| {
+        to_lua(tools::cp_tmp(&origin, &destiny))
     })?;
-    wiz.set("cp_old", cp_old)?;
+    wiz.set("cp_tmp", cp_tmp)?;
 
     let cp = ctx.create_function(|_, (origin, destiny): (String, String)| {
         to_lua(tools::cp(&origin, &destiny))
