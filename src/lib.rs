@@ -100,6 +100,22 @@ fn wiz_injection(ctx: Context) -> Result<(), LizError> {
     )?;
     wiz.set("cmd", cmd)?;
 
+    let has = ctx.create_function(|_, path: String| Ok(tools::has(&path)))?;
+    wiz.set("has", has)?;
+
+    let isdir = ctx.create_function(|_, path: String| Ok(tools::isdir(&path)))?;
+    wiz.set("isdir", isdir)?;
+
+    let rn = ctx.create_function(|_, (origin, destiny): (String, String)| {
+        to_lua(tools::rn(&origin, &destiny))
+    })?;
+    wiz.set("rn", rn)?;
+
+    let cp_old = ctx.create_function(|_, (origin, destiny): (String, String)| {
+        to_lua(tools::cp_old(&origin, &destiny))
+    })?;
+    wiz.set("cp_old", cp_old)?;
+
     let cp = ctx.create_function(|_, (origin, destiny): (String, String)| {
         to_lua(tools::cp(&origin, &destiny))
     })?;
@@ -113,20 +129,26 @@ fn wiz_injection(ctx: Context) -> Result<(), LizError> {
     let rm = ctx.create_function(|_, path: String| to_lua(tools::rm(&path)))?;
     wiz.set("rm", rm)?;
 
-    let mk_dir = ctx.create_function(|_, path: String| to_lua(tools::mk_dir(&path)))?;
-    wiz.set("mk_dir", mk_dir)?;
+    let read = ctx.create_function(|_, path: String| to_lua(tools::read(&path)))?;
+    wiz.set("read", read)?;
+
+    let mkdir = ctx.create_function(|_, path: String| to_lua(tools::mkdir(&path)))?;
+    wiz.set("mkdir", mkdir)?;
+
+    let touch = ctx.create_function(|_, path: String| to_lua(tools::touch(&path)))?;
+    wiz.set("touch", touch)?;
 
     let write = ctx.create_function(|_, (path, contents): (String, String)| {
         to_lua(tools::write(&path, &contents))
     })?;
     wiz.set("write", write)?;
 
-	let append = ctx.create_function(|_, (path, contents): (String, String)| {
+    let append = ctx.create_function(|_, (path, contents): (String, String)| {
         to_lua(tools::append(&path, &contents))
     })?;
     wiz.set("append", append)?;
 
-	wiz.set("exe_ext", tools::exe_ext())?;
+    wiz.set("exe_ext", tools::exe_ext())?;
 
     let globals = ctx.globals();
     globals.set("wiz", wiz)?;

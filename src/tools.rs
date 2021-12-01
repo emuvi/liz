@@ -1,4 +1,5 @@
 use simple_error::SimpleError;
+use std::fs;
 use std::io::{Read, Write};
 use std::path::Path;
 use std::process::{Command, Stdio};
@@ -40,16 +41,29 @@ pub fn cmd<A: AsRef<str>, P: AsRef<Path>>(
 	Ok((res, out))
 }
 
-pub fn cp_old(origin: &str, destiny: &str) -> Result<(), LizError> -> {
-	let destiny_path = std::path::Path::new(destiny);
-	if destiny_path.exists() {
+pub fn has(path: &str) -> bool {
+	Path::new(path).exists()
+}
+
+pub fn isdir(path: &str) -> bool {
+	Path::new(path).is_dir()
+}
+
+pub fn rn(origin: &str, destiny: &str) -> Result<(), LizError> {
+	Ok(fs::rename(origin, destiny)?)
+}
+
+pub fn cp_old(origin: &str, destiny: &str) -> Result<(), LizError> {
+	if has(destiny) {
 		let destiny_old = format!("{}_old", destiny);
-		std::fs::rename(destiny, destiny_old)?;
+		rm(&destiny_old)?;
+		rn(destiny, &destiny_old)?;
 	}
+	cp(origin, destiny)
 }
 
 pub fn cp(origin: &str, destiny: &str) -> Result<(), LizError> {
-	if std::fs::metadata(origin)?.is_dir() {
+	if isdir(origin) {
 		copy_directory(origin, destiny)?;
 	} else {
 		copy_file(origin, destiny)?;
@@ -58,14 +72,14 @@ pub fn cp(origin: &str, destiny: &str) -> Result<(), LizError> {
 }
 
 fn copy_directory(origin: impl AsRef<Path>, destiny: impl AsRef<Path>) -> Result<(), LizError> {
-	std::fs::create_dir_all(&destiny)?;
-	for entry in std::fs::read_dir(origin)? {
+	fs::create_dir_all(&destiny)?;
+	for entry in fs::read_dir(origin)? {
 		let entry = entry?;
 		let file_type = entry.file_type()?;
 		if file_type.is_dir() {
 			copy_directory(entry.path(), destiny.as_ref().join(entry.file_name()))?;
 		} else {
-			std::fs::copy(entry.path(), destiny.as_ref().join(entry.file_name()))?;
+			fs::copy(entry.path(), destiny.as_ref().join(entry.file_name()))?;
 		}
 	}
 	Ok(())
@@ -73,9 +87,9 @@ fn copy_directory(origin: impl AsRef<Path>, destiny: impl AsRef<Path>) -> Result
 
 fn copy_file(origin: impl AsRef<Path>, destiny: impl AsRef<Path>) -> Result<(), LizError> {
 	if let Some(parent) = destiny.as_ref().parent() {
-		std::fs::create_dir_all(parent)?;
+		fs::create_dir_all(parent)?;
 	}
-	std::fs::copy(origin, destiny)?;
+	fs::copy(origin, destiny)?;
 	Ok(())
 }
 
@@ -86,34 +100,39 @@ pub fn mv(origin: &str, destiny: &str) -> Result<(), LizError> {
 }
 
 pub fn rm(path: &str) -> Result<(), LizError> {
-	let path = std::path::Path::new(path);
-	if path.exists() {
-		if path.is_dir() {
-			std::fs::remove_dir_all(path)?;
+	Ok(if has(path) {
+		if isdir(path) {
+			fs::remove_dir_all(path)?
 		} else {
-			std::fs::remove_file(path)?;
+			fs::remove_file(path)?
 		}
-	}
+	})
+}
+
+pub fn read(path: &str) -> Result<String, LizError> {
+	let mut file = fs::File::open(path)?;
+	let mut result = String::new();
+	file.read_to_string(&mut result)?;
+	Ok(result)
+}
+
+pub fn mkdir(path: &str) -> Result<(), LizError> {
+	fs::create_dir_all(path)?;
 	Ok(())
 }
 
-pub fn mk_dir(path: &str) -> Result<(), LizError> {
-	std::fs::create_dir_all(path)?;
+pub fn touch(path: &str) -> Result<(), LizError> {
+	fs::OpenOptions::new().create(true).write(true).open(path)?;
 	Ok(())
 }
 
 pub fn write(path: &str, contents: &str) -> Result<(), LizError> {
-	std::fs::write(path, contents)?;
-	Ok(())
+	Ok(fs::write(path, contents)?)
 }
 
 pub fn append(path: &str, contents: &str) -> Result<(), LizError> {
-	let mut file = std::fs::OpenOptions::new()
-		.write(true)
-		.append(true)
-		.open(path)?;
-	writeln!(file, "{}", contents)?;
-	Ok(())
+	let mut file = fs::OpenOptions::new().write(true).append(true).open(path)?;
+	Ok(writeln!(file, "{}", contents)?)
 }
 
 pub fn exe_ext() -> &'static str {
