@@ -7,12 +7,17 @@ pub mod tools;
 
 pub type LizError = Box<dyn Error + Send + Sync>;
 
-pub fn execute(path: impl AsRef<Path>, args: Option<Vec<String>>) -> Result<String, LizError> {
+pub fn exec(path: impl AsRef<Path>, args: Option<Vec<String>>) -> Result<String, LizError> {
+    let handler = start(args)?;
+    load(path, &handler)
+}
+
+pub fn load(path: impl AsRef<Path>, handler: &Lua) -> Result<String, LizError> {
     let source = std::fs::read_to_string(&path)?;
     let path = path.as_ref();
     let path_display = path
         .to_str()
-        .ok_or("Could not get the display of path to execute.")?;
+        .ok_or("Could not get the display of path to load.")?;
     let parent = parent(path)?;
     let old_dir = std::env::current_dir()?;
     let old_dir = if old_dir.is_relative() {
@@ -21,22 +26,38 @@ pub fn execute(path: impl AsRef<Path>, args: Option<Vec<String>>) -> Result<Stri
         old_dir
     };
     std::env::set_current_dir(parent)?;
-    let lua = Lua::new();
     let mut result: Result<String, LizError> = Ok(String::default());
-    lua.context(|ctx| {
-        if let Err(e) = wiz_injection(ctx, String::from(path_display), args) {
-            let msg = format!(
-                "Error in injection on execution of {} with message: \n{}",
-                path_display, e
-            );
-            let err = simple_error::SimpleError::new(msg);
-            result = Err(Box::new(err));
+    handler.context(|ctx| {
+        let globals = ctx.globals();
+        let wiz: Option<Table> = match globals.get("wiz") {
+            Ok(wiz) => {
+                Some(wiz)
+            },
+            Err(e) => {
+                let msg = format!(
+                    "Error on getting the wizard of {} with message: \n{}",
+                    path_display, e
+                );
+                let err = simple_error::SimpleError::new(msg);
+                result = Err(Box::new(err));
+                None
+            },
+        };
+        if let Some(wiz) = wiz {
+            if let Err(e) = wiz.set("path", path_display) {
+                let msg = format!(
+                    "Error on setting the path on wizard of {} with message: \n{}",
+                    path_display, e
+                );
+                let err = simple_error::SimpleError::new(msg);
+                result = Err(Box::new(err));
+            }
         }
     });
     if result.is_err() {
         return result;
     }
-    lua.context(|ctx| match ctx.load(&source).eval::<MultiValue>() {
+    handler.context(|ctx| match ctx.load(&source).eval::<MultiValue>() {
         Ok(values) => {
             let returned = format!(
                 "{}",
@@ -57,7 +78,7 @@ pub fn execute(path: impl AsRef<Path>, args: Option<Vec<String>>) -> Result<Stri
             };
             result = Ok(msg);
         }
-        Err(error) => {
+        Err(e) => {
             let mut msg = format!("Error on execution of {} with message:\n", path_display);
             let wiz = get_wiz(ctx);
             if let Some(wiz) = wiz {
@@ -65,18 +86,34 @@ pub fn execute(path: impl AsRef<Path>, args: Option<Vec<String>>) -> Result<Stri
                     msg.push_str(&err);
                 }
             }
-            msg.push_str(&format!("{}", error));
+            msg.push_str(&format!("{}", e));
             let err = simple_error::SimpleError::new(msg);
             result = Err(Box::new(err));
         }
     });
-    if let Err(error) = std::env::set_current_dir(old_dir) {
-        panic!(
-            "Could not return to the previous working directory. - {}",
-            error
+    if let Err(e) = std::env::set_current_dir(old_dir) {
+        let msg = format!(
+            "Error on returning the previous current dir on execution of {} with message: \n{}",
+            path_display, e
         );
+        let err = simple_error::SimpleError::new(msg);
+        result = Err(Box::new(err));
     }
     result
+}
+
+pub fn start(args: Option<Vec<String>>) -> Result<Lua, LizError> {
+    let handler = Lua::new();
+    let mut error: Option<LizError> = None;
+    handler.context(|ctx| {
+        if let Err(err) = wiz_injection(ctx, args) {
+            error = Some(err);
+        }
+    });
+    if let Some(err) = error {
+        return Err(err);
+    }
+    Ok(handler)
 }
 
 fn parent(path: impl AsRef<Path>) -> Result<PathBuf, LizError> {
@@ -132,10 +169,9 @@ fn treat_error<T>(ctx: Context, result: Result<T, LizError>) -> Result<T, rlua::
     }
 }
 
-fn wiz_injection(ctx: Context, path: String, args: Option<Vec<String>>) -> Result<(), LizError> {
+fn wiz_injection(ctx: Context, args: Option<Vec<String>>) -> Result<(), LizError> {
     let wiz = ctx.create_table()?;
 
-    wiz.set("path", path)?;
     wiz.set("args", args)?;
 
     let cmd = ctx.create_function(
