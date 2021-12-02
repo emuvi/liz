@@ -100,7 +100,7 @@ fn get_wiz(from_ctx: Context) -> Option<Table> {
     }
 }
 
-fn to_lua<T>(ctx: Context, result: Result<T, LizError>) -> Result<T, rlua::Error> {
+fn treat_error<T>(ctx: Context, result: Result<T, LizError>) -> Result<T, rlua::Error> {
     match result {
         Ok(returned) => Ok(returned),
         Err(error) => {
@@ -135,7 +135,7 @@ fn wiz_injection(ctx: Context) -> Result<(), LizError> {
 
     let cmd = ctx.create_function(
         |ctx, (name, args, dir, print, throw): (String, Vec<String>, String, bool, bool)| {
-            to_lua(ctx, tools::cmd(&name, args.as_slice(), &dir, print, throw))
+            treat_error(ctx, tools::cmd(&name, args.as_slice(), &dir, print, throw))
         },
     )?;
     wiz.set("cmd", cmd)?;
@@ -149,48 +149,48 @@ fn wiz_injection(ctx: Context) -> Result<(), LizError> {
     let is_file = ctx.create_function(|_, path: String| Ok(tools::is_file(&path)))?;
     wiz.set("is_file", is_file)?;
 
-    let cd = ctx.create_function(|ctx, path: String| to_lua(ctx, tools::cd(&path)))?;
+    let cd = ctx.create_function(|ctx, path: String| treat_error(ctx, tools::cd(&path)))?;
     wiz.set("cd", cd)?;
 
     let rn = ctx.create_function(|ctx, (origin, destiny): (String, String)| {
-        to_lua(ctx, tools::rn(&origin, &destiny))
+        treat_error(ctx, tools::rn(&origin, &destiny))
     })?;
     wiz.set("rn", rn)?;
 
     let cp = ctx.create_function(|ctx, (origin, destiny): (String, String)| {
-        to_lua(ctx, tools::cp(&origin, &destiny))
+        treat_error(ctx, tools::cp(&origin, &destiny))
     })?;
     wiz.set("cp", cp)?;
 
     let cp_tmp = ctx.create_function(|ctx, (origin, destiny): (String, String)| {
-        to_lua(ctx, tools::cp_tmp(&origin, &destiny))
+        treat_error(ctx, tools::cp_tmp(&origin, &destiny))
     })?;
     wiz.set("cp_tmp", cp_tmp)?;
 
     let mv = ctx.create_function(|ctx, (origin, destiny): (String, String)| {
-        to_lua(ctx, tools::mv(&origin, &destiny))
+        treat_error(ctx, tools::mv(&origin, &destiny))
     })?;
     wiz.set("mv", mv)?;
 
-    let rm = ctx.create_function(|ctx, path: String| to_lua(ctx, tools::rm(&path)))?;
+    let rm = ctx.create_function(|ctx, path: String| treat_error(ctx, tools::rm(&path)))?;
     wiz.set("rm", rm)?;
 
-    let read = ctx.create_function(|ctx, path: String| to_lua(ctx, tools::read(&path)))?;
+    let read = ctx.create_function(|ctx, path: String| treat_error(ctx, tools::read(&path)))?;
     wiz.set("read", read)?;
 
-    let mk_dir = ctx.create_function(|ctx, path: String| to_lua(ctx, tools::mk_dir(&path)))?;
+    let mk_dir = ctx.create_function(|ctx, path: String| treat_error(ctx, tools::mk_dir(&path)))?;
     wiz.set("mk_dir", mk_dir)?;
 
-    let touch = ctx.create_function(|ctx, path: String| to_lua(ctx, tools::touch(&path)))?;
+    let touch = ctx.create_function(|ctx, path: String| treat_error(ctx, tools::touch(&path)))?;
     wiz.set("touch", touch)?;
 
     let write = ctx.create_function(|ctx, (path, contents): (String, String)| {
-        to_lua(ctx, tools::write(&path, &contents))
+        treat_error(ctx, tools::write(&path, &contents))
     })?;
     wiz.set("write", write)?;
 
     let append = ctx.create_function(|ctx, (path, contents): (String, String)| {
-        to_lua(ctx, tools::append(&path, &contents))
+        treat_error(ctx, tools::append(&path, &contents))
     })?;
     wiz.set("append", append)?;
 
