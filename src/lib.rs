@@ -124,6 +124,8 @@ fn treat_error<T>(ctx: Context, result: Result<T, LizError>) -> Result<T, rlua::
                 if let Err(not_set_err) = wiz.set("err", stack_err) {
                     eprintln!("Could not set the error stack because: {}", not_set_err);
                 }
+            } else {
+                eprintln!("Could not set the error stack because: Could not get the wiz.",);
             }
             Err(rlua::Error::external(error))
         }
