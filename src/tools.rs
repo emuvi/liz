@@ -192,3 +192,9 @@ pub fn path_parent(path: &str) -> Result<String, LizError> {
 	let parent = parent.to_str().ok_or("Could not get the path parent.")?;
 	Ok(format!("{}", parent))
 }
+
+pub fn path_join(path: &str, child: &str) -> Result<String, LizError> {
+	let path = Path::new(path).join(child);
+	let path = path.to_str().ok_or("Could not get the path joined.")?;
+	Ok(format!("{}", path))
+}

@@ -217,6 +217,11 @@ fn wiz_injection(ctx: Context, path: String, args: Option<Vec<String>>) -> Resul
         ctx.create_function(|ctx, path: String| treat_error(ctx, tools::path_parent(&path)))?;
     wiz.set("path_parent", path_parent)?;
 
+    let path_join = ctx.create_function(|ctx, (path, child): (String, String)| {
+        treat_error(ctx, tools::path_join(&path, &child))
+    })?;
+    wiz.set("path_join", path_join)?;
+
     let globals = ctx.globals();
     globals.set("wiz", wiz)?;
     Ok(())
