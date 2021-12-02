@@ -157,3 +157,38 @@ pub fn append(path: &str, contents: &str) -> Result<(), LizError> {
 pub fn exe_ext() -> &'static str {
 	std::env::consts::EXE_EXTENSION
 }
+
+pub fn path_ext(path: &str) -> Result<String, LizError> {
+	let path = Path::new(path);
+	let path = path
+		.extension()
+		.ok_or("Could not get the path extension.")?;
+	let path = path.to_str().ok_or("Could not get the path extension.")?;
+	Ok(format!("{}", path))
+}
+
+pub fn path_name(path: &str) -> Result<String, LizError> {
+	let path = Path::new(path);
+	let path = path.file_name().ok_or("Could not get the path name.")?;
+	let path = path.to_str().ok_or("Could not get the path name.")?;
+	Ok(format!("{}", path))
+}
+
+pub fn path_steam(path: &str) -> Result<String, LizError> {
+	let path = Path::new(path);
+	let path = path.file_stem().ok_or("Could not get the path steam.")?;
+	let path = path.to_str().ok_or("Could not get the path steam.")?;
+	Ok(format!("{}", path))
+}
+
+pub fn path_parent(path: &str) -> Result<String, LizError> {
+	let path = Path::new(path);
+	let path = if path.is_relative() {
+		std::fs::canonicalize(path)?
+	} else {
+		path.to_path_buf()
+	};
+	let parent = path.parent().ok_or("Could not get the path parent.")?;
+	let parent = parent.to_str().ok_or("Could not get the path parent.")?;
+	Ok(format!("{}", parent))
+}

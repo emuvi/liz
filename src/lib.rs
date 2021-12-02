@@ -7,7 +7,7 @@ pub mod tools;
 
 pub type LizError = Box<dyn Error + Send + Sync>;
 
-pub fn execute(path: impl AsRef<Path>) -> Result<String, LizError> {
+pub fn execute(path: impl AsRef<Path>, args: Option<Vec<String>>) -> Result<String, LizError> {
     let source = std::fs::read_to_string(&path)?;
     let path = path.as_ref();
     let path_display = path
@@ -24,7 +24,7 @@ pub fn execute(path: impl AsRef<Path>) -> Result<String, LizError> {
     let lua = Lua::new();
     let mut result: Result<String, LizError> = Ok(String::default());
     lua.context(|ctx| {
-        if let Err(e) = wiz_injection(ctx) {
+        if let Err(e) = wiz_injection(ctx, String::from(path_display), args) {
             let msg = format!(
                 "Error in injection on execution of {} with message: \n{}",
                 path_display, e
@@ -88,8 +88,8 @@ fn parent(path: impl AsRef<Path>) -> Result<PathBuf, LizError> {
     };
     let parent = path
         .parent()
-        .ok_or("Could not get the parent from the path")?;
-    Ok(std::path::PathBuf::from(parent))
+        .ok_or("Could not get the parent from the path.")?;
+    Ok(PathBuf::from(parent))
 }
 
 fn get_wiz(from_ctx: Context) -> Option<Table> {
@@ -132,8 +132,11 @@ fn treat_error<T>(ctx: Context, result: Result<T, LizError>) -> Result<T, rlua::
     }
 }
 
-fn wiz_injection(ctx: Context) -> Result<(), LizError> {
+fn wiz_injection(ctx: Context, path: String, args: Option<Vec<String>>) -> Result<(), LizError> {
     let wiz = ctx.create_table()?;
+
+    wiz.set("path", path)?;
+    wiz.set("args", args)?;
 
     let cmd = ctx.create_function(
         |ctx, (name, args, dir, print, throw): (String, Vec<String>, String, bool, bool)| {
@@ -197,6 +200,22 @@ fn wiz_injection(ctx: Context) -> Result<(), LizError> {
     wiz.set("append", append)?;
 
     wiz.set("exe_ext", tools::exe_ext())?;
+
+    let path_ext =
+        ctx.create_function(|ctx, path: String| treat_error(ctx, tools::path_ext(&path)))?;
+    wiz.set("path_ext", path_ext)?;
+
+    let path_name =
+        ctx.create_function(|ctx, path: String| treat_error(ctx, tools::path_name(&path)))?;
+    wiz.set("path_name", path_name)?;
+
+    let path_steam =
+        ctx.create_function(|ctx, path: String| treat_error(ctx, tools::path_steam(&path)))?;
+    wiz.set("path_steam", path_steam)?;
+
+    let path_parent =
+        ctx.create_function(|ctx, path: String| treat_error(ctx, tools::path_parent(&path)))?;
+    wiz.set("path_parent", path_parent)?;
 
     let globals = ctx.globals();
     globals.set("wiz", wiz)?;
