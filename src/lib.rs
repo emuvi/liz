@@ -7,7 +7,8 @@ pub mod tools;
 
 pub type LizError = Box<dyn Error + Send + Sync>;
 
-pub fn execute(path: impl AsRef<Path>) -> Result<String, LizError> {
+pub fn execute(path: impl AsRef<Path>
+) -> Result<String, LizError> {
     let source = std::fs::read_to_string(&path)?;
     let path = path.as_ref();
     let path_display = path
@@ -86,7 +87,10 @@ fn parent(path: impl AsRef<Path>) -> Result<PathBuf, LizError> {
 fn to_lua<T>(result: Result<T, LizError>) -> Result<T, rlua::Error> {
     match result {
         Ok(returned) => Ok(returned),
-        Err(error) => Err(rlua::Error::external(error)),
+        Err(error) => {
+            let error = format!("{}", error);
+            Err(rlua::Error::RuntimeError(error))
+        },
     }
 }
 
