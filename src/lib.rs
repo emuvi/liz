@@ -16,6 +16,11 @@ pub fn execute(path: impl AsRef<Path>
         .ok_or("Could not get the display of path to execute.")?;
     let parent = parent(path)?;
     let old_dir = std::env::current_dir()?;
+    let old_dir = if old_dir.is_relative() {
+        std::fs::canonicalize(old_dir)?
+    } else {
+        old_dir
+    };
     std::env::set_current_dir(parent)?;
     let lua = Lua::new();
     let mut result: Result<String, LizError> = Ok(String::default());
@@ -62,10 +67,10 @@ pub fn execute(path: impl AsRef<Path>
             result = Err(Box::new(err));
         }
     });
-    if let Err(dir_err) = std::env::set_current_dir(old_dir) {
+    if let Err(error) = std::env::set_current_dir(old_dir) {
         panic!(
-            "Could not return to the system working directory. - {}",
-            dir_err
+            "Could not return to the previous working directory. - {}",
+            error
         );
     }
     result
@@ -107,23 +112,31 @@ fn wiz_injection(ctx: Context) -> Result<(), LizError> {
     let has = ctx.create_function(|_, path: String| Ok(tools::has(&path)))?;
     wiz.set("has", has)?;
 
-    let isdir = ctx.create_function(|_, path: String| Ok(tools::isdir(&path)))?;
-    wiz.set("isdir", isdir)?;
+    let is_dir = ctx.create_function(|_, path: String| Ok(tools::is_dir(&path)))?;
+    wiz.set("is_dir", is_dir)?;
+
+    let is_file = ctx.create_function(|_, path: String| Ok(tools::is_file(&path)))?;
+    wiz.set("is_file", is_file)?;
+
+    let cd = ctx.create_function(|_, path: String| {
+        to_lua(tools::cd(&path))
+    })?;
+    wiz.set("cd", cd)?;
 
     let rn = ctx.create_function(|_, (origin, destiny): (String, String)| {
         to_lua(tools::rn(&origin, &destiny))
     })?;
     wiz.set("rn", rn)?;
 
-    let cp_tmp = ctx.create_function(|_, (origin, destiny): (String, String)| {
-        to_lua(tools::cp_tmp(&origin, &destiny))
-    })?;
-    wiz.set("cp_tmp", cp_tmp)?;
-
     let cp = ctx.create_function(|_, (origin, destiny): (String, String)| {
         to_lua(tools::cp(&origin, &destiny))
     })?;
     wiz.set("cp", cp)?;
+
+    let cp_tmp = ctx.create_function(|_, (origin, destiny): (String, String)| {
+        to_lua(tools::cp_tmp(&origin, &destiny))
+    })?;
+    wiz.set("cp_tmp", cp_tmp)?;
 
     let mv = ctx.create_function(|_, (origin, destiny): (String, String)| {
         to_lua(tools::mv(&origin, &destiny))
@@ -136,8 +149,8 @@ fn wiz_injection(ctx: Context) -> Result<(), LizError> {
     let read = ctx.create_function(|_, path: String| to_lua(tools::read(&path)))?;
     wiz.set("read", read)?;
 
-    let mkdir = ctx.create_function(|_, path: String| to_lua(tools::mkdir(&path)))?;
-    wiz.set("mkdir", mkdir)?;
+    let mk_dir = ctx.create_function(|_, path: String| to_lua(tools::mk_dir(&path)))?;
+    wiz.set("mk_dir", mk_dir)?;
 
     let touch = ctx.create_function(|_, path: String| to_lua(tools::touch(&path)))?;
     wiz.set("touch", touch)?;

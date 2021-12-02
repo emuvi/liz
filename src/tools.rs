@@ -45,8 +45,16 @@ pub fn has(path: &str) -> bool {
 	Path::new(path).exists()
 }
 
-pub fn isdir(path: &str) -> bool {
+pub fn is_dir(path: &str) -> bool {
 	Path::new(path).is_dir()
+}
+
+pub fn is_file(path: &str) -> bool {
+	Path::new(path).is_file()
+}
+
+pub fn cd(path: &str) -> Result<(), LizError> {
+	Ok(std::env::set_current_dir(path)?)
 }
 
 pub fn rn(origin: &str, destiny: &str) -> Result<(), LizError> {
@@ -54,7 +62,7 @@ pub fn rn(origin: &str, destiny: &str) -> Result<(), LizError> {
 }
 
 pub fn cp(origin: &str, destiny: &str) -> Result<(), LizError> {
-	if isdir(origin) {
+	if is_dir(origin) {
 		copy_directory(origin, destiny)?;
 	} else {
 		copy_file(origin, destiny)?;
@@ -112,7 +120,7 @@ pub fn mv(origin: &str, destiny: &str) -> Result<(), LizError> {
 
 pub fn rm(path: &str) -> Result<(), LizError> {
 	Ok(if has(path) {
-		if isdir(path) {
+		if is_dir(path) {
 			fs::remove_dir_all(path)?
 		} else {
 			fs::remove_file(path)?
@@ -127,7 +135,7 @@ pub fn read(path: &str) -> Result<String, LizError> {
 	Ok(result)
 }
 
-pub fn mkdir(path: &str) -> Result<(), LizError> {
+pub fn mk_dir(path: &str) -> Result<(), LizError> {
 	fs::create_dir_all(path)?;
 	Ok(())
 }
