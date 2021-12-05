@@ -13,11 +13,16 @@ pub fn exec(path: impl AsRef<Path>, args: Option<Vec<String>>) -> Result<String,
 }
 
 pub fn load(path: impl AsRef<Path>, handler: &Lua) -> Result<String, LizError> {
-    let source = std::fs::read_to_string(&path)?;
     let path = path.as_ref();
     let path_display = path
         .to_str()
-        .ok_or("Could not get the display of path to load.")?;
+        .ok_or("Could not get the display of the path to load.")?;
+    if !path.exists() {
+        let msg = format!("The path to load {} does not exists.", path_display);
+        let err = simple_error::SimpleError::new(msg);
+        return Err(Box::new(err));
+    }
+    let source = std::fs::read_to_string(&path)?;
     let parent = parent(path)?;
     let old_dir = std::env::current_dir()?;
     let old_dir = if old_dir.is_relative() {
@@ -30,9 +35,7 @@ pub fn load(path: impl AsRef<Path>, handler: &Lua) -> Result<String, LizError> {
     handler.context(|ctx| {
         let globals = ctx.globals();
         let liz: Option<Table> = match globals.get("liz") {
-            Ok(liz) => {
-                Some(liz)
-            },
+            Ok(liz) => Some(liz),
             Err(e) => {
                 let msg = format!(
                     "Error on getting the liz global reference of {} with message: \n{}",
@@ -41,7 +44,7 @@ pub fn load(path: impl AsRef<Path>, handler: &Lua) -> Result<String, LizError> {
                 let err = simple_error::SimpleError::new(msg);
                 result = Err(Box::new(err));
                 None
-            },
+            }
         };
         if let Some(liz) = liz {
             if let Err(e) = liz.set("path", path_display) {

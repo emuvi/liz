@@ -4,6 +4,7 @@ use std::path::Path;
 fn main() -> Result<(), LizError> {
     let mut to_execute: Vec<Box<dyn AsRef<Path>>> = Vec::new();
     let mut to_execute_args: Option<Vec<String>> = None;
+    let mut first_arg = true;
     let mut getting_args = false;
     for arg in std::env::args() {
         if !getting_args {
@@ -18,7 +19,9 @@ fn main() -> Result<(), LizError> {
             } else if arg.ends_with(".liz") || arg.ends_with(".lua") {
                 to_execute.push(Box::new(arg));
             } else {
-                to_execute.push(Box::new(format!("{}.liz", arg)));
+                if !first_arg {
+                    to_execute.push(Box::new(format!("{}.liz", arg)));
+                }
             }
         } else {
             if let Some(ref mut to_execute_args) = to_execute_args {
@@ -26,6 +29,9 @@ fn main() -> Result<(), LizError> {
             } else {
                 to_execute_args = Some(vec![arg]);
             }
+        }
+        if first_arg {
+            first_arg = false;
         }
     }
     if to_execute.is_empty() {
