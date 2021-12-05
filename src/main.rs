@@ -10,8 +10,7 @@ fn main() -> Result<(), LizError> {
             if arg == "--" {
                 getting_args = true;
             } else if arg == "-v" || arg == "--version" {
-                let version = env!("CARGO_PKG_VERSION");
-                println!("Liz (LuaWizard) {}", version);
+                println!("Liz (LuaWizard) {}", env!("CARGO_PKG_VERSION"));
                 return Ok(());
             } else if arg == "-h" || arg == "--help" {
                 print_help();
