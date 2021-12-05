@@ -1,10 +1,10 @@
 [package]
 name = "liz"
-description = "LuaWizard - Features a bunch of functionalities for lua scripts inside of a wiz global variable."
+description = "LuaWizard - Features a bunch of functionalities for lua scripts inside the liz global variable."
 repository = "https://github.com/emuvi/liz/"
 authors = ["Éverton M. Vieira"]
 license = "LGPL-3.0-only"
-version = "0.1.6"
+version = "0.1.7"
 edition = "2018"
 
 [dependencies]

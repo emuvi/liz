@@ -29,13 +29,13 @@ pub fn load(path: impl AsRef<Path>, handler: &Lua) -> Result<String, LizError> {
     let mut result: Result<String, LizError> = Ok(String::default());
     handler.context(|ctx| {
         let globals = ctx.globals();
-        let wiz: Option<Table> = match globals.get("wiz") {
-            Ok(wiz) => {
-                Some(wiz)
+        let liz: Option<Table> = match globals.get("liz") {
+            Ok(liz) => {
+                Some(liz)
             },
             Err(e) => {
                 let msg = format!(
-                    "Error on getting the wizard of {} with message: \n{}",
+                    "Error on getting the liz global reference of {} with message: \n{}",
                     path_display, e
                 );
                 let err = simple_error::SimpleError::new(msg);
@@ -43,8 +43,8 @@ pub fn load(path: impl AsRef<Path>, handler: &Lua) -> Result<String, LizError> {
                 None
             },
         };
-        if let Some(wiz) = wiz {
-            if let Err(e) = wiz.set("path", path_display) {
+        if let Some(liz) = liz {
+            if let Err(e) = liz.set("path", path_display) {
                 let msg = format!(
                     "Error on setting the path on wizard of {} with message: \n{}",
                     path_display, e
@@ -80,9 +80,9 @@ pub fn load(path: impl AsRef<Path>, handler: &Lua) -> Result<String, LizError> {
         }
         Err(e) => {
             let mut msg = format!("Error on execution of {} with message:\n", path_display);
-            let wiz = get_wiz(ctx);
-            if let Some(wiz) = wiz {
-                if let Ok(err) = wiz.get::<_, String>("err") {
+            let liz = get_liz(ctx);
+            if let Some(liz) = liz {
+                if let Ok(err) = liz.get::<_, String>("err") {
                     msg.push_str(&err);
                 }
             }
@@ -106,7 +106,7 @@ pub fn start(args: Option<Vec<String>>) -> Result<Lua, LizError> {
     let handler = Lua::new();
     let mut error: Option<LizError> = None;
     handler.context(|ctx| {
-        if let Err(err) = wiz_injection(ctx, args) {
+        if let Err(err) = liz_injection(ctx, args) {
             error = Some(err);
         }
     });
@@ -129,10 +129,10 @@ fn parent(path: impl AsRef<Path>) -> Result<PathBuf, LizError> {
     Ok(PathBuf::from(parent))
 }
 
-fn get_wiz(from_ctx: Context) -> Option<Table> {
+fn get_liz(from_ctx: Context) -> Option<Table> {
     let globals = from_ctx.globals();
-    match globals.get("wiz") {
-        Ok(wiz) => Some(wiz),
+    match globals.get("liz") {
+        Ok(liz) => Some(liz),
         Err(_) => None,
     }
 }
@@ -141,13 +141,13 @@ fn treat_error<T>(ctx: Context, result: Result<T, LizError>) -> Result<T, rlua::
     match result {
         Ok(returned) => Ok(returned),
         Err(error) => {
-            if let Some(wiz) = get_wiz(ctx) {
+            if let Some(liz) = get_liz(ctx) {
                 let mut new = true;
-                if let Ok(has) = wiz.contains_key("err") {
+                if let Ok(has) = liz.contains_key("err") {
                     new = !has;
                 }
                 let mut stack_err: String = if !new {
-                    match wiz.get("err") {
+                    match liz.get("err") {
                         Ok(old_stacked) => old_stacked,
                         Err(get_old_err) => {
                             eprintln!("Could not get the stacked errors because: {}", get_old_err);
@@ -158,107 +158,107 @@ fn treat_error<T>(ctx: Context, result: Result<T, LizError>) -> Result<T, rlua::
                     String::new()
                 };
                 stack_err.push_str(&format!("{}\n", error));
-                if let Err(not_set_err) = wiz.set("err", stack_err) {
+                if let Err(not_set_err) = liz.set("err", stack_err) {
                     eprintln!("Could not set the error stack because: {}", not_set_err);
                 }
             } else {
-                eprintln!("Could not set the error stack because: Could not get the wiz.",);
+                eprintln!("Could not set the error stack because: Could not get the liz.",);
             }
             Err(rlua::Error::external(error))
         }
     }
 }
 
-fn wiz_injection(ctx: Context, args: Option<Vec<String>>) -> Result<(), LizError> {
-    let wiz = ctx.create_table()?;
+fn liz_injection(ctx: Context, args: Option<Vec<String>>) -> Result<(), LizError> {
+    let liz = ctx.create_table()?;
 
-    wiz.set("args", args)?;
+    liz.set("args", args)?;
 
     let cmd = ctx.create_function(
         |ctx, (name, args, dir, print, throw): (String, Vec<String>, String, bool, bool)| {
             treat_error(ctx, tools::cmd(&name, args.as_slice(), &dir, print, throw))
         },
     )?;
-    wiz.set("cmd", cmd)?;
+    liz.set("cmd", cmd)?;
 
     let has = ctx.create_function(|_, path: String| Ok(tools::has(&path)))?;
-    wiz.set("has", has)?;
+    liz.set("has", has)?;
 
     let is_dir = ctx.create_function(|_, path: String| Ok(tools::is_dir(&path)))?;
-    wiz.set("is_dir", is_dir)?;
+    liz.set("is_dir", is_dir)?;
 
     let is_file = ctx.create_function(|_, path: String| Ok(tools::is_file(&path)))?;
-    wiz.set("is_file", is_file)?;
+    liz.set("is_file", is_file)?;
 
     let cd = ctx.create_function(|ctx, path: String| treat_error(ctx, tools::cd(&path)))?;
-    wiz.set("cd", cd)?;
+    liz.set("cd", cd)?;
 
     let rn = ctx.create_function(|ctx, (origin, destiny): (String, String)| {
         treat_error(ctx, tools::rn(&origin, &destiny))
     })?;
-    wiz.set("rn", rn)?;
+    liz.set("rn", rn)?;
 
     let cp = ctx.create_function(|ctx, (origin, destiny): (String, String)| {
         treat_error(ctx, tools::cp(&origin, &destiny))
     })?;
-    wiz.set("cp", cp)?;
+    liz.set("cp", cp)?;
 
     let cp_tmp = ctx.create_function(|ctx, (origin, destiny): (String, String)| {
         treat_error(ctx, tools::cp_tmp(&origin, &destiny))
     })?;
-    wiz.set("cp_tmp", cp_tmp)?;
+    liz.set("cp_tmp", cp_tmp)?;
 
     let mv = ctx.create_function(|ctx, (origin, destiny): (String, String)| {
         treat_error(ctx, tools::mv(&origin, &destiny))
     })?;
-    wiz.set("mv", mv)?;
+    liz.set("mv", mv)?;
 
     let rm = ctx.create_function(|ctx, path: String| treat_error(ctx, tools::rm(&path)))?;
-    wiz.set("rm", rm)?;
+    liz.set("rm", rm)?;
 
     let read = ctx.create_function(|ctx, path: String| treat_error(ctx, tools::read(&path)))?;
-    wiz.set("read", read)?;
+    liz.set("read", read)?;
 
     let mk_dir = ctx.create_function(|ctx, path: String| treat_error(ctx, tools::mk_dir(&path)))?;
-    wiz.set("mk_dir", mk_dir)?;
+    liz.set("mk_dir", mk_dir)?;
 
     let touch = ctx.create_function(|ctx, path: String| treat_error(ctx, tools::touch(&path)))?;
-    wiz.set("touch", touch)?;
+    liz.set("touch", touch)?;
 
     let write = ctx.create_function(|ctx, (path, contents): (String, String)| {
         treat_error(ctx, tools::write(&path, &contents))
     })?;
-    wiz.set("write", write)?;
+    liz.set("write", write)?;
 
     let append = ctx.create_function(|ctx, (path, contents): (String, String)| {
         treat_error(ctx, tools::append(&path, &contents))
     })?;
-    wiz.set("append", append)?;
+    liz.set("append", append)?;
 
-    wiz.set("exe_ext", tools::exe_ext())?;
+    liz.set("exe_ext", tools::exe_ext())?;
 
     let path_ext =
         ctx.create_function(|ctx, path: String| treat_error(ctx, tools::path_ext(&path)))?;
-    wiz.set("path_ext", path_ext)?;
+    liz.set("path_ext", path_ext)?;
 
     let path_name =
         ctx.create_function(|ctx, path: String| treat_error(ctx, tools::path_name(&path)))?;
-    wiz.set("path_name", path_name)?;
+    liz.set("path_name", path_name)?;
 
     let path_steam =
         ctx.create_function(|ctx, path: String| treat_error(ctx, tools::path_steam(&path)))?;
-    wiz.set("path_steam", path_steam)?;
+    liz.set("path_steam", path_steam)?;
 
     let path_parent =
         ctx.create_function(|ctx, path: String| treat_error(ctx, tools::path_parent(&path)))?;
-    wiz.set("path_parent", path_parent)?;
+    liz.set("path_parent", path_parent)?;
 
     let path_join = ctx.create_function(|ctx, (path, child): (String, String)| {
         treat_error(ctx, tools::path_join(&path, &child))
     })?;
-    wiz.set("path_join", path_join)?;
+    liz.set("path_join", path_join)?;
 
     let globals = ctx.globals();
-    globals.set("wiz", wiz)?;
+    globals.set("liz", liz)?;
     Ok(())
 }
