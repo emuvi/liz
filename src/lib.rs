@@ -1,29 +1,33 @@
 use rlua::{Context, Lua, MultiValue, Table};
+use simple_error::SimpleError;
 use std::error::Error;
 use std::path::Path;
 use std::path::PathBuf;
 
-pub mod tools;
+pub mod execs;
+pub mod files;
+
+use execs::Spawned;
 
 pub type LizError = Box<dyn Error + Send + Sync>;
 
-pub fn exec(path: impl AsRef<Path>, args: Option<Vec<String>>) -> Result<String, LizError> {
+pub fn exec(path: impl AsRef<Path>, args: Option<Vec<String>>) -> Result<Vec<String>, LizError> {
     let handler = start(args)?;
     load(path, &handler)
 }
 
-pub fn load(path: impl AsRef<Path>, handler: &Lua) -> Result<String, LizError> {
+pub fn load(path: impl AsRef<Path>, handler: &Lua) -> Result<Vec<String>, LizError> {
     let path = path.as_ref();
     let path_display = path
         .to_str()
         .ok_or("Could not get the display of the path to load.")?;
     if !path.exists() {
         let msg = format!("The path to load {} does not exists.", path_display);
-        let err = simple_error::SimpleError::new(msg);
+        let err = SimpleError::new(msg);
         return Err(Box::new(err));
     }
     let source = std::fs::read_to_string(&path)?;
-    let parent = parent(path)?;
+    let parent = load_parent(path)?;
     let old_dir = std::env::current_dir()?;
     let old_dir = if old_dir.is_relative() {
         std::fs::canonicalize(old_dir)?
@@ -31,7 +35,7 @@ pub fn load(path: impl AsRef<Path>, handler: &Lua) -> Result<String, LizError> {
         old_dir
     };
     std::env::set_current_dir(parent)?;
-    let mut result: Result<String, LizError> = Ok(String::default());
+    let mut result: Option<Result<Vec<String>, LizError>> = None;
     handler.context(|ctx| {
         let globals = ctx.globals();
         let liz: Option<Table> = match globals.get("liz") {
@@ -41,8 +45,8 @@ pub fn load(path: impl AsRef<Path>, handler: &Lua) -> Result<String, LizError> {
                     "Error on getting the liz global reference of {} with message: \n{}",
                     path_display, e
                 );
-                let err = simple_error::SimpleError::new(msg);
-                result = Err(Box::new(err));
+                let err = SimpleError::new(msg);
+                result = Some(Err(Box::new(err)));
                 None
             }
         };
@@ -52,34 +56,21 @@ pub fn load(path: impl AsRef<Path>, handler: &Lua) -> Result<String, LizError> {
                     "Error on setting the path on wizard of {} with message: \n{}",
                     path_display, e
                 );
-                let err = simple_error::SimpleError::new(msg);
-                result = Err(Box::new(err));
+                let err = SimpleError::new(msg);
+                result = Some(Err(Box::new(err)));
             }
         }
     });
-    if result.is_err() {
+    if let Some(result) = result {
         return result;
     }
     handler.context(|ctx| match ctx.load(&source).eval::<MultiValue>() {
         Ok(values) => {
-            let returned = format!(
-                "{}",
-                values
-                    .iter()
-                    .map(|value| format!("{:?}", value))
-                    .collect::<Vec<_>>()
-                    .join("\n")
-            );
-            let returned = returned.trim();
-            let msg = if returned.is_empty() {
-                format!("Successfully executed {} with no result.", path_display)
-            } else {
-                format!(
-                    "Successfully executed {} with result(s):\n{}",
-                    path_display, returned
-                )
-            };
-            result = Ok(msg);
+            let mut vector: Vec<String> = Vec::new();
+            for value in &values {
+                vector.push(format!("{:?}", value));
+            }
+            result = Some(Ok(vector));
         }
         Err(e) => {
             let mut msg = format!("Error on execution of {} with message:\n", path_display);
@@ -90,8 +81,8 @@ pub fn load(path: impl AsRef<Path>, handler: &Lua) -> Result<String, LizError> {
                 }
             }
             msg.push_str(&format!("{}", e));
-            let err = simple_error::SimpleError::new(msg);
-            result = Err(Box::new(err));
+            let err = SimpleError::new(msg);
+            result = Some(Err(Box::new(err)));
         }
     });
     if let Err(e) = std::env::set_current_dir(old_dir) {
@@ -99,10 +90,17 @@ pub fn load(path: impl AsRef<Path>, handler: &Lua) -> Result<String, LizError> {
             "Error on returning the previous current dir on execution of {} with message: \n{}",
             path_display, e
         );
-        let err = simple_error::SimpleError::new(msg);
-        result = Err(Box::new(err));
+        let err = SimpleError::new(msg);
+        result = Some(Err(Box::new(err)));
     }
-    result
+    match result {
+        Some(result) => result,
+        None => {
+            let msg = format!("Could not reach a result on execution of {}", path_display);
+            let err = SimpleError::new(msg);
+            Err(Box::new(err))
+        }
+    }
 }
 
 pub fn start(args: Option<Vec<String>>) -> Result<Lua, LizError> {
@@ -119,7 +117,7 @@ pub fn start(args: Option<Vec<String>>) -> Result<Lua, LizError> {
     Ok(handler)
 }
 
-fn parent(path: impl AsRef<Path>) -> Result<PathBuf, LizError> {
+fn load_parent(path: impl AsRef<Path>) -> Result<PathBuf, LizError> {
     let path = path.as_ref();
     let path = if path.is_relative() {
         std::fs::canonicalize(path)?
@@ -177,112 +175,123 @@ fn liz_injection(ctx: Context, args: Option<Vec<String>>) -> Result<(), LizError
 
     liz.set("args", args)?;
 
+    let exec = ctx.create_function(|ctx, (path, args): (String, Option<Vec<String>>)| {
+        treat_error(ctx, exec(path, args))
+    })?;
+    liz.set("exec", exec)?;
+
+    let spawn = ctx.create_function(|_, (path, args): (String, Option<Vec<String>>)| {
+        Ok(execs::spawn(path, args))
+    })?;
+    liz.set("spawn", spawn)?;
+
+    let join = ctx.create_function(|ctx, spawned: Spawned| treat_error(ctx, execs::join(spawned)))?;
+    liz.set("join", join)?;
+
     let cmd = ctx.create_function(
         |ctx, (name, args, dir, print, throw): (String, Vec<String>, String, bool, bool)| {
-            treat_error(ctx, tools::cmd(&name, args.as_slice(), &dir, print, throw))
+            treat_error(ctx, execs::cmd(&name, args.as_slice(), &dir, print, throw))
         },
     )?;
     liz.set("cmd", cmd)?;
 
-    let has = ctx.create_function(|_, path: String| Ok(tools::has(&path)))?;
+    let has = ctx.create_function(|_, path: String| Ok(files::has(&path)))?;
     liz.set("has", has)?;
 
-    let is_dir = ctx.create_function(|_, path: String| Ok(tools::is_dir(&path)))?;
+    let is_dir = ctx.create_function(|_, path: String| Ok(files::is_dir(&path)))?;
     liz.set("is_dir", is_dir)?;
 
-    let is_file = ctx.create_function(|_, path: String| Ok(tools::is_file(&path)))?;
+    let is_file = ctx.create_function(|_, path: String| Ok(files::is_file(&path)))?;
     liz.set("is_file", is_file)?;
 
-    let cd = ctx.create_function(|ctx, path: String| treat_error(ctx, tools::cd(&path)))?;
+    let cd = ctx.create_function(|ctx, path: String| treat_error(ctx, files::cd(&path)))?;
     liz.set("cd", cd)?;
 
-    let pwd = ctx.create_function(|ctx, ()| treat_error(ctx, tools::pwd()))?;
+    let pwd = ctx.create_function(|ctx, ()| treat_error(ctx, files::pwd()))?;
     liz.set("pwd", pwd)?;
 
     let rn = ctx.create_function(|ctx, (origin, destiny): (String, String)| {
-        treat_error(ctx, tools::rn(&origin, &destiny))
+        treat_error(ctx, files::rn(&origin, &destiny))
     })?;
     liz.set("rn", rn)?;
 
     let cp = ctx.create_function(|ctx, (origin, destiny): (String, String)| {
-        treat_error(ctx, tools::cp(&origin, &destiny))
+        treat_error(ctx, files::cp(&origin, &destiny))
     })?;
     liz.set("cp", cp)?;
 
     let cp_tmp = ctx.create_function(|ctx, (origin, destiny): (String, String)| {
-        treat_error(ctx, tools::cp_tmp(&origin, &destiny))
+        treat_error(ctx, files::cp_tmp(&origin, &destiny))
     })?;
     liz.set("cp_tmp", cp_tmp)?;
 
     let mv = ctx.create_function(|ctx, (origin, destiny): (String, String)| {
-        treat_error(ctx, tools::mv(&origin, &destiny))
+        treat_error(ctx, files::mv(&origin, &destiny))
     })?;
     liz.set("mv", mv)?;
 
-    let rm = ctx.create_function(|ctx, path: String| treat_error(ctx, tools::rm(&path)))?;
+    let rm = ctx.create_function(|ctx, path: String| treat_error(ctx, files::rm(&path)))?;
     liz.set("rm", rm)?;
 
-    let read = ctx.create_function(|ctx, path: String| treat_error(ctx, tools::read(&path)))?;
+    let read = ctx.create_function(|ctx, path: String| treat_error(ctx, files::read(&path)))?;
     liz.set("read", read)?;
 
-    let mk_dir = ctx.create_function(|ctx, path: String| treat_error(ctx, tools::mk_dir(&path)))?;
+    let mk_dir = ctx.create_function(|ctx, path: String| treat_error(ctx, files::mk_dir(&path)))?;
     liz.set("mk_dir", mk_dir)?;
 
-    let touch = ctx.create_function(|ctx, path: String| treat_error(ctx, tools::touch(&path)))?;
+    let touch = ctx.create_function(|ctx, path: String| treat_error(ctx, files::touch(&path)))?;
     liz.set("touch", touch)?;
 
     let write = ctx.create_function(|ctx, (path, contents): (String, String)| {
-        treat_error(ctx, tools::write(&path, &contents))
+        treat_error(ctx, files::write(&path, &contents))
     })?;
     liz.set("write", write)?;
 
     let append = ctx.create_function(|ctx, (path, contents): (String, String)| {
-        treat_error(ctx, tools::append(&path, &contents))
+        treat_error(ctx, files::append(&path, &contents))
     })?;
     liz.set("append", append)?;
 
-    liz.set("exe_ext", tools::exe_ext())?;
+    liz.set("exe_ext", files::exe_ext())?;
 
-    liz.set("path_sep", tools::path_sep())?;
+    liz.set("path_sep", files::path_sep())?;
 
     let path_ext =
-        ctx.create_function(|ctx, path: String| treat_error(ctx, tools::path_ext(&path)))?;
+        ctx.create_function(|ctx, path: String| treat_error(ctx, files::path_ext(&path)))?;
     liz.set("path_ext", path_ext)?;
 
     let path_name =
-        ctx.create_function(|ctx, path: String| treat_error(ctx, tools::path_name(&path)))?;
+        ctx.create_function(|ctx, path: String| treat_error(ctx, files::path_name(&path)))?;
     liz.set("path_name", path_name)?;
 
     let path_stem =
-        ctx.create_function(|ctx, path: String| treat_error(ctx, tools::path_stem(&path)))?;
+        ctx.create_function(|ctx, path: String| treat_error(ctx, files::path_stem(&path)))?;
     liz.set("path_stem", path_stem)?;
 
     let path_parent =
-        ctx.create_function(|ctx, path: String| treat_error(ctx, tools::path_parent(&path)))?;
+        ctx.create_function(|ctx, path: String| treat_error(ctx, files::path_parent(&path)))?;
     liz.set("path_parent", path_parent)?;
 
-    let path_parent_find =
-        ctx.create_function(|ctx, (path, with_name): (String, String)| treat_error(ctx, tools::path_parent_find(&path, &with_name)))?;
+    let path_parent_find = ctx.create_function(|ctx, (path, with_name): (String, String)| {
+        treat_error(ctx, files::path_parent_find(&path, &with_name))
+    })?;
     liz.set("path_parent_find", path_parent_find)?;
 
     let path_join = ctx.create_function(|ctx, (path, child): (String, String)| {
-        treat_error(ctx, tools::path_join(&path, &child))
+        treat_error(ctx, files::path_join(&path, &child))
     })?;
     liz.set("path_join", path_join)?;
 
-    let path_list = ctx.create_function(|ctx, path: String| {
-        treat_error(ctx, tools::path_list(&path))
-    })?;
+    let path_list =
+        ctx.create_function(|ctx, path: String| treat_error(ctx, files::path_list(&path)))?;
     liz.set("path_list", path_list)?;
 
-    let path_list_dirs = ctx.create_function(|ctx, path: String| {
-        treat_error(ctx, tools::path_list_dirs(&path))
-    })?;
+    let path_list_dirs =
+        ctx.create_function(|ctx, path: String| treat_error(ctx, files::path_list_dirs(&path)))?;
     liz.set("path_list_dirs", path_list_dirs)?;
 
-    let path_list_files = ctx.create_function(|ctx, path: String| {
-        treat_error(ctx, tools::path_list_files(&path))
-    })?;
+    let path_list_files =
+        ctx.create_function(|ctx, path: String| treat_error(ctx, files::path_list_files(&path)))?;
     liz.set("path_list_files", path_list_files)?;
 
     let globals = ctx.globals();

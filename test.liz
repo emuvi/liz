@@ -1,0 +1,10 @@
+spawned = liz.spawn("spawn.liz", {"path passed"})
+results = liz.join(spawned)
+print("oi")
+print(results)
+for k, v in ipairs(results) do
+    print("k")
+    print(k)
+    print("v")
+    print(v)
+end

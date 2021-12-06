@@ -1,45 +1,8 @@
-use simple_error::SimpleError;
 use std::fs;
 use std::io::{Read, Write};
 use std::path::Path;
-use std::process::{Command, Stdio};
 
 use crate::LizError;
-
-pub fn cmd<A: AsRef<str>, P: AsRef<Path>>(
-	name: &str,
-	args: &[A],
-	dir: P,
-	print: bool,
-	throw: bool,
-) -> Result<(i32, String), LizError> {
-	let mut cmd = Command::new(name);
-	for arg in args {
-		cmd.arg(arg.as_ref());
-	}
-	cmd.current_dir(dir);
-	let mut child = cmd
-		.stdin(Stdio::null())
-		.stderr(Stdio::piped())
-		.stdout(Stdio::piped())
-		.spawn()?;
-	let mut out = String::new();
-	child.stderr.take().unwrap().read_to_string(&mut out)?;
-	child.stdout.take().unwrap().read_to_string(&mut out)?;
-	let out = out.trim();
-	let out = String::from(out);
-	let res = child.wait()?.code().unwrap_or(0);
-	if print && !out.is_empty() {
-		println!("{}", out);
-	}
-	if throw && res != 0 {
-		return Err(Box::new(SimpleError::new(format!(
-			"Exit code from {} command is different than zero: {}.",
-			name, res
-		))));
-	}
-	Ok((res, out))
-}
 
 pub fn has(path: &str) -> bool {
 	Path::new(path).exists()
