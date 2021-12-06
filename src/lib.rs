@@ -196,6 +196,9 @@ fn liz_injection(ctx: Context, args: Option<Vec<String>>) -> Result<(), LizError
     let cd = ctx.create_function(|ctx, path: String| treat_error(ctx, tools::cd(&path)))?;
     liz.set("cd", cd)?;
 
+    let pwd = ctx.create_function(|ctx, ()| treat_error(ctx, tools::pwd()))?;
+    liz.set("pwd", pwd)?;
+
     let rn = ctx.create_function(|ctx, (origin, destiny): (String, String)| {
         treat_error(ctx, tools::rn(&origin, &destiny))
     })?;
@@ -240,6 +243,8 @@ fn liz_injection(ctx: Context, args: Option<Vec<String>>) -> Result<(), LizError
 
     liz.set("exe_ext", tools::exe_ext())?;
 
+    liz.set("path_sep", tools::path_sep())?;
+
     let path_ext =
         ctx.create_function(|ctx, path: String| treat_error(ctx, tools::path_ext(&path)))?;
     liz.set("path_ext", path_ext)?;
@@ -248,18 +253,37 @@ fn liz_injection(ctx: Context, args: Option<Vec<String>>) -> Result<(), LizError
         ctx.create_function(|ctx, path: String| treat_error(ctx, tools::path_name(&path)))?;
     liz.set("path_name", path_name)?;
 
-    let path_steam =
-        ctx.create_function(|ctx, path: String| treat_error(ctx, tools::path_steam(&path)))?;
-    liz.set("path_steam", path_steam)?;
+    let path_stem =
+        ctx.create_function(|ctx, path: String| treat_error(ctx, tools::path_stem(&path)))?;
+    liz.set("path_stem", path_stem)?;
 
     let path_parent =
         ctx.create_function(|ctx, path: String| treat_error(ctx, tools::path_parent(&path)))?;
     liz.set("path_parent", path_parent)?;
 
+    let path_parent_find =
+        ctx.create_function(|ctx, (path, with_name): (String, String)| treat_error(ctx, tools::path_parent_find(&path, &with_name)))?;
+    liz.set("path_parent_find", path_parent_find)?;
+
     let path_join = ctx.create_function(|ctx, (path, child): (String, String)| {
         treat_error(ctx, tools::path_join(&path, &child))
     })?;
     liz.set("path_join", path_join)?;
+
+    let path_list = ctx.create_function(|ctx, path: String| {
+        treat_error(ctx, tools::path_list(&path))
+    })?;
+    liz.set("path_list", path_list)?;
+
+    let path_list_dirs = ctx.create_function(|ctx, path: String| {
+        treat_error(ctx, tools::path_list_dirs(&path))
+    })?;
+    liz.set("path_list_dirs", path_list_dirs)?;
+
+    let path_list_files = ctx.create_function(|ctx, path: String| {
+        treat_error(ctx, tools::path_list_files(&path))
+    })?;
+    liz.set("path_list_files", path_list_files)?;
 
     let globals = ctx.globals();
     globals.set("liz", liz)?;

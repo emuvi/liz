@@ -57,6 +57,10 @@ pub fn cd(path: &str) -> Result<(), LizError> {
 	Ok(std::env::set_current_dir(path)?)
 }
 
+pub fn pwd() -> Result<String, LizError> {
+	Ok(format!("{}", std::env::current_dir()?.display()))
+}
+
 pub fn rn(origin: &str, destiny: &str) -> Result<(), LizError> {
 	Ok(fs::rename(origin, destiny)?)
 }
@@ -158,43 +162,119 @@ pub fn exe_ext() -> &'static str {
 	std::env::consts::EXE_EXTENSION
 }
 
+pub fn path_sep() -> String {
+	String::from(std::path::MAIN_SEPARATOR)
+}
+
 pub fn path_ext(path: &str) -> Result<String, LizError> {
 	let path = Path::new(path);
-	let path = path
-		.extension()
-		.ok_or("Could not get the path extension.")?;
-	let path = path.to_str().ok_or("Could not get the path extension.")?;
-	Ok(format!("{}", path))
+	if let Some(path) = path.extension() {
+		if let Some(path_str) = path.to_str() {
+			return Ok(String::from(path_str));
+		}
+	}
+	Ok(String::new())
 }
 
 pub fn path_name(path: &str) -> Result<String, LizError> {
 	let path = Path::new(path);
-	let path = path.file_name().ok_or("Could not get the path name.")?;
-	let path = path.to_str().ok_or("Could not get the path name.")?;
-	Ok(format!("{}", path))
+	if let Some(path) = path.file_name() {
+		if let Some(path_str) = path.to_str() {
+			return Ok(String::from(path_str));
+		}
+	}
+	Ok(String::new())
 }
 
-pub fn path_steam(path: &str) -> Result<String, LizError> {
+pub fn path_stem(path: &str) -> Result<String, LizError> {
 	let path = Path::new(path);
-	let path = path.file_stem().ok_or("Could not get the path steam.")?;
-	let path = path.to_str().ok_or("Could not get the path steam.")?;
-	Ok(format!("{}", path))
+	if let Some(path) = path.file_stem() {
+		if let Some(path_str) = path.to_str() {
+			return Ok(String::from(path_str));
+		}
+	}
+	Ok(String::new())
 }
 
 pub fn path_parent(path: &str) -> Result<String, LizError> {
 	let path = Path::new(path);
-	let path = if path.is_relative() {
+	let path = if path.exists() && path.is_relative() {
 		std::fs::canonicalize(path)?
 	} else {
 		path.to_path_buf()
 	};
-	let parent = path.parent().ok_or("Could not get the path parent.")?;
-	let parent = parent.to_str().ok_or("Could not get the path parent.")?;
-	Ok(format!("{}", parent))
+	if let Some(path) = path.parent() {
+		if let Some(path_str) = path.to_str() {
+			return Ok(String::from(path_str));
+		}
+	}
+	Ok(String::new())
+}
+
+pub fn path_parent_find(path: &str, with_name: &str) -> Result<String, LizError> {
+	let mut path = String::from(path);
+	loop {
+		let parent = path_parent(&path)?;
+		if parent.is_empty() {
+			break;
+		} else {
+			let name = path_stem(&parent)?;
+			if name == with_name {
+				return Ok(parent);
+			} else {
+				path = parent;
+			}
+		}
+	}
+	Ok(String::new())
 }
 
 pub fn path_join(path: &str, child: &str) -> Result<String, LizError> {
 	let path = Path::new(path).join(child);
-	let path = path.to_str().ok_or("Could not get the path joined.")?;
-	Ok(format!("{}", path))
+	if let Some(path_str) = path.to_str() {
+		return Ok(String::from(path_str));
+	}
+	Ok(String::new())
+}
+
+pub fn path_list(path: &str) -> Result<Vec<String>, LizError> {
+	let mut result = Vec::new();
+	for entry in fs::read_dir(path)? {
+		if let Ok(entry) = entry {
+			if let Some(path) = entry.path().to_str() {
+				result.push(String::from(path));
+			}
+		}
+	}
+	return Ok(result);
+}
+
+pub fn path_list_dirs(path: &str) -> Result<Vec<String>, LizError> {
+	let mut result = Vec::new();
+	for entry in fs::read_dir(path)? {
+		if let Ok(entry) = entry {
+			let file_type = entry.file_type()?;
+			if file_type.is_dir() {
+				if let Some(path) = entry.path().to_str() {
+					result.push(String::from(path));
+				}
+			}
+		}
+	}
+	return Ok(result);
+}
+
+pub fn path_list_files(path: &str) -> Result<Vec<String>, LizError> {
+	let mut result = Vec::new();
+	for entry in fs::read_dir(path)? {
+		if let Ok(entry) = entry {
+			let file_type = entry.file_type()?;
+			if file_type.is_file() {
+				if let Some(path) = entry.path().to_str() {
+					result.push(String::from(path));
+				}
+			}
+		}
+	}
+	return Ok(result);
 }
