@@ -1,5 +1,0 @@
-print("primeiro: " .. liz.args[1])
-for _, v in ipairs(liz.args) do
-    print("arg: " .. v)
-end
-return 10
