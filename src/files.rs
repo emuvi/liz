@@ -1,22 +1,23 @@
 use std::fs;
 use std::io::{Read, Write};
 use std::path::Path;
+use std::path::PathBuf;
 
 use crate::LizError;
 
-pub fn has(path: &str) -> bool {
-	Path::new(path).exists()
+pub fn has(path: impl AsRef<Path>) -> bool {
+	path.as_ref().exists()
 }
 
-pub fn is_dir(path: &str) -> bool {
-	Path::new(path).is_dir()
+pub fn is_dir(path: impl AsRef<Path>) -> bool {
+	path.as_ref().is_dir()
 }
 
-pub fn is_file(path: &str) -> bool {
-	Path::new(path).is_file()
+pub fn is_file(path: impl AsRef<Path>) -> bool {
+	path.as_ref().is_file()
 }
 
-pub fn cd(path: &str) -> Result<(), LizError> {
+pub fn cd(path: impl AsRef<Path>) -> Result<(), LizError> {
 	Ok(std::env::set_current_dir(path)?)
 }
 
@@ -24,12 +25,12 @@ pub fn pwd() -> Result<String, LizError> {
 	Ok(format!("{}", std::env::current_dir()?.display()))
 }
 
-pub fn rn(origin: &str, destiny: &str) -> Result<(), LizError> {
+pub fn rn(origin: impl AsRef<Path>, destiny: impl AsRef<Path>) -> Result<(), LizError> {
 	Ok(fs::rename(origin, destiny)?)
 }
 
-pub fn cp(origin: &str, destiny: &str) -> Result<(), LizError> {
-	if is_dir(origin) {
+pub fn cp(origin: impl AsRef<Path>, destiny: impl AsRef<Path>) -> Result<(), LizError> {
+	if is_dir(&origin) {
 		copy_directory(origin, destiny)?;
 	} else {
 		copy_file(origin, destiny)?;
@@ -37,22 +38,16 @@ pub fn cp(origin: &str, destiny: &str) -> Result<(), LizError> {
 	Ok(())
 }
 
-pub fn cp_tmp(origin: &str, destiny: &str) -> Result<(), LizError> {
-	if has(destiny) {
-		let mut temp_name: String = destiny
-			.chars()
-			.map(|x| match x {
-				'\\' => '_',
-				'/' => '_',
-				_ => x,
-			})
-			.collect();
+pub fn cp_tmp(origin: impl AsRef<Path>, destiny: impl AsRef<Path>) -> Result<(), LizError> {
+	if has(&destiny) {
+		let mut temp_name: String = format!("{}", PathBuf::from(destiny.as_ref()).display());
 		let mut destiny_tmp = std::env::temp_dir().join(&temp_name);
 		while destiny_tmp.exists() {
 			temp_name.push_str("_");
 			destiny_tmp = std::env::temp_dir().join(&temp_name);
 		}
-		fs::rename(destiny, destiny_tmp)?;
+		cp(&destiny, &destiny_tmp)?;
+		rm(&destiny)?;
 	}
 	cp(origin, destiny)
 }
@@ -79,15 +74,15 @@ fn copy_file(origin: impl AsRef<Path>, destiny: impl AsRef<Path>) -> Result<(), 
 	Ok(())
 }
 
-pub fn mv(origin: &str, destiny: &str) -> Result<(), LizError> {
-	cp(origin, destiny)?;
+pub fn mv(origin: impl AsRef<Path>, destiny: impl AsRef<Path>) -> Result<(), LizError> {
+	cp(&origin, &destiny)?;
 	rm(origin)?;
 	Ok(())
 }
 
-pub fn rm(path: &str) -> Result<(), LizError> {
-	Ok(if has(path) {
-		if is_dir(path) {
+pub fn rm(path: impl AsRef<Path>) -> Result<(), LizError> {
+	Ok(if has(&path) {
+		if is_dir(&path) {
 			fs::remove_dir_all(path)?
 		} else {
 			fs::remove_file(path)?
@@ -95,28 +90,28 @@ pub fn rm(path: &str) -> Result<(), LizError> {
 	})
 }
 
-pub fn read(path: &str) -> Result<String, LizError> {
+pub fn read(path: impl AsRef<Path>) -> Result<String, LizError> {
 	let mut file = fs::File::open(path)?;
 	let mut result = String::new();
 	file.read_to_string(&mut result)?;
 	Ok(result)
 }
 
-pub fn mk_dir(path: &str) -> Result<(), LizError> {
+pub fn mk_dir(path: impl AsRef<Path>) -> Result<(), LizError> {
 	fs::create_dir_all(path)?;
 	Ok(())
 }
 
-pub fn touch(path: &str) -> Result<(), LizError> {
+pub fn touch(path: impl AsRef<Path>) -> Result<(), LizError> {
 	fs::OpenOptions::new().create(true).write(true).open(path)?;
 	Ok(())
 }
 
-pub fn write(path: &str, contents: &str) -> Result<(), LizError> {
+pub fn write(path: impl AsRef<Path>, contents: &str) -> Result<(), LizError> {
 	Ok(fs::write(path, contents)?)
 }
 
-pub fn append(path: &str, contents: &str) -> Result<(), LizError> {
+pub fn append(path: impl AsRef<Path>, contents: &str) -> Result<(), LizError> {
 	let mut file = fs::OpenOptions::new().write(true).append(true).open(path)?;
 	Ok(writeln!(file, "{}", contents)?)
 }
@@ -129,8 +124,8 @@ pub fn path_sep() -> String {
 	String::from(std::path::MAIN_SEPARATOR)
 }
 
-pub fn path_ext(path: &str) -> Result<String, LizError> {
-	let path = Path::new(path);
+pub fn path_ext(path: impl AsRef<Path>) -> Result<String, LizError> {
+	let path = path.as_ref();
 	if let Some(path) = path.extension() {
 		if let Some(path_str) = path.to_str() {
 			return Ok(String::from(path_str));
@@ -139,8 +134,8 @@ pub fn path_ext(path: &str) -> Result<String, LizError> {
 	Ok(String::new())
 }
 
-pub fn path_name(path: &str) -> Result<String, LizError> {
-	let path = Path::new(path);
+pub fn path_name(path: impl AsRef<Path>) -> Result<String, LizError> {
+	let path = path.as_ref();
 	if let Some(path) = path.file_name() {
 		if let Some(path_str) = path.to_str() {
 			return Ok(String::from(path_str));
@@ -149,8 +144,8 @@ pub fn path_name(path: &str) -> Result<String, LizError> {
 	Ok(String::new())
 }
 
-pub fn path_stem(path: &str) -> Result<String, LizError> {
-	let path = Path::new(path);
+pub fn path_stem(path: impl AsRef<Path>) -> Result<String, LizError> {
+	let path = path.as_ref();
 	if let Some(path) = path.file_stem() {
 		if let Some(path_str) = path.to_str() {
 			return Ok(String::from(path_str));
@@ -159,8 +154,8 @@ pub fn path_stem(path: &str) -> Result<String, LizError> {
 	Ok(String::new())
 }
 
-pub fn path_parent(path: &str) -> Result<String, LizError> {
-	let path = Path::new(path);
+pub fn path_parent(path: impl AsRef<Path>) -> Result<String, LizError> {
+	let path = path.as_ref();
 	let path = if path.exists() && path.is_relative() {
 		std::fs::canonicalize(path)?
 	} else {
@@ -174,8 +169,8 @@ pub fn path_parent(path: &str) -> Result<String, LizError> {
 	Ok(String::new())
 }
 
-pub fn path_parent_find(path: &str, with_name: &str) -> Result<String, LizError> {
-	let mut path = String::from(path);
+pub fn path_parent_find(path: impl AsRef<Path>, with_name: &str) -> Result<String, LizError> {
+	let mut path = format!("{}", PathBuf::from(path.as_ref()).display());
 	loop {
 		let parent = path_parent(&path)?;
 		if parent.is_empty() {
@@ -192,15 +187,15 @@ pub fn path_parent_find(path: &str, with_name: &str) -> Result<String, LizError>
 	Ok(String::new())
 }
 
-pub fn path_join(path: &str, child: &str) -> Result<String, LizError> {
-	let path = Path::new(path).join(child);
+pub fn path_join(path: impl AsRef<Path>, child: &str) -> Result<String, LizError> {
+	let path = path.as_ref().join(child);
 	if let Some(path_str) = path.to_str() {
 		return Ok(String::from(path_str));
 	}
 	Ok(String::new())
 }
 
-pub fn path_list(path: &str) -> Result<Vec<String>, LizError> {
+pub fn path_list(path: impl AsRef<Path>) -> Result<Vec<String>, LizError> {
 	let mut result = Vec::new();
 	for entry in fs::read_dir(path)? {
 		if let Ok(entry) = entry {
@@ -212,7 +207,7 @@ pub fn path_list(path: &str) -> Result<Vec<String>, LizError> {
 	return Ok(result);
 }
 
-pub fn path_list_dirs(path: &str) -> Result<Vec<String>, LizError> {
+pub fn path_list_dirs(path: impl AsRef<Path>) -> Result<Vec<String>, LizError> {
 	let mut result = Vec::new();
 	for entry in fs::read_dir(path)? {
 		if let Ok(entry) = entry {
@@ -227,7 +222,7 @@ pub fn path_list_dirs(path: &str) -> Result<Vec<String>, LizError> {
 	return Ok(result);
 }
 
-pub fn path_list_files(path: &str) -> Result<Vec<String>, LizError> {
+pub fn path_list_files(path: impl AsRef<Path>) -> Result<Vec<String>, LizError> {
 	let mut result = Vec::new();
 	for entry in fs::read_dir(path)? {
 		if let Ok(entry) = entry {
