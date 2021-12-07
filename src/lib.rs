@@ -1,4 +1,4 @@
-use rlua::{Context, Lua, MultiValue, Table};
+use rlua::{Context, Lua, MultiValue, Table, Value};
 use simple_error::SimpleError;
 use std::error::Error;
 use std::path::Path;
@@ -68,7 +68,27 @@ pub fn load(path: impl AsRef<Path>, handler: &Lua) -> Result<Vec<String>, LizErr
         Ok(values) => {
             let mut vector: Vec<String> = Vec::new();
             for value in &values {
-                vector.push(format!("{:?}", value));
+                let value_str = match value {
+                    Value::Nil => format!("|Nil|[]"),
+                    Value::Boolean(data) => format!("|Boolean|[{}]", data),
+                    Value::Integer(data) => format!("|Integer|[{}]", data),
+                    Value::Number(data) => format!("|Number|[{}]", data),
+                    Value::String(data) => match data.to_str() {
+                        Ok(data) => {
+                            format!("|String|[{}]", data)
+                        }
+                        Err(error) => {
+                            format!("|String|[![{}]]", error)
+                        }
+                    },
+                    Value::Table(data) => format!("|Table|[{:?}]", data),
+                    Value::Function(data) => format!("|Function|[{:?}]", data),
+                    Value::LightUserData(data) => format!("|LightUserData|[{:?}]", data),
+                    Value::UserData(data) => format!("|UserData|[{:?}]", data),
+                    Value::Thread(data) => format!("|Thread|[{:?}]", data),
+                    Value::Error(data) => format!("|Error|[{:?}]", data),
+                };
+                vector.push(value_str);
             }
             result = Some(Ok(vector));
         }
@@ -170,11 +190,47 @@ fn treat_error<T>(ctx: Context, result: Result<T, LizError>) -> Result<T, rlua::
     }
 }
 
+fn from_returned<'a>(ctx: Context<'a>, value: String) -> Result<Value<'a>, LizError> {
+    if value.starts_with("|Nil|") {
+        return Ok(Value::Nil);
+    } else if value.starts_with("|Boolean|") {
+        if value == "|Boolean|[true]" {
+            return Ok(Value::Boolean(true));
+        } else {
+            return Ok(Value::Boolean(false));
+        }
+    } else if value.starts_with("|Integer|") {
+        let data = &value[10..value.len() -1];
+        let data: i64 = data.parse()?;
+        return Ok(Value::Integer(data));
+    } else if value.starts_with("|Number|") {
+        let data = &value[9..value.len() -1];
+        let data: f64 = data.parse()?;
+        return Ok(Value::Number(data));
+    } else if value.starts_with("|String|") {
+        let data = &value[9..value.len() -1];
+        let data = ctx.create_string(data)?;
+        return Ok(Value::String(data));
+    }
+    let data = ctx.create_string(&value)?;
+    return Ok(Value::String(data));
+}
+
 fn liz_injection(ctx: Context, args: Option<Vec<String>>) -> Result<(), LizError> {
     let liz = ctx.create_table()?;
-
     liz.set("args", args)?;
+    let from_returned = ctx.create_function(|ctx, returned: String| {
+        treat_error(ctx, from_returned(ctx, returned))
+    })?;
+    liz.set("from_returned", from_returned)?;
+    liz_inject_execs(ctx, &liz)?;
+    liz_inject_files(ctx, &liz)?;
+    let globals = ctx.globals();
+    globals.set("liz", liz)?;
+    Ok(())
+}
 
+fn liz_inject_execs<'a>(ctx: Context<'a>, liz: &Table<'a>) -> Result<(), LizError> {
     let exec = ctx.create_function(|ctx, (path, args): (String, Option<Vec<String>>)| {
         treat_error(ctx, exec(path, args))
     })?;
@@ -185,7 +241,8 @@ fn liz_injection(ctx: Context, args: Option<Vec<String>>) -> Result<(), LizError
     })?;
     liz.set("spawn", spawn)?;
 
-    let join = ctx.create_function(|ctx, spawned: Spawned| treat_error(ctx, execs::join(spawned)))?;
+    let join =
+        ctx.create_function(|ctx, spawned: Spawned| treat_error(ctx, execs::join(spawned)))?;
     liz.set("join", join)?;
 
     let cmd = ctx.create_function(
@@ -195,6 +252,10 @@ fn liz_injection(ctx: Context, args: Option<Vec<String>>) -> Result<(), LizError
     )?;
     liz.set("cmd", cmd)?;
 
+    Ok(())
+}
+
+fn liz_inject_files<'a>(ctx: Context<'a>, liz: &Table<'a>) -> Result<(), LizError> {
     let has = ctx.create_function(|_, path: String| Ok(files::has(&path)))?;
     liz.set("has", has)?;
 
@@ -294,7 +355,5 @@ fn liz_injection(ctx: Context, args: Option<Vec<String>>) -> Result<(), LizError
         ctx.create_function(|ctx, path: String| treat_error(ctx, files::path_list_files(&path)))?;
     liz.set("path_list_files", path_list_files)?;
 
-    let globals = ctx.globals();
-    globals.set("liz", liz)?;
     Ok(())
 }

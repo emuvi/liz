@@ -51,12 +51,17 @@ impl Spawned {
 impl UserData for Spawned {}
 
 pub fn spawn(path: String, args: Option<Vec<String>>) -> Spawned {
+	let exec_path = if !path.ends_with(".liz") || !path.ends_with(".lua") {
+		format!("{}.liz", path)
+	} else {
+		path
+	};
 	let spawned = Spawned::new();
-	let cloned = spawned.clone();
+	let spawned_clone = spawned.clone();
 	thread::spawn(move || {
-		let returned = crate::exec(path, args);
+		let returned = crate::exec(exec_path, args);
 		{
-			let mut lock = cloned.results.write().unwrap();
+			let mut lock = spawned_clone.results.write().unwrap();
 			*lock = Some(returned);
 		}
 	});
