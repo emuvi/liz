@@ -249,3 +249,21 @@ pub fn path_list_files(path: impl AsRef<Path>) -> Result<Vec<String>, LizError> 
 	}
 	return Ok(result);
 }
+
+pub fn path_list_files_ext(path: impl AsRef<Path>, ext: &str) -> Result<Vec<String>, LizError> {
+	let mut result = Vec::new();
+	let ext = ext.to_lowercase();
+	for entry in fs::read_dir(path)? {
+		if let Ok(entry) = entry {
+			let file_type = entry.file_type()?;
+			if file_type.is_file() {
+				if let Some(path) = entry.path().to_str() {
+					if path.to_lowercase().ends_with(&ext) {	
+						result.push(String::from(path));
+					}
+				}
+			}
+		}
+	}
+	return Ok(result);
+}

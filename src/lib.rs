@@ -200,15 +200,15 @@ fn from_returned<'a>(ctx: Context<'a>, value: String) -> Result<Value<'a>, LizEr
             return Ok(Value::Boolean(false));
         }
     } else if value.starts_with("|Integer|") {
-        let data = &value[10..value.len() -1];
+        let data = &value[10..value.len() - 1];
         let data: i64 = data.parse()?;
         return Ok(Value::Integer(data));
     } else if value.starts_with("|Number|") {
-        let data = &value[9..value.len() -1];
+        let data = &value[9..value.len() - 1];
         let data: f64 = data.parse()?;
         return Ok(Value::Number(data));
     } else if value.starts_with("|String|") {
-        let data = &value[9..value.len() -1];
+        let data = &value[9..value.len() - 1];
         let data = ctx.create_string(data)?;
         return Ok(Value::String(data));
     }
@@ -219,9 +219,8 @@ fn from_returned<'a>(ctx: Context<'a>, value: String) -> Result<Value<'a>, LizEr
 fn liz_injection(ctx: Context, args: Option<Vec<String>>) -> Result<(), LizError> {
     let liz = ctx.create_table()?;
     liz.set("args", args)?;
-    let from_returned = ctx.create_function(|ctx, returned: String| {
-        treat_error(ctx, from_returned(ctx, returned))
-    })?;
+    let from_returned = ctx
+        .create_function(|ctx, returned: String| treat_error(ctx, from_returned(ctx, returned)))?;
     liz.set("from_returned", from_returned)?;
     liz_inject_execs(ctx, &liz)?;
     liz_inject_files(ctx, &liz)?;
@@ -354,6 +353,11 @@ fn liz_inject_files<'a>(ctx: Context<'a>, liz: &Table<'a>) -> Result<(), LizErro
     let path_list_files =
         ctx.create_function(|ctx, path: String| treat_error(ctx, files::path_list_files(&path)))?;
     liz.set("path_list_files", path_list_files)?;
+
+    let path_list_files_ext = ctx.create_function(|ctx, (path, ext): (String, String)| {
+        treat_error(ctx, files::path_list_files_ext(&path, &ext))
+    })?;
+    liz.set("path_list_files_ext", path_list_files_ext)?;
 
     Ok(())
 }
