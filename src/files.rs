@@ -40,7 +40,15 @@ pub fn cp(origin: impl AsRef<Path>, destiny: impl AsRef<Path>) -> Result<(), Liz
 
 pub fn cp_tmp(origin: impl AsRef<Path>, destiny: impl AsRef<Path>) -> Result<(), LizError> {
 	if has(&destiny) {
-		let mut temp_name: String = format!("{}", PathBuf::from(destiny.as_ref()).display());
+		let unknown = "unknown";
+		let stem_name = match destiny.as_ref().file_stem() {
+			Some(file_stem) => match file_stem.to_str() {
+				Some(file_stem) => file_stem,
+				None => unknown,
+			},
+			None => unknown
+		};
+		let mut temp_name = String::from(stem_name);
 		let mut destiny_tmp = std::env::temp_dir().join(&temp_name);
 		while destiny_tmp.exists() {
 			temp_name.push_str("_");
