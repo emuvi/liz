@@ -41,14 +41,14 @@ pub fn cp(origin: impl AsRef<Path>, destiny: impl AsRef<Path>) -> Result<(), Liz
 pub fn cp_tmp(origin: impl AsRef<Path>, destiny: impl AsRef<Path>) -> Result<(), LizError> {
 	if has(&destiny) {
 		let unknown = "unknown";
-		let stem_name = match destiny.as_ref().file_stem() {
-			Some(file_stem) => match file_stem.to_str() {
+		let file_name = match destiny.as_ref().file_name() {
+			Some(file_name) => match file_name.to_str() {
 				Some(file_stem) => file_stem,
 				None => unknown,
 			},
-			None => unknown
+			None => unknown,
 		};
-		let mut temp_name = String::from(stem_name);
+		let mut temp_name = String::from(file_name);
 		let mut destiny_tmp = std::env::temp_dir().join(&temp_name);
 		while destiny_tmp.exists() {
 			temp_name.push_str("_");
@@ -171,6 +171,11 @@ pub fn path_parent(path: impl AsRef<Path>) -> Result<String, LizError> {
 	};
 	if let Some(path) = path.parent() {
 		if let Some(path_str) = path.to_str() {
+			let path_str = if path_str.starts_with("\\\\?\\") || path_str.starts_with("//?/") {
+				&path_str[4..]
+			} else {
+				&path_str
+			};
 			return Ok(String::from(path_str));
 		}
 	}
