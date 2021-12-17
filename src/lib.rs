@@ -6,6 +6,7 @@ use std::path::PathBuf;
 
 pub mod execs;
 pub mod files;
+pub mod texts;
 
 use execs::Spawned;
 
@@ -224,6 +225,7 @@ fn liz_injection(ctx: Context, args: Option<Vec<String>>) -> Result<(), LizError
     liz.set("from_returned", from_returned)?;
     liz_inject_execs(ctx, &liz)?;
     liz_inject_files(ctx, &liz)?;
+    liz_inject_texts(ctx, &liz)?;
     let globals = ctx.globals();
     globals.set("liz", liz)?;
     Ok(())
@@ -346,18 +348,46 @@ fn liz_inject_files<'a>(ctx: Context<'a>, liz: &Table<'a>) -> Result<(), LizErro
         ctx.create_function(|ctx, path: String| treat_error(ctx, files::path_list(&path)))?;
     liz.set("path_list", path_list)?;
 
+	let path_list_subs =
+        ctx.create_function(|ctx, path: String| treat_error(ctx, files::path_list_subs(&path)))?;
+    liz.set("path_list_subs", path_list_subs)?;
+
     let path_list_dirs =
         ctx.create_function(|ctx, path: String| treat_error(ctx, files::path_list_dirs(&path)))?;
     liz.set("path_list_dirs", path_list_dirs)?;
+
+    let path_list_dirs_subs =
+        ctx.create_function(|ctx, path: String| treat_error(ctx, files::path_list_dirs_subs(&path)))?;
+    liz.set("path_list_dirs_subs", path_list_dirs_subs)?;
 
     let path_list_files =
         ctx.create_function(|ctx, path: String| treat_error(ctx, files::path_list_files(&path)))?;
     liz.set("path_list_files", path_list_files)?;
 
+    let path_list_files_subs =
+        ctx.create_function(|ctx, path: String| treat_error(ctx, files::path_list_files_subs(&path)))?;
+    liz.set("path_list_files_subs", path_list_files_subs)?;
+
     let path_list_files_ext = ctx.create_function(|ctx, (path, ext): (String, String)| {
         treat_error(ctx, files::path_list_files_ext(&path, &ext))
     })?;
     liz.set("path_list_files_ext", path_list_files_ext)?;
+	
+	let path_list_files_ext_subs = ctx.create_function(|ctx, (path, ext): (String, String)| {
+        treat_error(ctx, files::path_list_files_ext_subs(&path, &ext))
+    })?;
+    liz.set("path_list_files_ext_subs", path_list_files_ext_subs)?;
+
+    Ok(())
+}
+
+fn liz_inject_texts<'a>(ctx: Context<'a>, liz: &Table<'a>) -> Result<(), LizError> {
+     let search = ctx.create_function(
+        |ctx, (path, contents): (String, String)| {
+            treat_error(ctx, texts::search(&path, &contents))
+        },
+    )?;
+    liz.set("search", search)?;
 
     Ok(())
 }
