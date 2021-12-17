@@ -4,7 +4,7 @@ use std::path::Path;
 
 use crate::LizError;
 
-pub fn search(path: impl AsRef<Path>, contents: &str) -> Result<Option<Vec<String>>, LizError> {
+pub fn text_find(path: impl AsRef<Path>, contents: &str) -> Result<Option<Vec<String>>, LizError> {
     let mut file = fs::File::open(path)?;
     let mut read = String::new();
     file.read_to_string(&mut read)?;

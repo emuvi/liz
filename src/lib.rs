@@ -4,6 +4,7 @@ use std::error::Error;
 use std::path::Path;
 use std::path::PathBuf;
 
+pub mod codes;
 pub mod execs;
 pub mod files;
 pub mod texts;
@@ -223,12 +224,27 @@ fn liz_injection(ctx: Context, args: Option<Vec<String>>) -> Result<(), LizError
     let from_returned = ctx
         .create_function(|ctx, returned: String| treat_error(ctx, from_returned(ctx, returned)))?;
     liz.set("from_returned", from_returned)?;
+    liz_inject_codes(ctx, &liz)?;
     liz_inject_execs(ctx, &liz)?;
     liz_inject_files(ctx, &liz)?;
     liz_inject_texts(ctx, &liz)?;
     let globals = ctx.globals();
     globals.set("liz", liz)?;
     Ok(())
+}
+
+fn liz_inject_codes<'a>(ctx: Context<'a>, liz: &Table<'a>) -> Result<(), LizError> {
+    let git_root_find = ctx.create_function(|ctx, path: String| {
+        treat_error(ctx, codes::git_root_find(&path))
+    })?;
+    liz.set("git_root_find", git_root_find)?;
+
+	let git_is_ignored = ctx.create_function(|ctx, path: String| {
+        treat_error(ctx, codes::git_is_ignored(&path))
+    })?;
+    liz.set("git_is_ignored", git_is_ignored)?;
+
+	Ok(())
 }
 
 fn liz_inject_execs<'a>(ctx: Context<'a>, liz: &Table<'a>) -> Result<(), LizError> {
@@ -330,6 +346,16 @@ fn liz_inject_files<'a>(ctx: Context<'a>, liz: &Table<'a>) -> Result<(), LizErro
         ctx.create_function(|ctx, path: String| treat_error(ctx, files::path_stem(&path)))?;
     liz.set("path_stem", path_stem)?;
 
+	let path_absolute = ctx.create_function(|ctx, path: String| {
+        treat_error(ctx, files::path_absolute(&path))
+    })?;
+    liz.set("path_absolute", path_absolute)?;
+
+	let path_relative = ctx.create_function(|ctx, (path, base): (String, String)| {
+        treat_error(ctx, files::path_relative(&path, &base))
+    })?;
+    liz.set("path_relative", path_relative)?;
+
     let path_parent =
         ctx.create_function(|ctx, path: String| treat_error(ctx, files::path_parent(&path)))?;
     liz.set("path_parent", path_parent)?;
@@ -382,12 +408,12 @@ fn liz_inject_files<'a>(ctx: Context<'a>, liz: &Table<'a>) -> Result<(), LizErro
 }
 
 fn liz_inject_texts<'a>(ctx: Context<'a>, liz: &Table<'a>) -> Result<(), LizError> {
-     let search = ctx.create_function(
+     let text_find = ctx.create_function(
         |ctx, (path, contents): (String, String)| {
-            treat_error(ctx, texts::search(&path, &contents))
+            treat_error(ctx, texts::text_find(&path, &contents))
         },
     )?;
-    liz.set("search", search)?;
+    liz.set("text_find", text_find)?;
 
     Ok(())
 }

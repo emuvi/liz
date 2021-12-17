@@ -162,20 +162,75 @@ pub fn path_stem(path: impl AsRef<Path>) -> Result<String, LizError> {
     Ok(String::new())
 }
 
-pub fn path_parent(path: impl AsRef<Path>) -> Result<String, LizError> {
+pub fn path_absolute(path: impl AsRef<Path>) -> Result<String, LizError> {
     let path = path.as_ref();
     let path = if path.exists() && path.is_relative() {
         std::fs::canonicalize(path)?
     } else {
         path.to_path_buf()
     };
+    let path_str = path.to_str().ok_or("Could not convert the path to String.")?;
+    let path_str = if path_str.starts_with("\\\\?\\") || path_str.starts_with("//?/") {
+        &path_str[4..]
+    } else {
+        &path_str
+    };
+    Ok(String::from(path_str))
+}
+
+pub fn path_relative(path: impl AsRef<Path>, base: impl AsRef<Path>) -> Result<String, LizError> {
+	let path = path_absolute(path)?;
+	let base = path_absolute(base)?;
+	let result = path_relative_from(&path, &base).ok_or("Could not make relative.")?;
+	Ok(format!("{}", result.display()))
+}
+
+fn path_relative_from(path: impl AsRef<Path>, base: impl AsRef<Path>) -> Option<PathBuf> {
+    use std::path::Component;
+	let path = path.as_ref();
+	let base = base.as_ref();
+    if path.is_absolute() != base.is_absolute() {
+        if path.is_absolute() {
+            Some(PathBuf::from(path))
+        } else {
+            None
+        }
+    } else {
+        let mut ita = path.components();
+        let mut itb = base.components();
+        let mut comps: Vec<Component> = vec![];
+        loop {
+            match (ita.next(), itb.next()) {
+                (None, None) => break,
+                (Some(a), None) => {
+                    comps.push(a);
+                    comps.extend(ita.by_ref());
+                    break;
+                }
+                (None, _) => comps.push(Component::ParentDir),
+                (Some(a), Some(b)) if comps.is_empty() && a == b => (),
+                (Some(a), Some(b)) if b == Component::CurDir => comps.push(a),
+                (Some(_), Some(b)) if b == Component::ParentDir => return None,
+                (Some(a), Some(_)) => {
+                    comps.push(Component::ParentDir);
+                    for _ in itb {
+                        comps.push(Component::ParentDir);
+                    }
+                    comps.push(a);
+                    comps.extend(ita.by_ref());
+                    break;
+                }
+            }
+        }
+        Some(comps.iter().map(|c| c.as_os_str()).collect())
+    }
+}
+
+pub fn path_parent(path: impl AsRef<Path>) -> Result<String, LizError> {
+    let path = path_absolute(path)?;
+    let path = Path::new(&path);
     if let Some(path) = path.parent() {
         if let Some(path_str) = path.to_str() {
-            let path_str = if path_str.starts_with("\\\\?\\") || path_str.starts_with("//?/") {
-                &path_str[4..]
-            } else {
-                &path_str
-            };
             return Ok(String::from(path_str));
         }
     }
@@ -262,13 +317,16 @@ pub fn path_list_dirs_subs(path: impl AsRef<Path>) -> Result<Vec<String>, LizErr
     return Ok(results);
 }
 
-fn path_list_dirs_subs_make(path: impl AsRef<Path>, results: &mut Vec<String>) -> Result<(), LizError> {
+fn path_list_dirs_subs_make(
+    path: impl AsRef<Path>,
+    results: &mut Vec<String>,
+) -> Result<(), LizError> {
     for entry in fs::read_dir(&path)? {
         if let Ok(entry) = entry {
             if let Some(path) = entry.path().to_str() {
-				let file_type = entry.file_type()?;
-				if file_type.is_dir() {
-					results.push(String::from(path));
+                let file_type = entry.file_type()?;
+                if file_type.is_dir() {
+                    results.push(String::from(path));
                     path_list_dirs_subs_make(&path, results)?;
                 }
             }
@@ -298,15 +356,18 @@ pub fn path_list_files_subs(path: impl AsRef<Path>) -> Result<Vec<String>, LizEr
     return Ok(results);
 }
 
-fn path_list_files_subs_make(path: impl AsRef<Path>, results: &mut Vec<String>) -> Result<(), LizError> {
+fn path_list_files_subs_make(
+    path: impl AsRef<Path>,
+    results: &mut Vec<String>,
+) -> Result<(), LizError> {
     for entry in fs::read_dir(&path)? {
         if let Ok(entry) = entry {
             if let Some(path) = entry.path().to_str() {
-				let file_type = entry.file_type()?;
-				if file_type.is_file() {
-					results.push(String::from(path));
-				}
-				if file_type.is_dir() {
+                let file_type = entry.file_type()?;
+                if file_type.is_file() {
+                    results.push(String::from(path));
+                }
+                if file_type.is_dir() {
                     path_list_files_subs_make(&path, results)?;
                 }
             }
@@ -333,23 +394,31 @@ pub fn path_list_files_ext(path: impl AsRef<Path>, ext: &str) -> Result<Vec<Stri
     return Ok(result);
 }
 
-pub fn path_list_files_ext_subs(path: impl AsRef<Path>, ext: &str) -> Result<Vec<String>, LizError> {
+pub fn path_list_files_ext_subs(
+    path: impl AsRef<Path>,
+    ext: &str,
+) -> Result<Vec<String>, LizError> {
     let mut results = Vec::new();
-    path_list_files_ext_subs_make(path, ext, &mut results)?;
+    let ext = ext.to_lowercase();
+    path_list_files_ext_subs_make(path, &ext, &mut results)?;
     return Ok(results);
 }
 
-fn path_list_files_ext_subs_make(path: impl AsRef<Path>, ext: &str, results: &mut Vec<String>) -> Result<(), LizError> {
+fn path_list_files_ext_subs_make(
+    path: impl AsRef<Path>,
+    ext: &str,
+    results: &mut Vec<String>,
+) -> Result<(), LizError> {
     for entry in fs::read_dir(&path)? {
         if let Ok(entry) = entry {
             if let Some(path) = entry.path().to_str() {
-				let file_type = entry.file_type()?;
-				if file_type.is_file() {
+                let file_type = entry.file_type()?;
+                if file_type.is_file() {
                     if path.to_lowercase().ends_with(&ext) {
-						results.push(String::from(path));
-					}
-				}
-				if file_type.is_dir() {
+                        results.push(String::from(path));
+                    }
+                }
+                if file_type.is_dir() {
                     path_list_files_ext_subs_make(&path, ext, results)?;
                 }
             }
