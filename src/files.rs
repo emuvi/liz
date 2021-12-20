@@ -169,7 +169,9 @@ pub fn path_absolute(path: impl AsRef<Path>) -> Result<String, LizError> {
     } else {
         path.to_path_buf()
     };
-    let path_str = path.to_str().ok_or("Could not convert the path to String.")?;
+    let path_str = path
+        .to_str()
+        .ok_or("Could not convert the path to String.")?;
     let path_str = if path_str.starts_with("\\\\?\\") || path_str.starts_with("//?/") {
         &path_str[4..]
     } else {
@@ -179,16 +181,16 @@ pub fn path_absolute(path: impl AsRef<Path>) -> Result<String, LizError> {
 }
 
 pub fn path_relative(path: impl AsRef<Path>, base: impl AsRef<Path>) -> Result<String, LizError> {
-	let path = path_absolute(path)?;
-	let base = path_absolute(base)?;
-	let result = path_relative_from(&path, &base).ok_or("Could not make relative.")?;
-	Ok(format!("{}", result.display()))
+    let path = path_absolute(path)?;
+    let base = path_absolute(base)?;
+    let result = path_relative_from(&path, &base).ok_or("Could not make relative.")?;
+    Ok(format!("{}", result.display()))
 }
 
 fn path_relative_from(path: impl AsRef<Path>, base: impl AsRef<Path>) -> Option<PathBuf> {
     use std::path::Component;
-	let path = path.as_ref();
-	let base = base.as_ref();
+    let path = path.as_ref();
+    let base = base.as_ref();
     if path.is_absolute() != base.is_absolute() {
         if path.is_absolute() {
             Some(PathBuf::from(path))
@@ -394,6 +396,28 @@ pub fn path_list_files_ext(path: impl AsRef<Path>, ext: &str) -> Result<Vec<Stri
     return Ok(result);
 }
 
+pub fn path_list_files_exts(
+    path: impl AsRef<Path>,
+    exts: &[&str],
+) -> Result<Vec<String>, LizError> {
+    let mut result = Vec::new();
+    for entry in fs::read_dir(path)? {
+        if let Ok(entry) = entry {
+            let file_type = entry.file_type()?;
+            if file_type.is_file() {
+                if let Some(path) = entry.path().to_str() {
+                    for ext in exts {
+                        if path.to_lowercase().ends_with(&ext.to_lowercase()) {
+                            result.push(String::from(path));
+                        }
+                    }
+                }
+            }
+        }
+    }
+    return Ok(result);
+}
+
 pub fn path_list_files_ext_subs(
     path: impl AsRef<Path>,
     ext: &str,
@@ -420,6 +444,40 @@ fn path_list_files_ext_subs_make(
                 }
                 if file_type.is_dir() {
                     path_list_files_ext_subs_make(&path, ext, results)?;
+                }
+            }
+        }
+    }
+    return Ok(());
+}
+
+pub fn path_list_files_exts_subs(
+    path: impl AsRef<Path>,
+    exts: &[&str],
+) -> Result<Vec<String>, LizError> {
+    let mut results = Vec::new();
+    path_list_files_exts_subs_make(path, &exts, &mut results)?;
+    return Ok(results);
+}
+
+fn path_list_files_exts_subs_make(
+    path: impl AsRef<Path>,
+    exts: &[&str],
+    results: &mut Vec<String>,
+) -> Result<(), LizError> {
+    for entry in fs::read_dir(&path)? {
+        if let Ok(entry) = entry {
+            if let Some(path) = entry.path().to_str() {
+                let file_type = entry.file_type()?;
+                if file_type.is_file() {
+                    for ext in exts {
+                        if path.to_lowercase().ends_with(&ext.to_lowercase()) {
+                            results.push(String::from(path));
+                        }
+                    }
+                }
+                if file_type.is_dir() {
+                    path_list_files_exts_subs_make(&path, exts, results)?;
                 }
             }
         }

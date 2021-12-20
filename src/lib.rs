@@ -399,21 +399,55 @@ fn liz_inject_files<'a>(ctx: Context<'a>, liz: &Table<'a>) -> Result<(), LizErro
     })?;
     liz.set("path_list_files_ext", path_list_files_ext)?;
 	
+    let path_list_files_exts = ctx.create_function(|ctx, (path, exts): (String, Vec<String>)| {
+		let exts: Vec<_> = exts.iter().map(String::as_ref).collect();
+        treat_error(ctx, files::path_list_files_exts(&path, &exts))
+    })?;
+    liz.set("path_list_files_exts", path_list_files_exts)?;
+	
 	let path_list_files_ext_subs = ctx.create_function(|ctx, (path, ext): (String, String)| {
         treat_error(ctx, files::path_list_files_ext_subs(&path, &ext))
     })?;
     liz.set("path_list_files_ext_subs", path_list_files_ext_subs)?;
 
+	let path_list_files_exts_subs = ctx.create_function(|ctx, (path, exts): (String, Vec<String>)| {
+		let exts: Vec<_> = exts.iter().map(String::as_str).collect();
+        treat_error(ctx, files::path_list_files_exts_subs(&path, &exts))
+    })?;
+    liz.set("path_list_files_exts_subs", path_list_files_exts_subs)?;
+
     Ok(())
 }
 
 fn liz_inject_texts<'a>(ctx: Context<'a>, liz: &Table<'a>) -> Result<(), LizError> {
-     let text_find = ctx.create_function(
-        |ctx, (path, contents): (String, String)| {
-            treat_error(ctx, texts::text_find(&path, &contents))
+	let text_trim = ctx.create_function(
+        |_, text: String| {
+            Ok(texts::text_trim(&text))
         },
     )?;
-    liz.set("text_find", text_find)?;
+    liz.set("text_trim", text_trim)?;
+
+
+	let text_path_find = ctx.create_function(
+        |ctx, (path, contents): (String, String)| {
+            treat_error(ctx, texts::text_path_find(&path, &contents))
+        },
+    )?;
+    liz.set("text_path_find", text_path_find)?;
+
+	let text_dir_find = ctx.create_function(
+        |ctx, (path, contents): (String, String)| {
+            treat_error(ctx, texts::text_dir_find(&path, &contents))
+        },
+    )?;
+    liz.set("text_dir_find", text_dir_find)?;
+
+	let text_file_find = ctx.create_function(
+        |ctx, (path, contents): (String, String)| {
+            treat_error(ctx, texts::text_file_find(&path, &contents))
+        },
+    )?;
+    liz.set("text_file_find", text_file_find)?;
 
     Ok(())
 }
