@@ -449,5 +449,13 @@ fn liz_inject_texts<'a>(ctx: Context<'a>, liz: &Table<'a>) -> Result<(), LizErro
     )?;
     liz.set("text_file_find", text_file_find)?;
 
+    let text_files_find = ctx.create_function(
+        |ctx, (paths, contents): (Vec<String>, String)| {
+            let paths: Vec<_> = paths.iter().map(String::as_str).collect();
+            treat_error(ctx, texts::text_files_find(&paths, &contents))
+        },
+    )?;
+    liz.set("text_files_find", text_files_find)?;
+
     Ok(())
 }
