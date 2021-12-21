@@ -450,7 +450,6 @@ fn liz_inject_texts<'a>(ctx: Context<'a>, liz: &Table<'a>) -> Result<(), LizErro
         },
     )?;
 
-
 	let text_path_find = ctx.create_function(
         |ctx, (path, contents): (String, String)| {
             treat_error(ctx, texts::text_path_find(&path, &contents))
