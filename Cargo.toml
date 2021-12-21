@@ -9,4 +9,5 @@ edition = "2018"
 
 [dependencies]
 rlua = "0.18"
+num_cpus = "1"
 simple-error = "0.2"

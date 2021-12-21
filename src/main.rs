@@ -37,9 +37,9 @@ fn main() -> Result<(), LizError> {
     if to_execute.is_empty() {
         to_execute.push(Box::new("./default.liz"));
     }
-    let handler = liz::start(to_execute_args)?;
+    let handler = liz::rise(to_execute_args)?;
     for path in to_execute {
-        liz::load(path.as_ref(), &handler)?;
+        liz::race(path.as_ref(), &handler)?;
     }
     Ok(())
 }

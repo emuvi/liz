@@ -1,6 +1,10 @@
 use std::fs::{self, File};
 use std::io::{prelude::*, BufReader};
 use std::path::Path;
+use std::sync::{Arc, Mutex};
+use std::thread::JoinHandle;
+
+use simple_error::simple_error;
 
 use crate::files;
 use crate::LizError;
@@ -24,7 +28,7 @@ pub fn text_dir_find(
     path: impl AsRef<Path>,
     contents: &str,
 ) -> Result<Option<Vec<String>>, LizError> {
-    let mut founds: Option<Vec<String>> = None;
+    let mut partial: Option<Vec<String>> = None;
     for entry in fs::read_dir(path)? {
         if let Ok(entry) = entry {
             let path = entry.path();
@@ -45,10 +49,10 @@ pub fn text_dir_find(
                     break;
                 }
                 if let Some(col) = line.find(contents) {
-                    if founds.is_none() {
-                        founds = Some(Vec::new());
+                    if partial.is_none() {
+                        partial = Some(Vec::new());
                     }
-                    founds.as_mut().unwrap().push(format!(
+                    partial.as_mut().unwrap().push(format!(
                         "({})[{},{}] {}",
                         name,
                         row,
@@ -60,14 +64,14 @@ pub fn text_dir_find(
             }
         }
     }
-    Ok(founds)
+    Ok(partial)
 }
 
 pub fn text_file_find(
     path: impl AsRef<Path>,
     contents: &str,
 ) -> Result<Option<Vec<String>>, LizError> {
-    let mut founds: Option<Vec<String>> = None;
+    let mut partial: Option<Vec<String>> = None;
     let file = File::open(path)?;
     let mut reader = BufReader::new(file);
     let mut line = String::new();
@@ -78,53 +82,92 @@ pub fn text_file_find(
             break;
         }
         if let Some(col) = line.find(contents) {
-            if founds.is_none() {
-                founds = Some(Vec::new());
+            if partial.is_none() {
+                partial = Some(Vec::new());
             }
-            founds
+            partial
                 .as_mut()
                 .unwrap()
                 .push(format!("[{},{}] {}", row, col, line.trim()));
         }
         row += 1;
     }
-    Ok(founds)
+    Ok(partial)
 }
 
-pub fn text_files_find(paths: &[&str], contents: &str) -> Result<Option<Vec<String>>, LizError> {
-    let mut founds: Option<Vec<String>> = None;
-    for path in paths {
-        let path = Path::new(path);
-        let name = match path.file_name() {
-            Some(name) => match name.to_str() {
-                Some(name) => String::from(name),
-                None => String::default(),
-            },
-            None => String::default(),
-        };
-        let file = File::open(path)?;
-        let mut reader = BufReader::new(file);
-        let mut line = String::new();
-        let mut row = 1;
-        loop {
-            line.clear();
-            if reader.read_line(&mut line)? == 0 {
-                break;
-            }
-            if let Some(col) = line.find(contents) {
-                if founds.is_none() {
-                    founds = Some(Vec::new());
+pub fn text_files_find(
+    paths: Vec<String>,
+    contents: String,
+) -> Result<Option<Vec<String>>, LizError> {
+    let cpus = num_cpus::get();
+    let pool = Arc::new(Mutex::new(paths));
+	let mut handles: Vec<JoinHandle<Option<Vec<String>>>> = Vec::with_capacity(cpus);
+	let contents = Arc::new(contents);
+    for _ in 0..cpus {
+        let link_pool = pool.clone();
+		let link_contents = contents.clone();
+        let handle = std::thread::spawn(move || -> Option<Vec<String>> {
+            let mut partial: Option<Vec<String>> = None;
+            loop {
+                let path = {
+                    let mut lock_pool = link_pool.lock().unwrap();
+                    lock_pool.pop()
+                };
+                if path.is_none() {
+                    break;
                 }
-                founds.as_mut().unwrap().push(format!(
-                    "({})[{},{}] {}",
-                    name,
-                    row,
-                    col,
-                    line.trim()
-                ));
+                let path = path.unwrap();
+                let path = Path::new(&path);
+                let name = match path.file_name() {
+                    Some(name) => match name.to_str() {
+                        Some(name) => String::from(name),
+                        None => String::default(),
+                    },
+                    None => String::default(),
+                };
+                let file = File::open(path).unwrap();
+                let mut reader = BufReader::new(file);
+                let mut line = String::new();
+                let mut row = 1;
+                loop {
+                    line.clear();
+                    if reader.read_line(&mut line).unwrap() == 0 {
+                        break;
+                    }
+                    if let Some(col) = line.find(&*link_contents) {
+                        if partial.is_none() {
+                            partial = Some(Vec::new());
+                        }
+                        partial.as_mut().unwrap().push(format!(
+                            "({})[{},{}] {}",
+                            name,
+                            row,
+                            col,
+                            line.trim()
+                        ));
+                    }
+                    row += 1;
+                }
             }
-            row += 1;
-        }
+            partial
+        });
+		handles.push(handle);
     }
-    Ok(founds)
+	let mut results: Option<Vec<String>> = None;
+	for handle in handles {
+		let partial = match handle.join() {
+			Ok(partial) => partial,
+			Err(error) => return Err(Box::new(simple_error!(format!("{:?}", error))))
+		};
+		if let Some(partial) = partial {
+			if results.is_none() {
+				results = Some(Vec::new());
+			}
+			let inserter = results.as_mut().unwrap();
+			for found in partial {
+				inserter.push(found);
+			}
+		}
+	}
+    Ok(results)
 }
