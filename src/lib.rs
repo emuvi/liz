@@ -1,5 +1,6 @@
 use rlua::{Context, Lua, MultiValue, Table, Value};
 use simple_error::SimpleError;
+
 use std::error::Error;
 use std::path::Path;
 use std::path::PathBuf;
@@ -268,29 +269,44 @@ fn liz_inject_codes<'a>(ctx: Context<'a>, liz: &Table<'a>) -> Result<(), LizErro
 }
 
 fn liz_inject_execs<'a>(ctx: Context<'a>, liz: &Table<'a>) -> Result<(), LizError> {
-    let exec = ctx.create_function(|ctx, (path, args): (String, Option<Vec<String>>)| {
-        treat_error(ctx, runs(path, args))
-    })?;
 
-    let spawn = ctx.create_function(|_, (path, args): (String, Option<Vec<String>>)| {
-        Ok(execs::spawn(path, args))
-    })?;
+  let exec = ctx.create_function(
+    |ctx, (path, args): (String, Option<Vec<String>>)| {
+      treat_error(ctx, runs(path, args))
+    }
+  )?;
 
-    let join =
-        ctx.create_function(|ctx, spawned: Spawned| treat_error(ctx, execs::join(spawned)))?;
+  let spawn = ctx.create_function(
+    |_, (path, args): (String, Option<Vec<String>>)| {
+      Ok(execs::spawn(path, args))
+    }
+  )?;
 
-    let cmd = ctx.create_function(
-        |ctx, (name, args, dir, print, throw): (String, Vec<String>, String, bool, bool)| {
-            treat_error(ctx, execs::cmd(&name, args.as_slice(), &dir, print, throw))
-        },
-    )?;
+  let join = ctx.create_function(
+    |ctx, spawned: Spawned| {
+      treat_error(ctx, execs::join(spawned))
+    }
+  )?;
 
-    liz.set("exec", exec)?;
-    liz.set("spawn", spawn)?;
-    liz.set("join", join)?;
-    liz.set("cmd", cmd)?;
+  let cmd = ctx.create_function(
+    |ctx, (name, args, dir, print, throw): (String, Vec<String>, String, bool, bool)| {
+      treat_error(ctx, execs::cmd(&name, args.as_slice(), &dir, print, throw))
+    }
+  )?;
 
-    Ok(())
+  let pause = ctx.create_function(
+    |_, ()| {
+      Ok(execs::pause())
+    }
+  )?;
+
+  liz.set("exec", exec)?;
+  liz.set("spawn", spawn)?;
+  liz.set("join", join)?;
+  liz.set("cmd", cmd)?;
+  liz.set("pause", pause)?;
+
+  Ok(())
 }
 
 fn liz_inject_files<'a>(ctx: Context<'a>, liz: &Table<'a>) -> Result<(), LizError> {

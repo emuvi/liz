@@ -106,3 +106,13 @@ pub fn cmd<A: AsRef<str>, P: AsRef<Path>>(
 	}
 	Ok((res, out))
 }
+
+pub fn pause() {
+  use std::io::Write;
+  let stdout = std::io::stdout();
+  let mut reader = std::io::stdin();
+  let mut buffer = [0;1];
+  print!("Press any key to continue...");
+  stdout.lock().flush().unwrap();
+  reader.read_exact(&mut buffer).unwrap();
+}
