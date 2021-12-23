@@ -453,7 +453,19 @@ fn liz_inject_texts<'a>(ctx: Context<'a>, liz: &Table<'a>) -> Result<(), LizErro
     let ask_bool =
         ctx.create_function(|ctx, message: String| treat_error(ctx, texts::ask_bool(&message)))?;
 
-    let text_trim = ctx.create_function(|_, text: String| Ok(texts::text_trim(&text)))?;
+    let trim = ctx.create_function(|_, text: String| Ok(texts::trim(&text)))?;
+
+    let find = ctx.create_function(|_, (text, contents): (String, String)| {
+        Ok(texts::find(&text, &contents))
+    })?;
+
+    let starts_with = ctx.create_function(|_, (text, contents): (String, String)| {
+        Ok(texts::starts_with(&text, &contents))
+    })?;
+
+    let ends_with = ctx.create_function(|_, (text, contents): (String, String)| {
+        Ok(texts::ends_with(&text, &contents))
+    })?;
 
     let text_path_find = ctx.create_function(|ctx, (path, contents): (String, String)| {
         treat_error(ctx, texts::text_path_find(&path, &contents))
@@ -476,7 +488,10 @@ fn liz_inject_texts<'a>(ctx: Context<'a>, liz: &Table<'a>) -> Result<(), LizErro
     liz.set("ask_int", ask_int)?;
     liz.set("ask_float", ask_float)?;
     liz.set("ask_bool", ask_bool)?;
-    liz.set("text_trim", text_trim)?;
+    liz.set("trim", trim)?;
+    liz.set("find", find)?;
+    liz.set("starts_with", starts_with)?;
+    liz.set("ends_with", ends_with)?;
     liz.set("text_path_find", text_path_find)?;
     liz.set("text_dir_find", text_dir_find)?;
     liz.set("text_file_find", text_file_find)?;

@@ -10,14 +10,16 @@ use crate::files;
 use crate::LizError;
 
 pub fn ask(message: &str) -> Result<String, LizError> {
-	println!("{}", message);
+	print!("{}", message);
+	std::io::stdout().flush().unwrap();
 	let mut buffer = String::new();
 	std::io::stdin().read_line(&mut buffer)?;
 	Ok(buffer)
 }
 
 pub fn ask_int(message: &str) -> Result<i32, LizError> {
-	println!("{}", message);
+	print!("{}", message);
+	std::io::stdout().flush().unwrap();
 	let mut buffer = String::new();
 	std::io::stdin().read_line(&mut buffer)?;
 	let result = buffer.parse::<i32>()?;
@@ -25,7 +27,8 @@ pub fn ask_int(message: &str) -> Result<i32, LizError> {
 }
 
 pub fn ask_float(message: &str) -> Result<f64, LizError> {
-	println!("{}", message);
+	print!("{}", message);
+	std::io::stdout().flush().unwrap();
 	let mut buffer = String::new();
 	std::io::stdin().read_line(&mut buffer)?;
 	let result = buffer.parse::<f64>()?;
@@ -38,8 +41,20 @@ pub fn ask_bool(message: &str) -> Result<bool, LizError> {
 	Ok(result == "t" || result == "true" || result == "y" || result == "yes")
 }
 
-pub fn text_trim(text: &str) -> String {
+pub fn trim(text: &str) -> String {
     String::from(text.trim())
+}
+
+pub fn find(text: &str, contents: &str) -> Option<usize> {
+	text.find(contents)
+}
+
+pub fn starts_with(text: &str, prefix: &str) -> bool {
+	text.starts_with(prefix)
+}
+
+pub fn ends_with(text: &str, suffix: &str) -> bool {
+	text.ends_with(suffix)
 }
 
 pub fn text_path_find(
