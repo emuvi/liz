@@ -13,7 +13,7 @@ use execs::Spawned;
 
 pub type LizError = Box<dyn Error + Send + Sync>;
 
-pub fn exec(path: impl AsRef<Path>, args: Option<Vec<String>>) -> Result<Vec<String>, LizError> {
+pub fn runs(path: impl AsRef<Path>, args: Option<Vec<String>>) -> Result<Vec<String>, LizError> {
     let handler = rise(args)?;
     race(path, &handler)
 }
@@ -30,7 +30,7 @@ pub fn race(path: impl AsRef<Path>, handler: &Lua) -> Result<Vec<String>, LizErr
     }
     let source = std::fs::read_to_string(&path)?;
     let parent = load_parent(path)?;
-	let parent_display = parent
+    let parent_display = parent
         .to_str()
         .ok_or("Could not get the display of the parent to race.")?;
     let old_dir = std::env::current_dir()?;
@@ -64,7 +64,7 @@ pub fn race(path: impl AsRef<Path>, handler: &Lua) -> Result<Vec<String>, LizErr
                 let err = SimpleError::new(msg);
                 result = Some(Err(Box::new(err)));
             }
-			if let Err(e) = liz.set("race_dir", parent_display) {
+            if let Err(e) = liz.set("race_dir", parent_display) {
                 let msg = format!(
                     "Error on setting the race directory on wizard of {} with message: \n{}",
                     path_display, e
@@ -234,44 +234,42 @@ fn liz_injection(ctx: Context, args: Option<Vec<String>>) -> Result<(), LizError
     liz.set("args", args)?;
 
     let path = std::env::current_dir()?;
-	let path_display = path.to_str().ok_or("Could not get the display path of the rise.")?;
-	liz.set("rise_dir", String::from(path_display))?;
+    let path_display = path
+        .to_str()
+        .ok_or("Could not get the display path of the rise.")?;
+    liz.set("rise_dir", String::from(path_display))?;
 
-	let from_returned = ctx.create_function(|ctx, value: String| {
-        treat_error(ctx, from_returned(ctx, value))
-    })?;
-	liz.set("from_returned", from_returned)?;
-	
+    let from_returned =
+        ctx.create_function(|ctx, value: String| treat_error(ctx, from_returned(ctx, value)))?;
+    liz.set("from_returned", from_returned)?;
+
     liz_inject_codes(ctx, &liz)?;
     liz_inject_execs(ctx, &liz)?;
     liz_inject_files(ctx, &liz)?;
     liz_inject_texts(ctx, &liz)?;
 
-	let globals = ctx.globals();
+    let globals = ctx.globals();
     globals.set("liz", liz)?;
 
-	Ok(())
+    Ok(())
 }
 
 fn liz_inject_codes<'a>(ctx: Context<'a>, liz: &Table<'a>) -> Result<(), LizError> {
-    let git_root_find = ctx.create_function(|ctx, path: String| {
-        treat_error(ctx, codes::git_root_find(&path))
-    })?;
+    let git_root_find =
+        ctx.create_function(|ctx, path: String| treat_error(ctx, codes::git_root_find(&path)))?;
 
-	let git_is_ignored = ctx.create_function(|ctx, path: String| {
-        treat_error(ctx, codes::git_is_ignored(&path))
-    })?;
+    let git_is_ignored =
+        ctx.create_function(|ctx, path: String| treat_error(ctx, codes::git_is_ignored(&path)))?;
 
-	liz.set("git_root_find", git_root_find)?;
+    liz.set("git_root_find", git_root_find)?;
     liz.set("git_is_ignored", git_is_ignored)?;
 
-	Ok(())
+    Ok(())
 }
 
 fn liz_inject_execs<'a>(ctx: Context<'a>, liz: &Table<'a>) -> Result<(), LizError> {
-
-	let exec = ctx.create_function(|ctx, (path, args): (String, Option<Vec<String>>)| {
-        treat_error(ctx, exec(path, args))
+    let exec = ctx.create_function(|ctx, (path, args): (String, Option<Vec<String>>)| {
+        treat_error(ctx, runs(path, args))
     })?;
 
     let spawn = ctx.create_function(|_, (path, args): (String, Option<Vec<String>>)| {
@@ -286,17 +284,16 @@ fn liz_inject_execs<'a>(ctx: Context<'a>, liz: &Table<'a>) -> Result<(), LizErro
             treat_error(ctx, execs::cmd(&name, args.as_slice(), &dir, print, throw))
         },
     )?;
-	
-	liz.set("exec", exec)?;
-	liz.set("spawn", spawn)?;
-	liz.set("join", join)?;
+
+    liz.set("exec", exec)?;
+    liz.set("spawn", spawn)?;
+    liz.set("join", join)?;
     liz.set("cmd", cmd)?;
 
     Ok(())
 }
 
 fn liz_inject_files<'a>(ctx: Context<'a>, liz: &Table<'a>) -> Result<(), LizError> {
-
     let has = ctx.create_function(|_, path: String| Ok(files::has(&path)))?;
 
     let is_dir = ctx.create_function(|_, path: String| Ok(files::is_dir(&path)))?;
@@ -306,7 +303,7 @@ fn liz_inject_files<'a>(ctx: Context<'a>, liz: &Table<'a>) -> Result<(), LizErro
     let cd = ctx.create_function(|ctx, path: String| treat_error(ctx, files::cd(&path)))?;
 
     let pwd = ctx.create_function(|ctx, ()| treat_error(ctx, files::pwd()))?;
-    
+
     let rn = ctx.create_function(|ctx, (origin, destiny): (String, String)| {
         treat_error(ctx, files::rn(&origin, &destiny))
     })?;
@@ -344,15 +341,14 @@ fn liz_inject_files<'a>(ctx: Context<'a>, liz: &Table<'a>) -> Result<(), LizErro
 
     let path_name =
         ctx.create_function(|ctx, path: String| treat_error(ctx, files::path_name(&path)))?;
-	
+
     let path_stem =
         ctx.create_function(|ctx, path: String| treat_error(ctx, files::path_stem(&path)))?;
 
-	let path_absolute = ctx.create_function(|ctx, path: String| {
-        treat_error(ctx, files::path_absolute(&path))
-    })?;
+    let path_absolute =
+        ctx.create_function(|ctx, path: String| treat_error(ctx, files::path_absolute(&path)))?;
 
-	let path_relative = ctx.create_function(|ctx, (path, base): (String, String)| {
+    let path_relative = ctx.create_function(|ctx, (path, base): (String, String)| {
         treat_error(ctx, files::path_relative(&path, &base))
     })?;
 
@@ -370,114 +366,120 @@ fn liz_inject_files<'a>(ctx: Context<'a>, liz: &Table<'a>) -> Result<(), LizErro
     let path_list =
         ctx.create_function(|ctx, path: String| treat_error(ctx, files::path_list(&path)))?;
 
-	let path_list_subs =
+    let path_list_subs =
         ctx.create_function(|ctx, path: String| treat_error(ctx, files::path_list_subs(&path)))?;
 
     let path_list_dirs =
         ctx.create_function(|ctx, path: String| treat_error(ctx, files::path_list_dirs(&path)))?;
 
-    let path_list_dirs_subs =
-        ctx.create_function(|ctx, path: String| treat_error(ctx, files::path_list_dirs_subs(&path)))?;
+    let path_list_dirs_subs = ctx
+        .create_function(|ctx, path: String| treat_error(ctx, files::path_list_dirs_subs(&path)))?;
 
     let path_list_files =
         ctx.create_function(|ctx, path: String| treat_error(ctx, files::path_list_files(&path)))?;
 
-    let path_list_files_subs =
-        ctx.create_function(|ctx, path: String| treat_error(ctx, files::path_list_files_subs(&path)))?;
+    let path_list_files_subs = ctx.create_function(|ctx, path: String| {
+        treat_error(ctx, files::path_list_files_subs(&path))
+    })?;
 
     let path_list_files_ext = ctx.create_function(|ctx, (path, ext): (String, String)| {
         treat_error(ctx, files::path_list_files_ext(&path, &ext))
     })?;
-	
-    let path_list_files_exts = ctx.create_function(|ctx, (path, exts): (String, Vec<String>)| {
-		let exts: Vec<_> = exts.iter().map(String::as_ref).collect();
-        treat_error(ctx, files::path_list_files_exts(&path, &exts))
-    })?;
-	
-	let path_list_files_ext_subs = ctx.create_function(|ctx, (path, ext): (String, String)| {
+
+    let path_list_files_exts =
+        ctx.create_function(|ctx, (path, exts): (String, Vec<String>)| {
+            let exts: Vec<_> = exts.iter().map(String::as_ref).collect();
+            treat_error(ctx, files::path_list_files_exts(&path, &exts))
+        })?;
+
+    let path_list_files_ext_subs = ctx.create_function(|ctx, (path, ext): (String, String)| {
         treat_error(ctx, files::path_list_files_ext_subs(&path, &ext))
     })?;
 
-	let path_list_files_exts_subs = ctx.create_function(|ctx, (path, exts): (String, Vec<String>)| {
-		let exts: Vec<_> = exts.iter().map(String::as_str).collect();
-        treat_error(ctx, files::path_list_files_exts_subs(&path, &exts))
-    })?;
-	
-	liz.set("has", has)?;
+    let path_list_files_exts_subs =
+        ctx.create_function(|ctx, (path, exts): (String, Vec<String>)| {
+            let exts: Vec<_> = exts.iter().map(String::as_str).collect();
+            treat_error(ctx, files::path_list_files_exts_subs(&path, &exts))
+        })?;
+
+    liz.set("has", has)?;
     liz.set("is_dir", is_dir)?;
     liz.set("is_file", is_file)?;
     liz.set("cd", cd)?;
     liz.set("pwd", pwd)?;
-	liz.set("rn", rn)?;
-	liz.set("cp", cp)?;
-	liz.set("cp_tmp", cp_tmp)?;
+    liz.set("rn", rn)?;
+    liz.set("cp", cp)?;
+    liz.set("cp_tmp", cp_tmp)?;
     liz.set("mv", mv)?;
     liz.set("rm", rm)?;
     liz.set("read", read)?;
-	liz.set("mk_dir", mk_dir)?;
-	liz.set("touch", touch)?;
-	liz.set("write", write)?;
-	liz.set("append", append)?;
-	liz.set("exe_ext", files::exe_ext())?;
-	liz.set("path_sep", files::path_sep())?;
-	liz.set("path_ext", path_ext)?;
+    liz.set("mk_dir", mk_dir)?;
+    liz.set("touch", touch)?;
+    liz.set("write", write)?;
+    liz.set("append", append)?;
+    liz.set("exe_ext", files::exe_ext())?;
+    liz.set("path_sep", files::path_sep())?;
+    liz.set("path_ext", path_ext)?;
     liz.set("path_name", path_name)?;
-	liz.set("path_stem", path_stem)?;
-	liz.set("path_absolute", path_absolute)?;
-	liz.set("path_relative", path_relative)?;
-	liz.set("path_parent", path_parent)?;
-	liz.set("path_parent_find", path_parent_find)?;
-	liz.set("path_join", path_join)?;
-	liz.set("path_list", path_list)?;
-	liz.set("path_list_subs", path_list_subs)?;
-	liz.set("path_list_dirs", path_list_dirs)?;
-	liz.set("path_list_dirs_subs", path_list_dirs_subs)?;
-	liz.set("path_list_files", path_list_files)?;
-	liz.set("path_list_files_subs", path_list_files_subs)?;
-	liz.set("path_list_files_ext", path_list_files_ext)?;
-	liz.set("path_list_files_exts", path_list_files_exts)?;
-	liz.set("path_list_files_ext_subs", path_list_files_ext_subs)?;
+    liz.set("path_stem", path_stem)?;
+    liz.set("path_absolute", path_absolute)?;
+    liz.set("path_relative", path_relative)?;
+    liz.set("path_parent", path_parent)?;
+    liz.set("path_parent_find", path_parent_find)?;
+    liz.set("path_join", path_join)?;
+    liz.set("path_list", path_list)?;
+    liz.set("path_list_subs", path_list_subs)?;
+    liz.set("path_list_dirs", path_list_dirs)?;
+    liz.set("path_list_dirs_subs", path_list_dirs_subs)?;
+    liz.set("path_list_files", path_list_files)?;
+    liz.set("path_list_files_subs", path_list_files_subs)?;
+    liz.set("path_list_files_ext", path_list_files_ext)?;
+    liz.set("path_list_files_exts", path_list_files_exts)?;
+    liz.set("path_list_files_ext_subs", path_list_files_ext_subs)?;
     liz.set("path_list_files_exts_subs", path_list_files_exts_subs)?;
 
     Ok(())
 }
 
 fn liz_inject_texts<'a>(ctx: Context<'a>, liz: &Table<'a>) -> Result<(), LizError> {
-	
-	let text_trim = ctx.create_function(
-        |_, text: String| {
-            Ok(texts::text_trim(&text))
-        },
-    )?;
+    let ask = ctx.create_function(|ctx, message: String| treat_error(ctx, texts::ask(&message)))?;
 
-	let text_path_find = ctx.create_function(
-        |ctx, (path, contents): (String, String)| {
-            treat_error(ctx, texts::text_path_find(&path, &contents))
-        },
-    )?;
+    let ask_int =
+        ctx.create_function(|ctx, message: String| treat_error(ctx, texts::ask_int(&message)))?;
 
-	let text_dir_find = ctx.create_function(
-        |ctx, (path, contents): (String, String)| {
-            treat_error(ctx, texts::text_dir_find(&path, &contents))
-        },
-    )?;
+    let ask_float =
+        ctx.create_function(|ctx, message: String| treat_error(ctx, texts::ask_float(&message)))?;
 
-	let text_file_find = ctx.create_function(
-        |ctx, (path, contents): (String, String)| {
-            treat_error(ctx, texts::text_file_find(&path, &contents))
-        },
-    )?;
+    let ask_bool =
+        ctx.create_function(|ctx, message: String| treat_error(ctx, texts::ask_bool(&message)))?;
 
-    let text_files_find = ctx.create_function(
-        |ctx, (paths, contents): (Vec<String>, String)| {
+    let text_trim = ctx.create_function(|_, text: String| Ok(texts::text_trim(&text)))?;
+
+    let text_path_find = ctx.create_function(|ctx, (path, contents): (String, String)| {
+        treat_error(ctx, texts::text_path_find(&path, &contents))
+    })?;
+
+    let text_dir_find = ctx.create_function(|ctx, (path, contents): (String, String)| {
+        treat_error(ctx, texts::text_dir_find(&path, &contents))
+    })?;
+
+    let text_file_find = ctx.create_function(|ctx, (path, contents): (String, String)| {
+        treat_error(ctx, texts::text_file_find(&path, &contents))
+    })?;
+
+    let text_files_find =
+        ctx.create_function(|ctx, (paths, contents): (Vec<String>, String)| {
             treat_error(ctx, texts::text_files_find(paths, contents))
-        },
-    )?;
+        })?;
 
-	liz.set("text_trim", text_trim)?;
-	liz.set("text_path_find", text_path_find)?;
-	liz.set("text_dir_find", text_dir_find)?;
-	liz.set("text_file_find", text_file_find)?;
+    liz.set("ask", ask)?;
+    liz.set("ask_int", ask_int)?;
+    liz.set("ask_float", ask_float)?;
+    liz.set("ask_bool", ask_bool)?;
+    liz.set("text_trim", text_trim)?;
+    liz.set("text_path_find", text_path_find)?;
+    liz.set("text_dir_find", text_dir_find)?;
+    liz.set("text_file_find", text_file_find)?;
     liz.set("text_files_find", text_files_find)?;
 
     Ok(())

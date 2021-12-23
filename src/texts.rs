@@ -9,6 +9,35 @@ use simple_error::simple_error;
 use crate::files;
 use crate::LizError;
 
+pub fn ask(message: &str) -> Result<String, LizError> {
+	println!("{}", message);
+	let mut buffer = String::new();
+	std::io::stdin().read_line(&mut buffer)?;
+	Ok(buffer)
+}
+
+pub fn ask_int(message: &str) -> Result<i32, LizError> {
+	println!("{}", message);
+	let mut buffer = String::new();
+	std::io::stdin().read_line(&mut buffer)?;
+	let result = buffer.parse::<i32>()?;
+	Ok(result)
+}
+
+pub fn ask_float(message: &str) -> Result<f64, LizError> {
+	println!("{}", message);
+	let mut buffer = String::new();
+	std::io::stdin().read_line(&mut buffer)?;
+	let result = buffer.parse::<f64>()?;
+	Ok(result)
+}
+
+pub fn ask_bool(message: &str) -> Result<bool, LizError> {
+	let result = ask(message)?;
+	let result = result.to_lowercase();
+	Ok(result == "t" || result == "true" || result == "y" || result == "yes")
+}
+
 pub fn text_trim(text: &str) -> String {
     String::from(text.trim())
 }

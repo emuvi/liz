@@ -28,3 +28,9 @@ pub fn git_is_ignored(path: impl AsRef<Path>) -> Result<bool, LizError> {
     }
     Ok(false)
 }
+
+pub fn git_has_changes(root: impl AsRef<Path>) -> Result<bool, LizError> {
+	let (_, output) = execs::cmd("git", &["status"], root, false, true)?;
+	let output = output.trim();
+	Ok(!output.ends_with("nothing to commit, working tree clean"))
+}
