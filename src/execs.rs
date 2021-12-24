@@ -21,7 +21,7 @@ impl Spawned {
 		}
 	}
 
-	fn get_results(&self) -> Result<Vec<String>, LizError> {
+	fn join(&self) -> Result<Vec<String>, LizError> {
 		loop {
 			{
 				let lock = self.results.read().unwrap();
@@ -69,7 +69,7 @@ pub fn spawn(path: String, args: Option<Vec<String>>) -> Spawned {
 }
 
 pub fn join(spawned: Spawned) -> Result<Vec<String>, LizError> {
-	spawned.get_results()
+	spawned.join()
 }
 
 pub fn cmd<A: AsRef<str>, P: AsRef<Path>>(
