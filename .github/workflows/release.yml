@@ -1,0 +1,163 @@
+name: Rust Release CI
+on: [push]
+jobs:
+  mac-64:
+    runs-on: macos-latest
+    if: "contains(github.event.head_commit.message, '[Release]')"
+    steps:
+      - uses: actions/checkout@v2
+      
+      - name: Install
+        uses: actions-rs/toolchain@v1
+        with:
+          toolchain: stable
+          target: x86_64-apple-darwin
+          profile: minimal
+      
+      - name: Build
+        run: |
+          cargo build --all --release --target x86_64-apple-darwin
+          strip target/x86_64-apple-darwin/release/liz
+          mkdir -p release
+          tar -C ./target/x86_64-apple-darwin/release/ -czvf ./release/mac_64_liz.tar.gz ./liz
+
+      - name: Release
+        uses: softprops/action-gh-release@v1
+        with:
+          tag_name: ${{ github.ref }}
+          name: Release ${{ github.ref }}
+          draft: true
+          files: ./release/*.tar.gz
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+    
+  
+  lin-64:
+    runs-on: ubuntu-latest
+    if: "contains(github.event.head_commit.message, '[Release]')"
+    steps:
+      - uses: actions/checkout@v2
+      
+      - name: Install
+        uses: actions-rs/toolchain@v1
+        with:
+          toolchain: stable
+          target: x86_64-unknown-linux-gnu
+          profile: minimal
+      
+      - name: Build
+        run: |
+          cargo build --all --release --target x86_64-unknown-linux-gnu
+          strip target/x86_64-unknown-linux-gnu/release/liz
+          mkdir -p release
+          tar -C ./target/x86_64-unknown-linux-gnu/release/ -czvf ./release/lin_64_liz.tar.gz ./liz
+
+      - name: Release
+        uses: softprops/action-gh-release@v1
+        with:
+          tag_name: ${{ github.ref }}
+          name: Release ${{ github.ref }}
+          draft: true
+          files: ./release/*.tar.gz
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+    
+  
+  lin-32:
+    runs-on: ubuntu-latest
+    env:
+      PKG_CONFIG_ALLOW_CROSS: 1
+    if: "contains(github.event.head_commit.message, '[Release]')"
+    steps:
+      - uses: actions/checkout@v2
+
+      - name: Config
+        run: |
+          sudo dpkg --add-architecture i386
+          sudo apt-get update
+          sudo apt-get install libc6-dev-i386
+          sudo apt-get install libssl-dev:i386
+      
+      - name: Install
+        uses: actions-rs/toolchain@v1
+        with:
+          toolchain: stable
+          target: i686-unknown-linux-gnu
+          profile: minimal
+      
+      - name: Build
+        run: |
+          cargo build --all --release --target i686-unknown-linux-gnu
+          strip target/i686-unknown-linux-gnu/release/liz
+          mkdir -p release
+          tar -C ./target/i686-unknown-linux-gnu/release/ -czvf ./release/lin_32_liz.tar.gz ./liz
+
+      - name: Release
+        uses: softprops/action-gh-release@v1
+        with:
+          tag_name: ${{ github.ref }}
+          name: Release ${{ github.ref }}
+          draft: true
+          files: ./release/*.tar.gz
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+
+    
+  win-64:
+    runs-on: windows-latest
+    if: "contains(github.event.head_commit.message, '[Release]')"
+    steps:
+      - uses: actions/checkout@v2
+      
+      - name: Install
+        uses: actions-rs/toolchain@v1
+        with:
+          toolchain: stable
+          target: x86_64-pc-windows-msvc
+          profile: minimal
+      
+      - name: Build
+        run: |
+          cargo build --all --release --target x86_64-pc-windows-msvc
+          mkdir -p release
+          tar -C ./target/x86_64-pc-windows-msvc/release/ -czvf ./release/win_64_liz.tar.gz ./liz.exe
+
+      - name: Release
+        uses: softprops/action-gh-release@v1
+        with:
+          tag_name: ${{ github.ref }}
+          name: Release ${{ github.ref }}
+          draft: true
+          files: ./release/*.tar.gz
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+
+    
+  win-32:
+    runs-on: windows-latest
+    if: "contains(github.event.head_commit.message, '[Release]')"
+    steps:
+      - uses: actions/checkout@v2
+      
+      - name: Install
+        uses: actions-rs/toolchain@v1
+        with:
+          toolchain: stable
+          target: i686-pc-windows-msvc
+          profile: minimal
+      
+      - name: Build
+        run: |
+          cargo build --all --release --target i686-pc-windows-msvc
+          mkdir -p release
+          tar -C ./target/i686-pc-windows-msvc/release/ -czvf ./release/win_32_liz.tar.gz ./liz.exe
+
+      - name: Release
+        uses: softprops/action-gh-release@v1
+        with:
+          tag_name: ${{ github.ref }}
+          name: Release ${{ github.ref }}
+          draft: true
+          files: ./release/*.tar.gz
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
