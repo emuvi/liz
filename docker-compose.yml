@@ -1,0 +1,8 @@
+version: '3.8'
+services:
+  dev:
+    image: "rust:1.57"
+    volumes:
+      - .:/code
+    environment:
+      - USER=emuvi
