@@ -1,0 +1,17 @@
+{
+    "name": "liz-dev",
+    "dockerComposeFile": ["docker-compose.yml"],
+    "service": "vscode",
+    "runServices": ["vscode"],
+    "shutdownAction": "stopCompose",
+    "postCreateCommand": "",
+    "workspaceFolder": "/code",
+    "extensions": [
+        "matklad.rust-analyzer",
+        "tamasfe.even-better-toml"
+    ],
+    "settings": {
+        "files.eol": "\n",
+        "editor.codeActionsOnSaveTimeout": 3000
+    }
+}

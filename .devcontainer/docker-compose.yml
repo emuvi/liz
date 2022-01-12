@@ -3,6 +3,6 @@ services:
   dev:
     image: "rust:1.57"
     volumes:
-      - .:/code
+      - ..:/code
     environment:
       - USER=emuvi
