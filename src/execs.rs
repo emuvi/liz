@@ -72,9 +72,9 @@ pub fn join(spawned: Spawned) -> Result<Vec<String>, LizError> {
 	spawned.join()
 }
 
-pub fn cmd<A: AsRef<str>, P: AsRef<Path>>(
+pub fn cmd<S: AsRef<str>, P: AsRef<Path>>(
 	name: &str,
-	args: &[A],
+	args: &[S],
 	dir: P,
 	print: bool,
 	throw: bool,

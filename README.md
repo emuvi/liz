@@ -14,7 +14,7 @@ Liz ( LuaWizard ) is a library and a command that features a bunch of functional
 
     spawn(path: String, args: Option<Vec<String>>) -> Spawned
     join(spawned: Spawned) -> Result<Vec<String>, LizError>
-    cmd<A: AsRef<str>, P: AsRef<Path>>(name: &str, args: &[A], dir: P, print: bool, throw: bool) -> Result<(i32, String), LizError>
+    cmd<S: AsRef<str>, P: AsRef<Path>>(name: &str, args: &[S], dir: P, print: bool, throw: bool) -> Result<(i32, String), LizError>
     pause()
     
 ### Files Functions
