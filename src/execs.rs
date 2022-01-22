@@ -59,7 +59,7 @@ pub fn spawn(path: String, args: Option<Vec<String>>) -> Spawned {
 	let spawned = Spawned::new();
 	let spawned_clone = spawned.clone();
 	thread::spawn(move || {
-		let returned = crate::runs(exec_path, args);
+		let returned = crate::run(exec_path, args);
 		{
 			let mut lock = spawned_clone.results.write().unwrap();
 			*lock = Some(returned);
