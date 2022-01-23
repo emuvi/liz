@@ -81,7 +81,15 @@ pub fn to_json(value: LuaValue) -> Result<String, LizError> {
         LuaValue::Boolean(data) => format!("{}", data),
         LuaValue::Integer(data) => format!("{}", data),
         LuaValue::Number(data) => format!("{}", data),
-        LuaValue::String(data) => format!("\"{}\"", data.to_str()?),
+        LuaValue::String(data) => format!(
+            "\"{}\"",
+            data.to_str()?
+                .replace("\\", "\\\\")
+                .replace("\n", "\\n")
+                .replace("\r", "\\r")
+                .replace("\t", "\\t")
+                .replace("\"", "\\\"")
+        ),
         LuaValue::Table(data) => {
             let mut buffer = String::from("{");
             let mut first = true;
