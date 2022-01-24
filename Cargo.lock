@@ -342,7 +342,7 @@ checksum = "eef78b64d87775463c549fbd80e19249ef436ea3bf1de2a1eb7e717ec7fab1e9"
 
 [[package]]
 name = "liz"
-version = "0.1.17"
+version = "0.1.18"
 dependencies = [
  "num_cpus",
  "reqwest",
