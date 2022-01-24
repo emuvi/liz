@@ -268,8 +268,16 @@ fn inject_texts<'a>(ctx: Context<'a>, liz: &Table<'a>) -> Result<(), LizError> {
 
     let trim = ctx.create_function(|_, text: String| Ok(texts::trim(&text)))?;
 
-    let find = ctx.create_function(|_, (text, contents): (String, String)| {
-        Ok(texts::find(&text, &contents))
+    let tolower = ctx.create_function(|_, text: String| Ok(texts::tolower(&text)))?;
+
+    let toupper = ctx.create_function(|_, text: String| Ok(texts::toupper(&text)))?;
+    
+    let contains = ctx.create_function(|_, (text, part): (String, String)| {
+        Ok(texts::contains(&text, &part))
+    })?;
+
+    let find = ctx.create_function(|_, (text, part): (String, String)| {
+        Ok(texts::find(&text, &part))
     })?;
 
     let starts_with = ctx.create_function(|_, (text, contents): (String, String)| {
@@ -302,6 +310,9 @@ fn inject_texts<'a>(ctx: Context<'a>, liz: &Table<'a>) -> Result<(), LizError> {
     liz.set("ask_float", ask_float)?;
     liz.set("ask_bool", ask_bool)?;
     liz.set("trim", trim)?;
+    liz.set("tolower", tolower)?;
+    liz.set("toupper", toupper)?;
+    liz.set("contains", contains)?;
     liz.set("find", find)?;
     liz.set("starts_with", starts_with)?;
     liz.set("ends_with", ends_with)?;
@@ -314,20 +325,20 @@ fn inject_texts<'a>(ctx: Context<'a>, liz: &Table<'a>) -> Result<(), LizError> {
 }
 
 fn inject_trans<'a>(ctx: Context<'a>, liz: &Table<'a>) -> Result<(), LizError> {
-    let get_text = ctx.create_function(
+    let get = ctx.create_function(
         |ctx, (url, headers): (String, Option<HashMap<String, String>>)| {
-            utils::treat_error(ctx, trans::get_text(&url, headers))
+            utils::treat_error(ctx, trans::get(&url, headers))
         },
     )?;
 
-    let post_text = ctx.create_function(
+    let post = ctx.create_function(
         |ctx, (url, text, headers): (String, String, Option<HashMap<String, String>>)| {
-            utils::treat_error(ctx, trans::post_text(&url, text, headers))
+            utils::treat_error(ctx, trans::post(&url, text, headers))
         },
     )?;
 
-    liz.set("get_text", get_text)?;
-    liz.set("post_text", post_text)?;
+    liz.set("get", get)?;
+    liz.set("post", post)?;
 
     Ok(())
 }

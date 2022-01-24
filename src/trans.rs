@@ -5,7 +5,7 @@ use std::collections::HashMap;
 
 use crate::LizError;
 
-pub fn get_text(url: &str, with_headers: Option<HashMap<String, String>>) -> Result<String, LizError> {
+pub fn get(url: &str, with_headers: Option<HashMap<String, String>>) -> Result<String, LizError> {
     let client = reqwest::blocking::Client::new();
     let builder = client.get(url);
     let mut headers = HeaderMap::new();
@@ -15,7 +15,7 @@ pub fn get_text(url: &str, with_headers: Option<HashMap<String, String>>) -> Res
     Ok(body)
 }
 
-pub fn post_text(url: &str, text: String, with_headers: Option<HashMap<String, String>>) -> Result<String, LizError> {
+pub fn post(url: &str, text: String, with_headers: Option<HashMap<String, String>>) -> Result<String, LizError> {
     let client = reqwest::blocking::Client::new();
     let builder = client.post(url);
     let mut headers = HeaderMap::new();

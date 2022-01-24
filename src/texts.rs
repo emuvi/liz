@@ -45,8 +45,20 @@ pub fn trim(text: &str) -> String {
     String::from(text.trim())
 }
 
-pub fn find(text: &str, contents: &str) -> Option<usize> {
-	text.find(contents)
+pub fn tolower(text: &str) -> String {
+    String::from(text.to_lowercase())
+}
+
+pub fn toupper(text: &str) -> String {
+    String::from(text.to_uppercase())
+}
+
+pub fn contains(text: &str, part: &str) -> bool {
+    text.contains(part)
+}
+
+pub fn find(text: &str, part: &str) -> Option<usize> {
+	text.find(part)
 }
 
 pub fn starts_with(text: &str, prefix: &str) -> bool {

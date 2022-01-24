@@ -78,7 +78,7 @@ pub fn race(path: impl AsRef<Path>, handler: &Lua) -> Result<Vec<String>, LizErr
             match json_multi {
                 Ok(json_multi) => result = Some(Ok(json_multi)),
                 Err(e) => {
-                    let mut msg = format!("Error on posting {} with message:\n", path_display);
+                    let mut msg = format!("Error on transforming the returned values of {} with message:\n", path_display);
                     let liz = utils::get_liz(ctx);
                     if let Some(liz) = liz {
                         if let Ok(err) = liz.get::<_, String>("err") {
