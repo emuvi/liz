@@ -1,4 +1,0 @@
-a = "teste\nteste"
-b = liz.to_json(a)
-c = liz.from_json(b)
-print(c)
