@@ -9,6 +9,8 @@ use crate::texts;
 use crate::trans;
 use crate::utils;
 
+// TODO - Separate this big file into smaller ones for each module.
+
 use crate::execs::Spawned;
 use crate::LizError;
 
@@ -222,7 +224,10 @@ fn inject_files<'a>(ctx: Context<'a>, liz: &Table<'a>) -> Result<(), LizError> {
     liz.set("mv", mv)?;
     liz.set("rm", rm)?;
     liz.set("read", read)?;
+    
+    // TODO - Removes this undescore because it should be equals on linux systems.
     liz.set("mk_dir", mk_dir)?;
+    
     liz.set("touch", touch)?;
     liz.set("write", write)?;
     liz.set("append", append)?;
