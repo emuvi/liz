@@ -4,11 +4,12 @@ use simple_error::SimpleError;
 use std::error::Error;
 use std::path::Path;
 
-pub mod codes;
-pub mod execs;
-pub mod files;
-pub mod texts;
-pub mod trans;
+pub mod liz_codes;
+pub mod liz_execs;
+pub mod liz_files;
+pub mod liz_texts;
+pub mod liz_trans;
+
 pub mod utils;
 
 mod wiz_all;
@@ -83,7 +84,10 @@ pub fn race(path: impl AsRef<Path>, handler: &Lua) -> Result<Vec<String>, LizErr
             match json_multi {
                 Ok(json_multi) => result = Some(Ok(json_multi)),
                 Err(e) => {
-                    let mut msg = format!("Error on transforming the returned values of {} with message:\n", path_display);
+                    let mut msg = format!(
+                        "Error on transforming the returned values of {} with message:\n",
+                        path_display
+                    );
                     let liz = utils::get_liz(ctx);
                     if let Some(liz) = liz {
                         if let Ok(err) = liz.get::<_, String>("err") {

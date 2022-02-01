@@ -1,9 +1,9 @@
 use rlua::{Context, Table};
 
-use crate::execs;
+use crate::liz_execs;
 use crate::utils;
 
-use crate::execs::Spawned;
+use crate::liz_execs::Spawned;
 use crate::LizError;
 
 pub fn inject_execs<'a>(ctx: Context<'a>, liz: &Table<'a>) -> Result<(), LizError> {
@@ -12,19 +12,19 @@ pub fn inject_execs<'a>(ctx: Context<'a>, liz: &Table<'a>) -> Result<(), LizErro
     })?;
 
     let spawn = ctx.create_function(|_, (path, args): (String, Option<Vec<String>>)| {
-        Ok(execs::spawn(path, args))
+        Ok(liz_execs::spawn(path, args))
     })?;
 
     let join =
-        ctx.create_function(|ctx, spawned: Spawned| utils::treat_error(ctx, execs::join(spawned)))?;
+        ctx.create_function(|ctx, spawned: Spawned| utils::treat_error(ctx, liz_execs::join(spawned)))?;
 
     let cmd = ctx.create_function(
         |ctx, (name, args, dir, print, throw): (String, Vec<String>, String, bool, bool)| {
-            utils::treat_error(ctx, execs::cmd(&name, args.as_slice(), &dir, print, throw))
+            utils::treat_error(ctx, liz_execs::cmd(&name, args.as_slice(), &dir, print, throw))
         },
     )?;
 
-    let pause = ctx.create_function(|_, ()| Ok(execs::pause()))?;
+    let pause = ctx.create_function(|_, ()| Ok(liz_execs::pause()))?;
 
     liz.set("run", run)?;
     liz.set("spawn", spawn)?;

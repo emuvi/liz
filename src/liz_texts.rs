@@ -6,39 +6,39 @@ use std::thread::JoinHandle;
 
 use simple_error::simple_error;
 
-use crate::files;
+use crate::liz_files;
 use crate::LizError;
 
 pub fn ask(message: &str) -> Result<String, LizError> {
-	print!("{}", message);
-	std::io::stdout().flush().unwrap();
-	let mut buffer = String::new();
-	std::io::stdin().read_line(&mut buffer)?;
-	Ok(buffer)
+    print!("{}", message);
+    std::io::stdout().flush().unwrap();
+    let mut buffer = String::new();
+    std::io::stdin().read_line(&mut buffer)?;
+    Ok(buffer)
 }
 
 pub fn ask_int(message: &str) -> Result<i32, LizError> {
-	print!("{}", message);
-	std::io::stdout().flush().unwrap();
-	let mut buffer = String::new();
-	std::io::stdin().read_line(&mut buffer)?;
-	let result = buffer.parse::<i32>()?;
-	Ok(result)
+    print!("{}", message);
+    std::io::stdout().flush().unwrap();
+    let mut buffer = String::new();
+    std::io::stdin().read_line(&mut buffer)?;
+    let result = buffer.parse::<i32>()?;
+    Ok(result)
 }
 
 pub fn ask_float(message: &str) -> Result<f64, LizError> {
-	print!("{}", message);
-	std::io::stdout().flush().unwrap();
-	let mut buffer = String::new();
-	std::io::stdin().read_line(&mut buffer)?;
-	let result = buffer.parse::<f64>()?;
-	Ok(result)
+    print!("{}", message);
+    std::io::stdout().flush().unwrap();
+    let mut buffer = String::new();
+    std::io::stdin().read_line(&mut buffer)?;
+    let result = buffer.parse::<f64>()?;
+    Ok(result)
 }
 
 pub fn ask_bool(message: &str) -> Result<bool, LizError> {
-	let result = ask(message)?;
-	let result = result.to_lowercase();
-	Ok(result == "t" || result == "true" || result == "y" || result == "yes")
+    let result = ask(message)?;
+    let result = result.to_lowercase();
+    Ok(result == "t" || result == "true" || result == "y" || result == "yes")
 }
 
 pub fn trim(text: &str) -> String {
@@ -66,22 +66,22 @@ pub fn contains(text: &str, part: &str) -> bool {
 }
 
 pub fn find(text: &str, part: &str) -> Option<usize> {
-	text.find(part)
+    text.find(part)
 }
 
 pub fn starts_with(text: &str, prefix: &str) -> bool {
-	text.starts_with(prefix)
+    text.starts_with(prefix)
 }
 
 pub fn ends_with(text: &str, suffix: &str) -> bool {
-	text.ends_with(suffix)
+    text.ends_with(suffix)
 }
 
 pub fn text_path_find(
     path: impl AsRef<Path>,
     contents: &str,
 ) -> Result<Option<Vec<String>>, LizError> {
-    if files::is_dir(&path) {
+    if liz_files::is_dir(&path) {
         text_dir_find(&path, contents)
     } else {
         text_file_find(&path, contents)
@@ -165,11 +165,11 @@ pub fn text_files_find(
 ) -> Result<Option<Vec<String>>, LizError> {
     let cpus = num_cpus::get();
     let pool = Arc::new(Mutex::new(paths));
-	let mut handles: Vec<JoinHandle<Option<Vec<String>>>> = Vec::with_capacity(cpus);
-	let contents = Arc::new(contents);
+    let mut handles: Vec<JoinHandle<Option<Vec<String>>>> = Vec::with_capacity(cpus);
+    let contents = Arc::new(contents);
     for _ in 0..cpus {
         let link_pool = pool.clone();
-		let link_contents = contents.clone();
+        let link_contents = contents.clone();
         let handle = std::thread::spawn(move || -> Option<Vec<String>> {
             let mut partial: Option<Vec<String>> = None;
             loop {
@@ -215,23 +215,23 @@ pub fn text_files_find(
             }
             partial
         });
-		handles.push(handle);
+        handles.push(handle);
     }
-	let mut results: Option<Vec<String>> = None;
-	for handle in handles {
-		let partial = match handle.join() {
-			Ok(partial) => partial,
-			Err(error) => return Err(Box::new(simple_error!(format!("{:?}", error))))
-		};
-		if let Some(partial) = partial {
-			if results.is_none() {
-				results = Some(Vec::new());
-			}
-			let inserter = results.as_mut().unwrap();
-			for found in partial {
-				inserter.push(found);
-			}
-		}
-	}
+    let mut results: Option<Vec<String>> = None;
+    for handle in handles {
+        let partial = match handle.join() {
+            Ok(partial) => partial,
+            Err(error) => return Err(Box::new(simple_error!(format!("{:?}", error)))),
+        };
+        if let Some(partial) = partial {
+            if results.is_none() {
+                results = Some(Vec::new());
+            }
+            let inserter = results.as_mut().unwrap();
+            for found in partial {
+                inserter.push(found);
+            }
+        }
+    }
     Ok(results)
 }

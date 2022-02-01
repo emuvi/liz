@@ -1,65 +1,65 @@
 use rlua::{Context, Table};
 
-use crate::texts;
+use crate::liz_texts;
 use crate::utils;
 
 use crate::LizError;
 
 pub fn inject_texts<'a>(ctx: Context<'a>, liz: &Table<'a>) -> Result<(), LizError> {
     let ask =
-        ctx.create_function(|ctx, message: String| utils::treat_error(ctx, texts::ask(&message)))?;
+        ctx.create_function(|ctx, message: String| utils::treat_error(ctx, liz_texts::ask(&message)))?;
 
     let ask_int = ctx.create_function(|ctx, message: String| {
-        utils::treat_error(ctx, texts::ask_int(&message))
+        utils::treat_error(ctx, liz_texts::ask_int(&message))
     })?;
 
     let ask_float = ctx.create_function(|ctx, message: String| {
-        utils::treat_error(ctx, texts::ask_float(&message))
+        utils::treat_error(ctx, liz_texts::ask_float(&message))
     })?;
 
     let ask_bool = ctx.create_function(|ctx, message: String| {
-        utils::treat_error(ctx, texts::ask_bool(&message))
+        utils::treat_error(ctx, liz_texts::ask_bool(&message))
     })?;
 
-    let trim = ctx.create_function(|_, text: String| Ok(texts::trim(&text)))?;
+    let trim = ctx.create_function(|_, text: String| Ok(liz_texts::trim(&text)))?;
 
-    let is_empty = ctx.create_function(|_, text: String| Ok(texts::is_empty(&text)))?;
+    let is_empty = ctx.create_function(|_, text: String| Ok(liz_texts::is_empty(&text)))?;
 
-    let is_ascii = ctx.create_function(|_, text: String| Ok(texts::is_ascii(&text)))?;
+    let is_ascii = ctx.create_function(|_, text: String| Ok(liz_texts::is_ascii(&text)))?;
 
-    let tolower = ctx.create_function(|_, text: String| Ok(texts::tolower(&text)))?;
+    let tolower = ctx.create_function(|_, text: String| Ok(liz_texts::tolower(&text)))?;
 
-    let toupper = ctx.create_function(|_, text: String| Ok(texts::toupper(&text)))?;
+    let toupper = ctx.create_function(|_, text: String| Ok(liz_texts::toupper(&text)))?;
 
     let contains =
-        ctx.create_function(|_, (text, part): (String, String)| Ok(texts::contains(&text, &part)))?;
+        ctx.create_function(|_, (text, part): (String, String)| Ok(liz_texts::contains(&text, &part)))?;
 
     let find =
-        ctx.create_function(|_, (text, part): (String, String)| Ok(texts::find(&text, &part)))?;
+        ctx.create_function(|_, (text, part): (String, String)| Ok(liz_texts::find(&text, &part)))?;
 
     let starts_with = ctx.create_function(|_, (text, contents): (String, String)| {
-        Ok(texts::starts_with(&text, &contents))
+        Ok(liz_texts::starts_with(&text, &contents))
     })?;
 
     let ends_with = ctx.create_function(|_, (text, contents): (String, String)| {
-        Ok(texts::ends_with(&text, &contents))
+        Ok(liz_texts::ends_with(&text, &contents))
     })?;
 
     let text_path_find = ctx.create_function(|ctx, (path, contents): (String, String)| {
-        utils::treat_error(ctx, texts::text_path_find(&path, &contents))
+        utils::treat_error(ctx, liz_texts::text_path_find(&path, &contents))
     })?;
 
     let text_dir_find = ctx.create_function(|ctx, (path, contents): (String, String)| {
-        utils::treat_error(ctx, texts::text_dir_find(&path, &contents))
+        utils::treat_error(ctx, liz_texts::text_dir_find(&path, &contents))
     })?;
 
     let text_file_find = ctx.create_function(|ctx, (path, contents): (String, String)| {
-        utils::treat_error(ctx, texts::text_file_find(&path, &contents))
+        utils::treat_error(ctx, liz_texts::text_file_find(&path, &contents))
     })?;
 
     let text_files_find =
         ctx.create_function(|ctx, (paths, contents): (Vec<String>, String)| {
-            utils::treat_error(ctx, texts::text_files_find(paths, contents))
+            utils::treat_error(ctx, liz_texts::text_files_find(paths, contents))
         })?;
 
     liz.set("ask", ask)?;

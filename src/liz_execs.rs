@@ -108,11 +108,11 @@ pub fn cmd<S: AsRef<str>, P: AsRef<Path>>(
 }
 
 pub fn pause() {
-  use std::io::Write;
-  let stdout = std::io::stdout();
-  let mut reader = std::io::stdin();
-  let mut buffer = [0;1];
-  print!("Press enter to continue...");
-  stdout.lock().flush().unwrap();
-  reader.read_exact(&mut buffer).unwrap();
+	use std::io::Write;
+	let stdout = std::io::stdout();
+	let mut reader = std::io::stdin();
+	let mut buffer = [0; 1];
+	print!("Press enter to continue...");
+	stdout.lock().flush().unwrap();
+	reader.read_exact(&mut buffer).unwrap();
 }
