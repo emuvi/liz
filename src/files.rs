@@ -105,7 +105,7 @@ pub fn read(path: impl AsRef<Path>) -> Result<String, LizError> {
     Ok(result)
 }
 
-pub fn mk_dir(path: impl AsRef<Path>) -> Result<(), LizError> {
+pub fn mkdir(path: impl AsRef<Path>) -> Result<(), LizError> {
     fs::create_dir_all(path)?;
     Ok(())
 }

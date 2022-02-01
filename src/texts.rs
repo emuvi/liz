@@ -45,6 +45,14 @@ pub fn trim(text: &str) -> String {
     String::from(text.trim())
 }
 
+pub fn is_empty(text: &str) -> bool {
+    text.is_empty()
+}
+
+pub fn is_ascii(text: &str) -> bool {
+    text.is_ascii()
+}
+
 pub fn tolower(text: &str) -> String {
     String::from(text.to_lowercase())
 }

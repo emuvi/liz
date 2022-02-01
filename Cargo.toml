@@ -4,11 +4,11 @@ description = "LuaWizard - Features a bunch of functionalities for lua scripts i
 repository = "https://github.com/emuvi/liz/"
 authors = ["Éverton M. Vieira"]
 license = "LGPL-3.0-only"
-version = "0.1.18"
+version = "0.1.19"
 edition = "2018"
 
 [dependencies]
-rlua = "0.18"
+rlua = "0.19"
 num_cpus = "1"
 simple-error = "0.2"
 reqwest = { version = "0.11", features = ["blocking"] }

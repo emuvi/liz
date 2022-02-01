@@ -11,7 +11,12 @@ pub mod texts;
 pub mod trans;
 pub mod utils;
 
-mod wizard;
+mod wiz_all;
+mod wiz_codes;
+mod wiz_execs;
+mod wiz_files;
+mod wiz_texts;
+mod wiz_trans;
 
 pub type LizError = Box<dyn Error + Send + Sync>;
 
@@ -118,7 +123,7 @@ pub fn rise(args: Option<Vec<String>>) -> Result<Lua, LizError> {
     let handler = Lua::new();
     let mut error: Option<LizError> = None;
     handler.context(|ctx| {
-        if let Err(err) = wizard::inject_all(ctx, args) {
+        if let Err(err) = wiz_all::inject_all(ctx, args) {
             error = Some(err);
         }
     });
