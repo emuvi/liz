@@ -13,10 +13,10 @@ fn main() -> Result<(), LizError> {
             if arg == "-h" || arg == "--help" {
                 print_help();
                 return Ok(());
-            } else if arg == "-v" || arg == "--version" {
+            } else if arg == "-V" || arg == "--version" {
                 println!("Liz (LuaWizard) {}", env!("CARGO_PKG_VERSION"));
                 return Ok(());
-            } else if arg == "-V" || arg == "--verbose" {
+            } else if arg == "-v" || arg == "--verbose" {
                 verbose = true;
             } else if arg == "--" {
                 getting_args = true;
@@ -41,6 +41,7 @@ fn main() -> Result<(), LizError> {
     if to_race.is_empty() {
         to_race.push(Box::new("./default.liz"));
     }
+    let first = &to_race[0];
     if verbose {
         if let Some(ref to_rise_args) = to_rise_args {
             println!("Rising with args: {:?}", to_rise_args);
@@ -48,7 +49,7 @@ fn main() -> Result<(), LizError> {
             println!("Rising with no args");
         }
     }
-    let handler = liz::rise(to_rise_args)?;
+    let handler = liz::rise(first.as_ref(), to_rise_args)?;
     for race_path in to_race {
         let results = liz::race(race_path.as_ref(), &handler)?;
         if verbose {
@@ -70,8 +71,9 @@ USAGE:
     liz [FLAGS] [PATH]... [-- ARGS] 
 
 FLAGS:
-    -v, --version   Prints the version information;
-    -h, --help      Prints the help information;
+    -v, --verbose   Prints the verbose information;
+    -V, --version   Prints the version information;
+    -h, --help      Prints the usage information;
 
 PATH:
     Address of the scripts to be loaded and executed. It is not necessary to put the extension .liz but if no path was specified, Liz will try to execute the ./default.liz path.

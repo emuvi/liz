@@ -36,22 +36,11 @@ pub fn inject_files<'a>(ctx: Context<'a>, liz: &Table<'a>) -> Result<(), LizErro
     let rm =
         ctx.create_function(|ctx, path: String| utils::treat_error(ctx, liz_files::rm(&path)))?;
 
-    let read =
-        ctx.create_function(|ctx, path: String| utils::treat_error(ctx, liz_files::read(&path)))?;
-
     let mkdir =
         ctx.create_function(|ctx, path: String| utils::treat_error(ctx, liz_files::mkdir(&path)))?;
 
     let touch =
         ctx.create_function(|ctx, path: String| utils::treat_error(ctx, liz_files::touch(&path)))?;
-
-    let write = ctx.create_function(|ctx, (path, contents): (String, String)| {
-        utils::treat_error(ctx, liz_files::write(&path, &contents))
-    })?;
-
-    let append = ctx.create_function(|ctx, (path, contents): (String, String)| {
-        utils::treat_error(ctx, liz_files::append(&path, &contents))
-    })?;
 
     let path_ext = ctx
         .create_function(|ctx, path: String| utils::treat_error(ctx, liz_files::path_ext(&path)))?;
@@ -138,11 +127,8 @@ pub fn inject_files<'a>(ctx: Context<'a>, liz: &Table<'a>) -> Result<(), LizErro
     liz.set("cp_tmp", cp_tmp)?;
     liz.set("mv", mv)?;
     liz.set("rm", rm)?;
-    liz.set("read", read)?;
     liz.set("mkdir", mkdir)?;
     liz.set("touch", touch)?;
-    liz.set("write", write)?;
-    liz.set("append", append)?;
     liz.set("exe_ext", liz_files::exe_ext())?;
     liz.set("path_sep", liz_files::path_sep())?;
     liz.set("path_ext", path_ext)?;

@@ -24,14 +24,14 @@ pub fn git_is_ignored(path: impl AsRef<Path>) -> Result<bool, LizError> {
     if let Some(root) = git_root_find(&path)? {
         let relative = liz_files::path_relative(path, &root)?;
         let (code, output) =
-            liz_execs::cmd("git", &["check-ignore", &relative], &root, false, false)?;
+            liz_execs::cmd("git", &["check-ignore", &relative], Some(&root), Some(false), Some(false))?;
         return Ok(code == 0 && !output.is_empty());
     }
     Ok(false)
 }
 
 pub fn git_has_changes(root: impl AsRef<Path>) -> Result<bool, LizError> {
-    let (_, output) = liz_execs::cmd("git", &["status"], root, false, true)?;
+    let (_, output) = liz_execs::cmd("git", &["status"], Some(root), Some(false), Some(true))?;
     let output = output.trim();
     Ok(!output.ends_with("nothing to commit, working tree clean"))
 }

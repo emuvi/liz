@@ -6,8 +6,9 @@ use crate::utils;
 use crate::LizError;
 
 pub fn inject_texts<'a>(ctx: Context<'a>, liz: &Table<'a>) -> Result<(), LizError> {
-    let ask =
-        ctx.create_function(|ctx, message: String| utils::treat_error(ctx, liz_texts::ask(&message)))?;
+    let ask = ctx.create_function(|ctx, message: String| {
+        utils::treat_error(ctx, liz_texts::ask(&message))
+    })?;
 
     let ask_int = ctx.create_function(|ctx, message: String| {
         utils::treat_error(ctx, liz_texts::ask_int(&message))
@@ -31,8 +32,9 @@ pub fn inject_texts<'a>(ctx: Context<'a>, liz: &Table<'a>) -> Result<(), LizErro
 
     let toupper = ctx.create_function(|_, text: String| Ok(liz_texts::toupper(&text)))?;
 
-    let contains =
-        ctx.create_function(|_, (text, part): (String, String)| Ok(liz_texts::contains(&text, &part)))?;
+    let contains = ctx.create_function(|_, (text, part): (String, String)| {
+        Ok(liz_texts::contains(&text, &part))
+    })?;
 
     let find =
         ctx.create_function(|_, (text, part): (String, String)| Ok(liz_texts::find(&text, &part)))?;
@@ -62,6 +64,25 @@ pub fn inject_texts<'a>(ctx: Context<'a>, liz: &Table<'a>) -> Result<(), LizErro
             utils::treat_error(ctx, liz_texts::text_files_find(paths, contents))
         })?;
 
+    let read =
+        ctx.create_function(|ctx, path: String| utils::treat_error(ctx, liz_texts::read(&path)))?;
+
+    let write = ctx.create_function(|ctx, (path, contents): (String, String)| {
+        utils::treat_error(ctx, liz_texts::write(&path, &contents))
+    })?;
+
+    let append = ctx.create_function(|ctx, (path, contents): (String, String)| {
+        utils::treat_error(ctx, liz_texts::append(&path, &contents))
+    })?;
+
+    let write_lines = ctx.create_function(|ctx, (path, lines): (String, Vec<String>)| {
+        utils::treat_error(ctx, liz_texts::write_lines(path, lines))
+    })?;
+
+    let append_lines = ctx.create_function(|ctx, (path, lines): (String, Vec<String>)| {
+        utils::treat_error(ctx, liz_texts::append_lines(path, lines))
+    })?;
+
     liz.set("ask", ask)?;
     liz.set("ask_int", ask_int)?;
     liz.set("ask_float", ask_float)?;
@@ -79,6 +100,11 @@ pub fn inject_texts<'a>(ctx: Context<'a>, liz: &Table<'a>) -> Result<(), LizErro
     liz.set("text_dir_find", text_dir_find)?;
     liz.set("text_file_find", text_file_find)?;
     liz.set("text_files_find", text_files_find)?;
+    liz.set("read", read)?;
+    liz.set("write", write)?;
+    liz.set("append", append)?;
+    liz.set("write_lines", write_lines)?;
+    liz.set("append_lines", append_lines)?;
 
     Ok(())
 }

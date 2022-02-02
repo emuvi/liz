@@ -235,3 +235,38 @@ pub fn text_files_find(
     }
     Ok(results)
 }
+
+pub fn read(path: impl AsRef<Path>) -> Result<String, LizError> {
+    let mut file = fs::File::open(path)?;
+    let mut result = String::new();
+    file.read_to_string(&mut result)?;
+    Ok(result)
+}
+
+pub fn write(path: impl AsRef<Path>, contents: &str) -> Result<(), LizError> {
+    Ok(fs::write(path, contents)?)
+}
+
+pub fn append(path: impl AsRef<Path>, contents: &str) -> Result<(), LizError> {
+    let mut file = fs::OpenOptions::new().write(true).append(true).open(path)?;
+    Ok(writeln!(file, "{}", contents)?)
+}
+
+pub fn write_lines(path: impl AsRef<Path>, lines: Vec<String>) -> Result<(), LizError> {
+    let mut file = fs::OpenOptions::new()
+        .write(true)
+        .append(false)
+        .open(path)?;
+    for line in lines {
+        writeln!(file, "{}", line)?;
+    }
+    Ok(())
+}
+
+pub fn append_lines(path: impl AsRef<Path>, lines: Vec<String>) -> Result<(), LizError> {
+    let mut file = fs::OpenOptions::new().write(true).append(true).open(path)?;
+    for line in lines {
+        writeln!(file, "{}", line)?;
+    }
+    Ok(())
+}

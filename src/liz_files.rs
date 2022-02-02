@@ -1,5 +1,4 @@
 use std::fs;
-use std::io::{Read, Write};
 use std::path::Path;
 use std::path::PathBuf;
 
@@ -22,7 +21,8 @@ pub fn cd(path: impl AsRef<Path>) -> Result<(), LizError> {
 }
 
 pub fn pwd() -> Result<String, LizError> {
-    Ok(format!("{}", std::env::current_dir()?.display()))
+    let cd = std::env::current_dir()?;
+    path_absolute(cd)
 }
 
 pub fn rn(origin: impl AsRef<Path>, destiny: impl AsRef<Path>) -> Result<(), LizError> {
@@ -98,13 +98,6 @@ pub fn rm(path: impl AsRef<Path>) -> Result<(), LizError> {
     })
 }
 
-pub fn read(path: impl AsRef<Path>) -> Result<String, LizError> {
-    let mut file = fs::File::open(path)?;
-    let mut result = String::new();
-    file.read_to_string(&mut result)?;
-    Ok(result)
-}
-
 pub fn mkdir(path: impl AsRef<Path>) -> Result<(), LizError> {
     fs::create_dir_all(path)?;
     Ok(())
@@ -113,15 +106,6 @@ pub fn mkdir(path: impl AsRef<Path>) -> Result<(), LizError> {
 pub fn touch(path: impl AsRef<Path>) -> Result<(), LizError> {
     fs::OpenOptions::new().create(true).write(true).open(path)?;
     Ok(())
-}
-
-pub fn write(path: impl AsRef<Path>, contents: &str) -> Result<(), LizError> {
-    Ok(fs::write(path, contents)?)
-}
-
-pub fn append(path: impl AsRef<Path>, contents: &str) -> Result<(), LizError> {
-    let mut file = fs::OpenOptions::new().write(true).append(true).open(path)?;
-    Ok(writeln!(file, "{}", contents)?)
 }
 
 pub fn exe_ext() -> &'static str {
@@ -259,10 +243,8 @@ pub fn path_parent_find(path: impl AsRef<Path>, with_name: &str) -> Result<Strin
 
 pub fn path_join(path: impl AsRef<Path>, child: &str) -> Result<String, LizError> {
     let path = path.as_ref().join(child);
-    if let Some(path_str) = path.to_str() {
-        return Ok(String::from(path_str));
-    }
-    Ok(String::new())
+    let path_str = path.to_str().ok_or("Could not get the display path.")?;
+    Ok(String::from(path_str))
 }
 
 pub fn path_list(path: impl AsRef<Path>) -> Result<Vec<String>, LizError> {
