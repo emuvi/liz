@@ -1,7 +1,7 @@
-use crate::LizError;
-use rlua::UserData;
+use rlua::{Context, Table, UserData};
 use simple_error::SimpleError;
-use std::io::Read;
+
+use std::io::{Read, Write};
 use std::path::Path;
 use std::path::PathBuf;
 use std::process::{Command, Stdio};
@@ -9,6 +9,9 @@ use std::sync::Arc;
 use std::sync::RwLock;
 use std::thread;
 use std::time::Duration;
+
+use crate::liz_files;
+use crate::LizError;
 
 #[derive(Clone)]
 pub struct Spawned {
@@ -51,22 +54,40 @@ impl Spawned {
 
 impl UserData for Spawned {}
 
-pub fn spawn(path: String, args: Option<Vec<String>>) -> Spawned {
-    let exec_path = if !path.ends_with(".liz") || !path.ends_with(".lua") {
-        format!("{}.liz", path)
+pub fn spawn(
+    path: impl AsRef<Path>,
+    args: Option<Vec<String>>,
+    context: Context,
+) -> Result<Spawned, LizError> {
+    let globals = context.globals();
+    let liz: Table = globals.get("liz")?;
+
+    let path = path.as_ref();
+    let path = if path.is_relative() {
+        let rise_dir: String = liz.get("rise_dir")?;
+        let rise_dir: PathBuf = rise_dir.into();
+        rise_dir.join(path)
     } else {
-        path
+        path.into()
     };
+
+    let mut spawn_path = liz_files::path_absolute(path)?;
+    let spawn_path_check = spawn_path.to_lowercase();
+    if !(spawn_path_check.ends_with(".liz") || spawn_path_check.ends_with(".lua")) {
+        spawn_path.push_str(".liz");
+    }
+    liz.set("spawn_path", spawn_path.clone())?;
+
     let spawned = Spawned::new();
     let spawned_clone = spawned.clone();
     thread::spawn(move || {
-        let returned = crate::run(exec_path, args);
+        let returned = crate::run(spawn_path, args);
         {
             let mut lock = spawned_clone.results.write().unwrap();
             *lock = Some(returned);
         }
     });
-    spawned
+    Ok(spawned)
 }
 
 pub fn join(spawned: Spawned) -> Result<Vec<String>, LizError> {
@@ -116,11 +137,14 @@ pub fn cmd<S: AsRef<str>, P: AsRef<Path>>(
 }
 
 pub fn pause() {
-    use std::io::Write;
-    let stdout = std::io::stdout();
-    let mut reader = std::io::stdin();
-    let mut buffer = [0; 1];
-    print!("Press enter to continue...");
-    stdout.lock().flush().unwrap();
-    reader.read_exact(&mut buffer).unwrap();
+    let mut stdin = std::io::stdin();
+    let mut stdout = std::io::stdout();
+    write!(stdout, "Press any key to continue...").unwrap();
+    stdout.flush().unwrap();
+    let mut buffer = [0u8];
+    stdin.read(&mut buffer).unwrap();
+    if !(buffer[0] == b'\r' || buffer[0] == b'\n') {
+        write!(stdout, "\n").unwrap();
+        stdout.flush().unwrap();
+    }
 }

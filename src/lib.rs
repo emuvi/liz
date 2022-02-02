@@ -43,7 +43,7 @@ pub fn rise(path: impl AsRef<Path>, args: Option<Vec<String>>) -> Result<Lua, Li
 
 pub fn race(path: impl AsRef<Path>, handler: &Lua) -> Result<Vec<String>, LizError> {
     let mut result: Option<Result<Vec<String>, LizError>> = None;
-    handler.context(|context| result = Some(eval(path, context)));
+    handler.context(|context| result = Some(race_in(path, context)));
     match result {
         Some(result) => result,
         None => {
@@ -54,7 +54,7 @@ pub fn race(path: impl AsRef<Path>, handler: &Lua) -> Result<Vec<String>, LizErr
     }
 }
 
-pub fn eval(path: impl AsRef<Path>, context: Context) -> Result<Vec<String>, LizError> {
+pub fn race_in(path: impl AsRef<Path>, context: Context) -> Result<Vec<String>, LizError> {
     let globals = context.globals();
     let liz: Table = globals.get("liz")?;
 
