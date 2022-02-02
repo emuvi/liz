@@ -22,6 +22,14 @@ pub fn inject_texts<'a>(ctx: Context<'a>, liz: &Table<'a>) -> Result<(), LizErro
         utils::treat_error(ctx, liz_texts::ask_bool(&message))
     })?;
 
+    let len = ctx.create_function(|_, text: String| {
+        Ok(liz_texts::len(&text))
+    })?;
+
+    let del = ctx.create_function(|_, (text, start, end): (String, usize, usize)| {
+        Ok(liz_texts::del(&text, start, end))
+    })?;
+
     let trim = ctx.create_function(|_, text: String| Ok(liz_texts::trim(&text)))?;
 
     let is_empty = ctx.create_function(|_, text: String| Ok(liz_texts::is_empty(&text)))?;
@@ -39,6 +47,9 @@ pub fn inject_texts<'a>(ctx: Context<'a>, liz: &Table<'a>) -> Result<(), LizErro
     let find =
         ctx.create_function(|_, (text, part): (String, String)| Ok(liz_texts::find(&text, &part)))?;
 
+    let rfind = ctx
+        .create_function(|_, (text, part): (String, String)| Ok(liz_texts::rfind(&text, &part)))?;
+
     let starts_with = ctx.create_function(|_, (text, contents): (String, String)| {
         Ok(liz_texts::starts_with(&text, &contents))
     })?;
@@ -47,22 +58,36 @@ pub fn inject_texts<'a>(ctx: Context<'a>, liz: &Table<'a>) -> Result<(), LizErro
         Ok(liz_texts::ends_with(&text, &contents))
     })?;
 
-    let text_path_find = ctx.create_function(|ctx, (path, contents): (String, String)| {
-        utils::treat_error(ctx, liz_texts::text_path_find(&path, &contents))
+    let split = ctx.create_function(|_, (text, pattern): (String, String)| {
+        Ok(liz_texts::split(&text, &pattern))
     })?;
 
-    let text_dir_find = ctx.create_function(|ctx, (path, contents): (String, String)| {
-        utils::treat_error(ctx, liz_texts::text_dir_find(&path, &contents))
-    })?;
+    let split_spaces = ctx.create_function(|_, text: String| Ok(liz_texts::split_spaces(&text)))?;
 
     let text_file_find = ctx.create_function(|ctx, (path, contents): (String, String)| {
         utils::treat_error(ctx, liz_texts::text_file_find(&path, &contents))
     })?;
 
+    let text_file_find_any =
+        ctx.create_function(|ctx, (path, contents): (String, Vec<String>)| {
+            utils::treat_error(
+                ctx,
+                liz_texts::text_file_find_any(&path, contents.as_slice()),
+            )
+        })?;
+
     let text_files_find =
         ctx.create_function(|ctx, (paths, contents): (Vec<String>, String)| {
             utils::treat_error(ctx, liz_texts::text_files_find(paths, contents))
         })?;
+
+    let text_files_find_any =
+        ctx.create_function(|ctx, (paths, contents): (Vec<String>, Vec<String>)| {
+            utils::treat_error(ctx, liz_texts::text_files_find_any(paths, contents))
+        })?;
+
+    let text_file_founds =
+        ctx.create_function(|_, found: String| Ok(liz_texts::text_file_founds(&found)))?;
 
     let read =
         ctx.create_function(|ctx, path: String| utils::treat_error(ctx, liz_texts::read(&path)))?;
@@ -87,6 +112,8 @@ pub fn inject_texts<'a>(ctx: Context<'a>, liz: &Table<'a>) -> Result<(), LizErro
     liz.set("ask_int", ask_int)?;
     liz.set("ask_float", ask_float)?;
     liz.set("ask_bool", ask_bool)?;
+    liz.set("len", len)?;
+    liz.set("del", del)?;
     liz.set("trim", trim)?;
     liz.set("is_empty", is_empty)?;
     liz.set("is_ascii", is_ascii)?;
@@ -94,12 +121,16 @@ pub fn inject_texts<'a>(ctx: Context<'a>, liz: &Table<'a>) -> Result<(), LizErro
     liz.set("toupper", toupper)?;
     liz.set("contains", contains)?;
     liz.set("find", find)?;
+    liz.set("rfind", rfind)?;
     liz.set("starts_with", starts_with)?;
     liz.set("ends_with", ends_with)?;
-    liz.set("text_path_find", text_path_find)?;
-    liz.set("text_dir_find", text_dir_find)?;
+    liz.set("split", split)?;
+    liz.set("split_spaces", split_spaces)?;
     liz.set("text_file_find", text_file_find)?;
+    liz.set("text_file_find_any", text_file_find_any)?;
     liz.set("text_files_find", text_files_find)?;
+    liz.set("text_files_find_any", text_files_find_any)?;
+    liz.set("text_file_founds", text_file_founds)?;
     liz.set("read", read)?;
     liz.set("write", write)?;
     liz.set("append", append)?;
