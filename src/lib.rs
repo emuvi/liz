@@ -54,15 +54,16 @@ pub fn race(path: impl AsRef<Path>, handler: &Lua) -> Result<Vec<String>, LizErr
     }
 }
 
-pub fn race_in(path: impl AsRef<Path>, context: Context) -> Result<Vec<String>, LizError> {
-    let globals = context.globals();
+pub fn race_in(path: impl AsRef<Path>, ctx: Context) -> Result<Vec<String>, LizError> {
+    let globals = ctx.globals();
     let liz: Table = globals.get("liz")?;
 
     let path = path.as_ref();
-    let path = if path.is_relative() {
-        let rise_dir: String = liz.get("rise_dir")?;
-        let rise_dir: PathBuf = rise_dir.into();
-        rise_dir.join(path)
+    let path: PathBuf = if path.is_relative() {
+        let stack_dir: String = utils::get_stack_dir(&liz)?;
+        let base_dir = Path::new(&stack_dir);
+        let path_join = base_dir.join(path);
+        path_join.into()
     } else {
         path.into()
     };
@@ -71,6 +72,7 @@ pub fn race_in(path: impl AsRef<Path>, context: Context) -> Result<Vec<String>, 
     liz.set("race_pwd", race_pwd)?;
 
     let race_dir = liz_files::path_parent(&path)?;
+    utils::put_stack_dir(&ctx, &liz, race_dir.clone())?;
     liz.set("race_dir", race_dir)?;
 
     let mut race_path = liz_files::path_absolute(path)?;
@@ -87,6 +89,7 @@ pub fn race_in(path: impl AsRef<Path>, context: Context) -> Result<Vec<String>, 
             source = (&source[first_line + 1..]).trim();
         }
     }
-    let values = context.load(source).eval::<MultiValue>()?;
+    let values = ctx.load(source).eval::<MultiValue>()?;
+    utils::pop_stack_dir(&liz)?;
     utils::to_json_multi(values)
 }

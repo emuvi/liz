@@ -14,7 +14,7 @@ pub fn display(path: impl AsRef<Path>) -> Result<String, LizError> {
     Ok(format!("{}", path_display))
 }
 
-pub fn load_parent(path: impl AsRef<Path>) -> Result<PathBuf, LizError> {
+pub fn get_parent(path: impl AsRef<Path>) -> Result<PathBuf, LizError> {
     let path = path.as_ref();
     let path = if path.is_relative() {
         std::fs::canonicalize(path)?
@@ -27,41 +27,87 @@ pub fn load_parent(path: impl AsRef<Path>) -> Result<PathBuf, LizError> {
     Ok(PathBuf::from(parent))
 }
 
-pub fn get_liz(from_ctx: Context) -> Option<Table> {
-    let globals = from_ctx.globals();
-    match globals.get("liz") {
-        Ok(liz) => Some(liz),
-        Err(_) => None,
+pub fn get_liz<'a>(ctx: &Context<'a>) -> Result<Table<'a>, LizError> {
+    let globals = ctx.globals();
+    let liz: Table = globals.get("liz")?;
+    Ok(liz)
+}
+
+pub fn print_stack_dir(ctx: Context) -> Result<(), LizError> {
+    let liz = get_liz(&ctx)?;
+    let stack: Table = liz.get("stack_dir")?;
+    let size = stack.raw_len();
+    for index in 1..size + 1 {
+        let dir: String = stack.get(index)?;
+        println!("{}", dir);
     }
+    Ok(())
+}
+
+pub fn put_stack_dir<'a>(ctx: &Context<'a>, liz: &Table<'a>, dir: String) -> Result<(), LizError> {
+    let contains = liz.contains_key("stack_dir")?;
+    if !contains {
+        let stack = ctx.create_table()?;
+        liz.set("stack_dir", stack)?;
+    }
+    let stack: Table = liz.get("stack_dir")?;
+    let next = stack.raw_len() + 1;
+    stack.set(next, dir)?;
+    Ok(())
+}
+
+pub fn get_stack_dir(liz: &Table) -> Result<String, LizError> {
+    let stack: Table = liz.get("stack_dir")?;
+    let last = stack.raw_len();
+    let result: String = stack.get(last)?;
+    Ok(result)
+}
+
+pub fn last_stack_dir(ctx: Context) -> Result<String, LizError> {
+    let liz = get_liz(&ctx)?;
+    Ok(get_stack_dir(&liz)?)
+}
+
+pub fn pop_stack_dir(liz: &Table) -> Result<(), LizError> {
+    let stack: Table = liz.get("stack_dir")?;
+    let last = stack.raw_len();
+    stack.set(last, rlua::Nil)?;
+    Ok(())
 }
 
 pub fn treat_error<T>(ctx: Context, result: Result<T, LizError>) -> Result<T, rlua::Error> {
     match result {
         Ok(returned) => Ok(returned),
         Err(error) => {
-            if let Some(liz) = get_liz(ctx) {
-                let mut new = true;
-                if let Ok(has) = liz.contains_key("err") {
-                    new = !has;
-                }
-                let mut stack_err: String = if !new {
-                    match liz.get("err") {
-                        Ok(old_stacked) => old_stacked,
-                        Err(get_old_err) => {
-                            eprintln!("Could not get the stacked errors because: {}", get_old_err);
-                            String::new()
-                        }
+            match get_liz(&ctx) {
+                Ok(liz) => {
+                    let mut new = true;
+                    if let Ok(has) = liz.contains_key("err") {
+                        new = !has;
                     }
-                } else {
-                    String::new()
-                };
-                stack_err.push_str(&format!("{}\n", error));
-                if let Err(not_set_err) = liz.set("err", stack_err) {
-                    eprintln!("Could not set the error stack because: {}", not_set_err);
+                    let mut stack_err: String = if !new {
+                        match liz.get("err") {
+                            Ok(old_stacked) => old_stacked,
+                            Err(get_old_err) => {
+                                eprintln!(
+                                    "Could not get the stacked errors because: {}",
+                                    get_old_err
+                                );
+                                String::new()
+                            }
+                        }
+                    } else {
+                        String::new()
+                    };
+                    stack_err.push_str(&format!("{}\n", error));
+                    if let Err(not_set_err) = liz.set("err", stack_err) {
+                        eprintln!("Could not set the error stack because: {}", not_set_err);
+                    }
                 }
-            } else {
-                eprintln!("Could not set the error stack because: Could not get the liz.",);
-            }
+                Err(err) => {
+                    eprintln!("Could not set the error stack because: Could not get the liz with error: {}", err);
+                }
+            };
             Err(rlua::Error::external(error))
         }
     }

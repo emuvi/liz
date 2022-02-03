@@ -20,10 +20,19 @@ pub fn inject_all(ctx: Context, path: impl AsRef<Path>, args: Option<Vec<String>
     liz.set("rise_pwd", rise_pwd)?;
 
     let rise_dir = liz_files::path_parent(&path)?;
+    utils::put_stack_dir(&ctx, &liz, rise_dir.clone())?;
     liz.set("rise_dir", rise_dir)?;
 
     let rise_path = liz_files::path_absolute(&path)?;
     liz.set("rise_path", rise_path)?;
+
+    let print_stack_dir = ctx.create_function(|ctx, ()| {
+        utils::treat_error(ctx, utils::print_stack_dir(ctx))
+    })?;
+
+    let last_stack_dir = ctx.create_function(|ctx, ()| {
+        utils::treat_error(ctx, utils::last_stack_dir(ctx))
+    })?;
 
     let to_json_multi = ctx.create_function(|ctx, values: MultiValue| {
         utils::treat_error(ctx, utils::to_json_multi(values))
@@ -36,6 +45,8 @@ pub fn inject_all(ctx: Context, path: impl AsRef<Path>, args: Option<Vec<String>
         utils::treat_error(ctx, utils::from_json(ctx, source))
     })?;
     
+    liz.set("print_stack_dir", print_stack_dir)?;
+    liz.set("last_stack_dir", last_stack_dir)?;
     liz.set("to_json_multi", to_json_multi)?;
     liz.set("to_json", to_json)?;
     liz.set("from_json", from_json)?;

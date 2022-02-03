@@ -11,6 +11,7 @@ use std::thread;
 use std::time::Duration;
 
 use crate::liz_files;
+use crate::utils;
 use crate::LizError;
 
 #[derive(Clone)]
@@ -63,10 +64,11 @@ pub fn spawn(
     let liz: Table = globals.get("liz")?;
 
     let path = path.as_ref();
-    let path = if path.is_relative() {
-        let rise_dir: String = liz.get("rise_dir")?;
-        let rise_dir: PathBuf = rise_dir.into();
-        rise_dir.join(path)
+    let path: PathBuf = if path.is_relative() {
+        let stack_dir: String = utils::get_stack_dir(&liz)?;
+        let base_dir = Path::new(&stack_dir);
+        let path_join = base_dir.join(path);
+        path_join.into()
     } else {
         path.into()
     };

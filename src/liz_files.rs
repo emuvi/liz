@@ -148,7 +148,7 @@ pub fn path_stem(path: impl AsRef<Path>) -> Result<String, LizError> {
 
 pub fn path_absolute(path: impl AsRef<Path>) -> Result<String, LizError> {
     let path = path.as_ref();
-    let path = if path.exists() && path.is_relative() {
+    let path = if path.is_relative() {
         std::fs::canonicalize(path)?
     } else {
         path.to_path_buf()
@@ -165,9 +165,7 @@ pub fn path_absolute(path: impl AsRef<Path>) -> Result<String, LizError> {
 }
 
 pub fn path_relative(path: impl AsRef<Path>, base: impl AsRef<Path>) -> Result<String, LizError> {
-    let path = path_absolute(path)?;
-    let base = path_absolute(base)?;
-    let result = path_relative_from(&path, &base).ok_or("Could not make relative.")?;
+    let result = path_relative_from(path, base).ok_or("Could not make relative.")?;
     Ok(format!("{}", result.display()))
 }
 
