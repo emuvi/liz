@@ -1,7 +1,5 @@
 use rlua::{Context, MultiValue, Value};
 
-use std::path::Path;
-
 use crate::liz_files;
 use crate::utils;
 use crate::wiz_codes;
@@ -12,7 +10,7 @@ use crate::wiz_trans;
 
 use crate::LizError;
 
-pub fn inject_all(ctx: Context, path: impl AsRef<Path>, args: Option<Vec<String>>) -> Result<(), LizError> {
+pub fn inject_all(ctx: Context, path: &str, args: Option<Vec<String>>) -> Result<(), LizError> {
     let liz = ctx.create_table()?;
     liz.set("args", args)?;
 
@@ -26,13 +24,11 @@ pub fn inject_all(ctx: Context, path: impl AsRef<Path>, args: Option<Vec<String>
     let rise_path = liz_files::path_absolute(&path)?;
     liz.set("rise_path", rise_path)?;
 
-    let print_stack_dir = ctx.create_function(|ctx, ()| {
-        utils::treat_error(ctx, utils::print_stack_dir(ctx))
-    })?;
+    let print_stack_dir =
+        ctx.create_function(|ctx, ()| utils::treat_error(ctx, utils::print_stack_dir(ctx)))?;
 
-    let last_stack_dir = ctx.create_function(|ctx, ()| {
-        utils::treat_error(ctx, utils::last_stack_dir(ctx))
-    })?;
+    let last_stack_dir =
+        ctx.create_function(|ctx, ()| utils::treat_error(ctx, utils::last_stack_dir(ctx)))?;
 
     let to_json_multi = ctx.create_function(|ctx, values: MultiValue| {
         utils::treat_error(ctx, utils::to_json_multi(values))
@@ -44,7 +40,7 @@ pub fn inject_all(ctx: Context, path: impl AsRef<Path>, args: Option<Vec<String>
     let from_json = ctx.create_function(|ctx, source: String| {
         utils::treat_error(ctx, utils::from_json(ctx, source))
     })?;
-    
+
     liz.set("print_stack_dir", print_stack_dir)?;
     liz.set("last_stack_dir", last_stack_dir)?;
     liz.set("to_json_multi", to_json_multi)?;

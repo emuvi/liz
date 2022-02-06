@@ -1,18 +1,20 @@
+use simple_error::simple_error;
+
 use std::fs::{self, File};
 use std::io::{prelude::*, BufReader};
-use std::path::Path;
 use std::sync::{Arc, Mutex};
 use std::thread::JoinHandle;
 
-use simple_error::simple_error;
-
+use crate::utils;
 use crate::LizError;
 
 pub fn ask(message: &str) -> Result<String, LizError> {
     print!("{}", message);
     std::io::stdout().flush().unwrap();
     let mut buffer = String::new();
-    std::io::stdin().read_line(&mut buffer)?;
+    std::io::stdin()
+        .read_line(&mut buffer)
+        .map_err(|err| utils::dbg("liz_texts", "ask", "read_line", err))?;
     Ok(buffer)
 }
 
@@ -20,8 +22,12 @@ pub fn ask_int(message: &str) -> Result<i32, LizError> {
     print!("{}", message);
     std::io::stdout().flush().unwrap();
     let mut buffer = String::new();
-    std::io::stdin().read_line(&mut buffer)?;
-    let result = buffer.parse::<i32>()?;
+    std::io::stdin()
+        .read_line(&mut buffer)
+        .map_err(|err| utils::dbg("liz_texts", "ask_int", "read_line", err))?;
+    let result = buffer
+        .parse::<i32>()
+        .map_err(|err| utils::dbg("liz_texts", "ask_int", "parse", err))?;
     Ok(result)
 }
 
@@ -112,82 +118,45 @@ pub fn split_spaces(text: &str) -> Vec<String> {
         .collect()
 }
 
-pub fn text_file_find(
-    path: impl AsRef<Path>,
-    contents: &str,
-) -> Result<Option<Vec<String>>, LizError> {
-    let mut results: Option<Vec<String>> = None;
-    let name = match path.as_ref().to_str() {
-        Some(name) => String::from(name),
-        None => String::default(),
-    };
-    let file = File::open(path)?;
-    let mut reader = BufReader::new(file);
-    let mut line = String::new();
-    let mut row = 1;
-    loop {
-        line.clear();
-        if reader.read_line(&mut line)? == 0 {
-            break;
-        }
-        if line.ends_with("\n") {
-            line.pop();
-        }
-        if line.ends_with("\r") {
-            line.pop();
-        }
-        if let Some(col) = line.find(contents) {
-            if results.is_none() {
-                results = Some(Vec::new());
-            }
-            let len = contents.len();
-            results
-                .as_mut()
-                .unwrap()
-                .push(format!("({})[{},{},{}]{}", name, row, col, len, line));
-        }
-        row += 1;
-    }
-    Ok(results)
+pub fn text_file_find(path: &str, content: &str) -> Result<Option<Vec<String>>, LizError> {
+    text_file_find_any(path, &[content])
 }
 
-pub fn text_file_find_any<S: AsRef<str>, P: AsRef<Path>>(
-    path: P,
-    contents: &[S],
+pub fn text_file_find_any(
+    path: &str,
+    contents: &[impl AsRef<str>],
 ) -> Result<Option<Vec<String>>, LizError> {
     let mut results: Option<Vec<String>> = None;
-    let name = match path.as_ref().to_str() {
-        Some(name) => String::from(name),
-        None => String::default(),
-    };
     let file = File::open(path)?;
     let mut reader = BufReader::new(file);
     let mut line = String::new();
     let mut row = 1;
+    let mut done = 0;
     loop {
         line.clear();
         if reader.read_line(&mut line)? == 0 {
             break;
         }
-        if line.ends_with("\n") {
-            line.pop();
-        }
-        if line.ends_with("\r") {
-            line.pop();
-        }
-        for searcher in contents {
-            let searcher = searcher.as_ref();
-            if let Some(col) = line.find(searcher) {
+        for content in contents {
+            let content = content.as_ref();
+            if let Some(col) = line.find(content) {
                 if results.is_none() {
                     results = Some(Vec::new());
                 }
-                let len = searcher.len();
-                results
-                    .as_mut()
-                    .unwrap()
-                    .push(format!("({})[{},{},{}]{}", name, row, col, len, line));
+                let pos = done + col;
+                let len = content.len();
+                results.as_mut().unwrap().push(format!(
+                    "({})[{},{},{},{}]{}",
+                    path,
+                    row,
+                    col,
+                    pos,
+                    len,
+                    line.trim()
+                ));
             }
         }
+        done = done + line.len();
         row += 1;
     }
     Ok(results)
@@ -197,57 +166,7 @@ pub fn text_files_find(
     paths: Vec<String>,
     contents: String,
 ) -> Result<Option<Vec<String>>, LizError> {
-    let cpus = num_cpus::get();
-    let pool = Arc::new(Mutex::new(paths));
-    let mut handles: Vec<JoinHandle<Option<Vec<String>>>> = Vec::with_capacity(cpus);
-    let contents = Arc::new(contents);
-    for _ in 0..cpus {
-        let link_pool = pool.clone();
-        let link_contents = contents.clone();
-        let handle = std::thread::spawn(move || -> Option<Vec<String>> {
-            let mut partial: Option<Vec<String>> = None;
-            loop {
-                let path = {
-                    let mut lock_pool = link_pool.lock().unwrap();
-                    lock_pool.pop()
-                };
-                if path.is_none() {
-                    break;
-                }
-                let path = path.unwrap();
-                let path = Path::new(&path);
-                let file_founds = text_file_find(path, &link_contents).unwrap();
-                if let Some(file_founds) = file_founds {
-                    if partial.is_none() {
-                        partial = Some(Vec::new());
-                    }
-                    let edit_partial = partial.as_mut().unwrap();
-                    for found in file_founds {
-                        edit_partial.push(found);
-                    }
-                }
-            }
-            partial
-        });
-        handles.push(handle);
-    }
-    let mut results: Option<Vec<String>> = None;
-    for handle in handles {
-        let partial = match handle.join() {
-            Ok(partial) => partial,
-            Err(error) => return Err(Box::new(simple_error!(format!("{:?}", error)))),
-        };
-        if let Some(partial) = partial {
-            if results.is_none() {
-                results = Some(Vec::new());
-            }
-            let editor = results.as_mut().unwrap();
-            for found in partial {
-                editor.push(found);
-            }
-        }
-    }
-    Ok(results)
+    text_files_find_any(paths, vec![contents])
 }
 
 pub fn text_files_find_any(
@@ -271,8 +190,7 @@ pub fn text_files_find_any(
                     break;
                 }
                 let path = path.unwrap();
-                let path = Path::new(&path);
-                let file_founds = text_file_find_any(path, link_contents.as_slice()).unwrap();
+                let file_founds = text_file_find_any(&path, link_contents.as_slice()).unwrap();
                 if let Some(file_founds) = file_founds {
                     if partial.is_none() {
                         partial = Some(Vec::new());
@@ -322,7 +240,7 @@ pub fn text_file_founds(found: &str) -> Vec<String> {
             } else {
                 actual.push(ch);
             }
-        } else if result.len() > 0 && result.len() < 4 {
+        } else if result.len() > 0 && result.len() < 5 {
             if ch == ',' || ch == ']' {
                 result.push(actual.clone());
                 actual.clear();
@@ -338,38 +256,76 @@ pub fn text_file_founds(found: &str) -> Vec<String> {
     result
 }
 
-pub fn read(path: impl AsRef<Path>) -> Result<String, LizError> {
-    let mut file = fs::File::open(path)?;
+pub fn read(path: &str) -> Result<String, LizError> {
+    let mut file = fs::OpenOptions::new()
+        .create(false)
+        .write(false)
+        .read(true)
+        .open(path)
+        .map_err(|err| utils::dbg_p("liz_texts", "read", "open", &[("path", path)], err))?;
     let mut result = String::new();
-    file.read_to_string(&mut result)?;
+    file.read_to_string(&mut result).map_err(|err| {
+        utils::dbg_p(
+            "liz_texts",
+            "read",
+            "read_to_string",
+            &[("path", path)],
+            err,
+        )
+    })?;
     Ok(result)
 }
 
-pub fn write(path: impl AsRef<Path>, contents: &str) -> Result<(), LizError> {
-    Ok(fs::write(path, contents)?)
-}
-
-pub fn append(path: impl AsRef<Path>, contents: &str) -> Result<(), LizError> {
-    let mut file = fs::OpenOptions::new().write(true).append(true).open(path)?;
-    Ok(writeln!(file, "{}", contents)?)
-}
-
-pub fn write_lines(path: impl AsRef<Path>, lines: Vec<String>) -> Result<(), LizError> {
+pub fn write(path: &str, contents: &str) -> Result<(), LizError> {
     let mut file = fs::OpenOptions::new()
         .create(true)
         .write(true)
+        .truncate(true)
         .append(false)
-        .open(path)?;
+        .open(path)
+        .map_err(|err| utils::dbg_p("texts", "write", "open", &[("path", path)], err))?;
+    Ok(write!(file, "{}", contents)
+        .map_err(|err| utils::dbg_p("texts", "write", "write", &[("path", path)], err))?)
+}
+
+pub fn append(path: &str, contents: &str) -> Result<(), LizError> {
+    let mut file = fs::OpenOptions::new()
+        .create(true)
+        .write(true)
+        .truncate(false)
+        .append(true)
+        .open(path)
+        .map_err(|err| utils::dbg_p("texts", "append", "open", &[("path", path)], err))?;
+    Ok(writeln!(file, "{}", contents)
+        .map_err(|err| utils::dbg_p("texts", "append", "write", &[("path", path)], err))?)
+}
+
+pub fn write_lines(path: &str, lines: &[impl AsRef<str>]) -> Result<(), LizError> {
+    let mut file = fs::OpenOptions::new()
+        .create(true)
+        .write(true)
+        .truncate(true)
+        .append(false)
+        .open(path)
+        .map_err(|err| utils::dbg_p("texts", "write_lines", "open", &[("path", path)], err))?;
     for line in lines {
-        writeln!(file, "{}", line)?;
+        writeln!(file, "{}", line.as_ref())?;
     }
     Ok(())
 }
 
-pub fn append_lines(path: impl AsRef<Path>, lines: Vec<String>) -> Result<(), LizError> {
-    let mut file = fs::OpenOptions::new().write(true).append(true).open(path)?;
+pub fn append_lines(path: &str, lines: &[impl AsRef<str>]) -> Result<(), LizError> {
+    let mut file = fs::OpenOptions::new()
+        .create(true)
+        .write(true)
+        .truncate(false)
+        .append(true)
+        .open(path)
+        .map_err(|err| utils::dbg_p("liz_texts", "append_lines", "open", &[("path", path)], err))?;
     for line in lines {
-        writeln!(file, "{}", line)?;
+        writeln!(file, "{}", line.as_ref()).map_err(|err| {
+            utils::dbg_p("liz_texts", "append_lines", "write", &[("path", path)], err)
+        })?;
     }
     Ok(())
 }

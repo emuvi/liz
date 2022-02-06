@@ -1,9 +1,7 @@
-use liz::utils;
 use liz::LizError;
-use std::path::Path;
 
 fn main() -> Result<(), LizError> {
-    let mut to_race: Vec<Box<dyn AsRef<Path>>> = Vec::new();
+    let mut to_race: Vec<String> = Vec::new();
     let mut to_rise_args: Option<Vec<String>> = None;
     let mut first_arg = true;
     let mut getting_args = false;
@@ -21,10 +19,10 @@ fn main() -> Result<(), LizError> {
             } else if arg == "--" {
                 getting_args = true;
             } else if arg.ends_with(".liz") || arg.ends_with(".lua") {
-                to_race.push(Box::new(arg));
+                to_race.push(arg);
             } else {
                 if !first_arg {
-                    to_race.push(Box::new(format!("{}.liz", arg)));
+                    to_race.push(arg);
                 }
             }
         } else {
@@ -39,7 +37,7 @@ fn main() -> Result<(), LizError> {
         }
     }
     if to_race.is_empty() {
-        to_race.push(Box::new("./default.liz"));
+        to_race.push(format!("default"));
     }
     let first = &to_race[0];
     if verbose {
@@ -49,12 +47,11 @@ fn main() -> Result<(), LizError> {
             println!("Rising with no args");
         }
     }
-    let handler = liz::rise(first.as_ref(), to_rise_args)?;
+    let handler = liz::rise(first, to_rise_args)?;
     for race_path in to_race {
-        let results = liz::race(race_path.as_ref(), &handler)?;
+        let results = liz::race(&race_path, &handler)?;
         if verbose {
-            let display = utils::display(race_path.as_ref())?;
-            println!("Raced the {} got: {:?}", display, results);
+            println!("Raced the {} got: {:?}", race_path, results);
         }
     }
     Ok(())

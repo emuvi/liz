@@ -6,12 +6,18 @@ use std::path::PathBuf;
 
 use crate::LizError;
 
-pub fn display(path: impl AsRef<Path>) -> Result<String, LizError> {
+pub fn display(path: impl AsRef<Path>) -> String {
     let path = path.as_ref();
-    let path_display = path
-        .to_str()
-        .ok_or("Could not get the display of the path.")?;
-    Ok(format!("{}", path_display))
+    format!("{}", path.display())
+}
+
+pub fn add_liz_extension(path: &str) -> String {
+    let check = path.to_lowercase();
+    if check.ends_with(".liz") || check.ends_with(".lua") {
+        String::from(path)
+    } else {
+        format!("{}.liz", path)
+    }
 }
 
 pub fn get_parent(path: impl AsRef<Path>) -> Result<PathBuf, LizError> {
@@ -204,4 +210,28 @@ fn from_json_value<'a>(ctx: Context<'a>, value: JsonValue) -> Result<LuaValue<'a
         }
     };
     Ok(result)
+}
+
+pub fn dbg(file: &str, func: &str, call: &str, err: impl std::error::Error) -> LizError {
+    throw(format!(
+        "Could not perform {}::{}::{} because {}",
+        file, func, call, err
+    ))
+}
+
+pub fn dbg_p(
+    file: &str,
+    func: &str,
+    call: &str,
+    params: &[(&str, &(impl std::fmt::Debug + ?Sized))],
+    err: impl std::fmt::Display,
+) -> LizError {
+    throw(format!(
+        "Could not perform {}::{}::{} with {:?} because {}",
+        file, func, call, params, err
+    ))
+}
+
+fn throw(message: String) -> LizError {
+    Box::new(simple_error::SimpleError::new(message))
 }

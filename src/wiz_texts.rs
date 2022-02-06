@@ -22,9 +22,7 @@ pub fn inject_texts<'a>(ctx: Context<'a>, liz: &Table<'a>) -> Result<(), LizErro
         utils::treat_error(ctx, liz_texts::ask_bool(&message))
     })?;
 
-    let len = ctx.create_function(|_, text: String| {
-        Ok(liz_texts::len(&text))
-    })?;
+    let len = ctx.create_function(|_, text: String| Ok(liz_texts::len(&text)))?;
 
     let del = ctx.create_function(|_, (text, start, end): (String, usize, usize)| {
         Ok(liz_texts::del(&text, start, end))
@@ -101,11 +99,11 @@ pub fn inject_texts<'a>(ctx: Context<'a>, liz: &Table<'a>) -> Result<(), LizErro
     })?;
 
     let write_lines = ctx.create_function(|ctx, (path, lines): (String, Vec<String>)| {
-        utils::treat_error(ctx, liz_texts::write_lines(path, lines))
+        utils::treat_error(ctx, liz_texts::write_lines(&path, lines.as_slice()))
     })?;
 
     let append_lines = ctx.create_function(|ctx, (path, lines): (String, Vec<String>)| {
-        utils::treat_error(ctx, liz_texts::append_lines(path, lines))
+        utils::treat_error(ctx, liz_texts::append_lines(&path, lines.as_slice()))
     })?;
 
     liz.set("ask", ask)?;

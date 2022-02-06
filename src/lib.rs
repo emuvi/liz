@@ -1,13 +1,11 @@
 use rlua::{Context, Lua, MultiValue, Table};
-use simple_error::SimpleError;
 
 use std::error::Error;
-use std::path::Path;
-use std::path::PathBuf;
 
 pub mod liz_codes;
 pub mod liz_execs;
 pub mod liz_files;
+pub mod liz_slabs;
 pub mod liz_texts;
 pub mod liz_trans;
 
@@ -22,12 +20,12 @@ mod wiz_trans;
 
 pub type LizError = Box<dyn Error + Send + Sync>;
 
-pub fn run(path: impl AsRef<Path>, args: Option<Vec<String>>) -> Result<Vec<String>, LizError> {
-    let handler = rise(&path, args)?;
+pub fn run(path: &str, args: Option<Vec<String>>) -> Result<Vec<String>, LizError> {
+    let handler = rise(path, args)?;
     race(path, &handler)
 }
 
-pub fn rise(path: impl AsRef<Path>, args: Option<Vec<String>>) -> Result<Lua, LizError> {
+pub fn rise(path: &str, args: Option<Vec<String>>) -> Result<Lua, LizError> {
     let handler = Lua::new();
     let mut error: Option<LizError> = None;
     handler.context(|ctx| {
@@ -41,31 +39,24 @@ pub fn rise(path: impl AsRef<Path>, args: Option<Vec<String>>) -> Result<Lua, Li
     Ok(handler)
 }
 
-pub fn race(path: impl AsRef<Path>, handler: &Lua) -> Result<Vec<String>, LizError> {
+pub fn race(path: &str, handler: &Lua) -> Result<Vec<String>, LizError> {
     let mut result: Option<Result<Vec<String>, LizError>> = None;
-    handler.context(|context| result = Some(race_in(path, context)));
-    match result {
-        Some(result) => result,
-        None => {
-            let msg = format!("Could not reach a result on the execution.");
-            let err = SimpleError::new(msg);
-            Err(Box::new(err))
-        }
-    }
+    handler.context(|ctx| result = Some(race_in(ctx, path)));
+    result
+        .ok_or("Could not reach a result")
+        .map_err(|err| utils::dbg_p("lib", "race", "ok_or", &[("path", path)], err))?
 }
 
-pub fn race_in(path: impl AsRef<Path>, ctx: Context) -> Result<Vec<String>, LizError> {
+pub fn race_in(ctx: Context, path: &str) -> Result<Vec<String>, LizError> {
     let globals = ctx.globals();
     let liz: Table = globals.get("liz")?;
 
-    let path = path.as_ref();
-    let path: PathBuf = if path.is_relative() {
-        let stack_dir: String = utils::get_stack_dir(&liz)?;
-        let base_dir = Path::new(&stack_dir);
-        let path_join = base_dir.join(path);
-        path_join.into()
+    let path = utils::add_liz_extension(path);
+    let path = if liz_files::is_relative(&path) {
+        let stack_dir = utils::get_stack_dir(&liz)?;
+        liz_files::path_join(&stack_dir, &path)?
     } else {
-        path.into()
+        path
     };
 
     let race_pwd = liz_files::pwd()?;
@@ -75,11 +66,7 @@ pub fn race_in(path: impl AsRef<Path>, ctx: Context) -> Result<Vec<String>, LizE
     utils::put_stack_dir(&ctx, &liz, race_dir.clone())?;
     liz.set("race_dir", race_dir)?;
 
-    let mut race_path = liz_files::path_absolute(path)?;
-    let race_path_check = race_path.to_lowercase();
-    if ! (race_path_check.ends_with(".liz") || race_path_check.ends_with(".lua")) {
-        race_path.push_str(".liz");
-    }
+    let race_path = liz_files::path_absolute(&path)?;
     liz.set("race_path", race_path.clone())?;
 
     let source = std::fs::read_to_string(race_path)?;

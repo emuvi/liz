@@ -1,110 +1,258 @@
-use std::fs;
 use std::path::Path;
-use std::path::PathBuf;
 
+use crate::utils;
 use crate::LizError;
 
-pub fn has(path: impl AsRef<Path>) -> bool {
-    path.as_ref().exists()
+pub fn has(path: &str) -> bool {
+    Path::new(path).exists()
 }
 
-pub fn is_dir(path: impl AsRef<Path>) -> bool {
-    path.as_ref().is_dir()
+pub fn is_dir(path: &str) -> bool {
+    Path::new(path).is_dir()
 }
 
-pub fn is_file(path: impl AsRef<Path>) -> bool {
-    path.as_ref().is_file()
+pub fn is_file(path: &str) -> bool {
+    Path::new(path).is_file()
 }
 
-pub fn cd(path: impl AsRef<Path>) -> Result<(), LizError> {
-    Ok(std::env::set_current_dir(path)?)
+pub fn is_absolute(path: &str) -> bool {
+    if path.starts_with("/") || path.starts_with("\\") {
+        return true;
+    }
+    is_absolute_win(path)
+}
+
+fn is_absolute_win(path: &str) -> bool {
+    let mut first_is_letter = false;
+    let mut second_is_colon = false;
+    for (i, c) in path.chars().enumerate() {
+        if i == 0 {
+            first_is_letter = c.is_alphabetic();
+        } else if i == 1 {
+            second_is_colon = c == ':';
+        } else {
+            break;
+        }
+    }
+    first_is_letter && second_is_colon
+}
+
+pub fn is_relative(path: &str) -> bool {
+    !is_absolute(path)
+}
+
+pub fn cd(path: &str) -> Result<(), LizError> {
+    std::env::set_current_dir(path).map_err(|err| {
+        utils::dbg_p("liz_files", "cd", "set_current_dir", &[("path", path)], err)
+    })?;
+    Ok(())
 }
 
 pub fn pwd() -> Result<String, LizError> {
-    let cd = std::env::current_dir()?;
-    path_absolute(cd)
+    let result = std::env::current_dir()
+        .map_err(|err| utils::dbg("liz_files", "pwd", "current_dir", err))?;
+    Ok(utils::display(result))
 }
 
-pub fn rn(origin: impl AsRef<Path>, destiny: impl AsRef<Path>) -> Result<(), LizError> {
-    Ok(fs::rename(origin, destiny)?)
+pub fn rn(origin: &str, destiny: &str) -> Result<(), LizError> {
+    std::fs::rename(origin, destiny).map_err(|err| {
+        utils::dbg_p(
+            "liz_files",
+            "rn",
+            "rename",
+            &[("origin", origin), ("destiny", destiny)],
+            err,
+        )
+    })?;
+    Ok(())
 }
 
-pub fn cp(origin: impl AsRef<Path>, destiny: impl AsRef<Path>) -> Result<(), LizError> {
-    if is_dir(&origin) {
-        copy_directory(origin, destiny)?;
+pub fn cp(origin: &str, destiny: &str) -> Result<(), LizError> {
+    if is_dir(origin) {
+        copy_directory(origin, destiny).map_err(|err| {
+            utils::dbg_p(
+                "liz_files",
+                "cp",
+                "copy_directory",
+                &[("origin", origin), ("destiny", destiny)],
+                err,
+            )
+        })?;
     } else {
-        copy_file(origin, destiny)?;
+        copy_file(origin, destiny).map_err(|err| {
+            utils::dbg_p(
+                "liz_files",
+                "cp",
+                "copy_file",
+                &[("origin", origin), ("destiny", destiny)],
+                err,
+            )
+        })?;
     }
     Ok(())
 }
 
-pub fn cp_tmp(origin: impl AsRef<Path>, destiny: impl AsRef<Path>) -> Result<(), LizError> {
-    if has(&destiny) {
-        let unknown = "unknown";
-        let file_name = match destiny.as_ref().file_name() {
-            Some(file_name) => match file_name.to_str() {
-                Some(file_stem) => file_stem,
-                None => unknown,
-            },
-            None => unknown,
-        };
-        let mut temp_name = String::from(file_name);
-        let mut destiny_tmp = std::env::temp_dir().join(&temp_name);
-        while destiny_tmp.exists() {
-            temp_name.push_str("_");
-            destiny_tmp = std::env::temp_dir().join(&temp_name);
-        }
-        cp(&destiny, &destiny_tmp)?;
-        rm(&destiny)?;
-    }
-    cp(origin, destiny)
-}
-
-fn copy_directory(origin: impl AsRef<Path>, destiny: impl AsRef<Path>) -> Result<(), LizError> {
-    fs::create_dir_all(&destiny)?;
-    for entry in fs::read_dir(origin)? {
-        let entry = entry?;
-        let file_type = entry.file_type()?;
+fn copy_directory(origin: &str, destiny: &str) -> Result<(), LizError> {
+    std::fs::create_dir_all(destiny).map_err(|err| {
+        utils::dbg_p(
+            "liz_files",
+            "copy_directory",
+            "create_dir_all",
+            &[("destiny", destiny)],
+            err,
+        )
+    })?;
+    for entry in std::fs::read_dir(origin).map_err(|err| {
+        utils::dbg_p(
+            "liz_files",
+            "copy_directory",
+            "read_dir",
+            &[("origin", origin)],
+            err,
+        )
+    })? {
+        let entry = entry.map_err(|err| utils::dbg("liz_files", "copy_directory", "entry", err))?;
+        let file_type = entry
+            .file_type()
+            .map_err(|err| utils::dbg("liz_files", "copy_directory", "file_type", err))?;
+        let entry_str = utils::display(entry.path());
+        let entry_name = path_name(&entry_str);
+        let entry_dest = path_join(&destiny, &entry_name).map_err(|err| {
+            utils::dbg_p(
+                "liz_files",
+                "copy_directory",
+                "path_join",
+                &[("destiny", &destiny), ("entry_name", &entry_name)],
+                err,
+            )
+        })?;
         if file_type.is_dir() {
-            copy_directory(entry.path(), destiny.as_ref().join(entry.file_name()))?;
+            copy_directory(&entry_str, &entry_dest).map_err(|err| {
+                utils::dbg_p(
+                    "liz_files",
+                    "copy_directory",
+                    "copy_directory",
+                    &[("entry_str", &entry_str), ("entry_dest", &entry_dest)],
+                    err,
+                )
+            })?;
         } else {
-            fs::copy(entry.path(), destiny.as_ref().join(entry.file_name()))?;
+            std::fs::copy(&entry_str, &entry_dest).map_err(|err| {
+                utils::dbg_p(
+                    "liz_files",
+                    "copy_directory",
+                    "copy",
+                    &[("entry_str", &entry_str), ("entry_dest", &entry_dest)],
+                    err,
+                )
+            })?;
         }
     }
     Ok(())
 }
 
-fn copy_file(origin: impl AsRef<Path>, destiny: impl AsRef<Path>) -> Result<(), LizError> {
-    if let Some(parent) = destiny.as_ref().parent() {
-        fs::create_dir_all(parent)?;
-    }
-    fs::copy(origin, destiny)?;
+fn copy_file(origin: &str, destiny: &str) -> Result<(), LizError> {
+    let parent = path_parent(destiny).map_err(|err| {
+        utils::dbg_p(
+            "liz_files",
+            "copy_file",
+            "path_parent",
+            &[("destiny", destiny)],
+            err,
+        )
+    })?;
+    std::fs::create_dir_all(&parent).map_err(|err| {
+        utils::dbg_p(
+            "liz_files",
+            "copy_file",
+            "create_dir_all",
+            &[("parent", &parent)],
+            err,
+        )
+    })?;
+    std::fs::copy(origin, destiny).map_err(|err| {
+        utils::dbg_p(
+            "liz_files",
+            "copy_file",
+            "copy",
+            &[("origin", origin), ("destiny", destiny)],
+            err,
+        )
+    })?;
     Ok(())
 }
 
-pub fn mv(origin: impl AsRef<Path>, destiny: impl AsRef<Path>) -> Result<(), LizError> {
-    cp(&origin, &destiny)?;
-    rm(origin)?;
-    Ok(())
-}
-
-pub fn rm(path: impl AsRef<Path>) -> Result<(), LizError> {
-    Ok(if has(&path) {
-        if is_dir(&path) {
-            fs::remove_dir_all(path)?
-        } else {
-            fs::remove_file(path)?
+pub fn cp_tmp(origin: &str, destiny: &str) -> Result<(), LizError> {
+    if has(destiny) {
+        let file_name = path_name(destiny);
+        let mut file_name = String::from(file_name);
+        let mut destiny_tmp = std::env::temp_dir().join(&file_name);
+        while destiny_tmp.exists() {
+            file_name.push_str("_");
+            destiny_tmp = std::env::temp_dir().join(&file_name);
         }
-    })
-}
-
-pub fn mkdir(path: impl AsRef<Path>) -> Result<(), LizError> {
-    fs::create_dir_all(path)?;
+        let destiny_tmp = utils::display(destiny_tmp);
+        cp(destiny, &destiny_tmp).map_err(|err| {
+            utils::dbg_p(
+                "liz_files",
+                "cp_tmp",
+                "cp",
+                &[("destiny", destiny), ("destiny_tmp", &destiny_tmp)],
+                err,
+            )
+        })?;
+        rm(destiny).map_err(|err| {
+            utils::dbg_p("liz_files", "cp_tmp", "rm", &[("destiny", destiny)], err)
+        })?;
+    }
+    cp(origin, destiny).map_err(|err| {
+        utils::dbg_p(
+            "liz_files",
+            "cp_tmp",
+            "cp",
+            &[("origin", origin), ("destiny", destiny)],
+            err,
+        )
+    })?;
     Ok(())
 }
 
-pub fn touch(path: impl AsRef<Path>) -> Result<(), LizError> {
-    fs::OpenOptions::new().create(true).write(true).open(path)?;
+pub fn mv(origin: &str, destiny: &str) -> Result<(), LizError> {
+    cp(origin, destiny).map_err(|err| {
+        utils::dbg_p(
+            "liz_files",
+            "mv",
+            "cp",
+            &[("origin", origin), ("destiny", destiny)],
+            err,
+        )
+    })?;
+    rm(origin).map_err(|err| utils::dbg_p("liz_files", "mv", "rm", &[("origin", origin)], err))?;
+    Ok(())
+}
+
+pub fn rm(path: &str) -> Result<(), LizError> {
+    if !has(path) {
+        return Ok(());
+    }
+    if is_dir(path) {
+        std::fs::remove_dir_all(path)?;
+    } else {
+        std::fs::remove_file(path)?;
+    }
+    Ok(())
+}
+
+pub fn mkdir(path: &str) -> Result<(), LizError> {
+    std::fs::create_dir_all(path)?;
+    Ok(())
+}
+
+pub fn touch(path: &str) -> Result<(), LizError> {
+    std::fs::OpenOptions::new()
+        .create(true)
+        .write(true)
+        .open(path)?;
     Ok(())
 }
 
@@ -112,355 +260,412 @@ pub fn exe_ext() -> &'static str {
     std::env::consts::EXE_EXTENSION
 }
 
-pub fn path_sep() -> String {
-    String::from(std::path::MAIN_SEPARATOR)
+pub fn os_sep() -> &'static char {
+    &std::path::MAIN_SEPARATOR
 }
 
-pub fn path_ext(path: impl AsRef<Path>) -> Result<String, LizError> {
-    let path = path.as_ref();
-    if let Some(path) = path.extension() {
-        if let Some(path_str) = path.to_str() {
-            return Ok(String::from(path_str));
-        }
-    }
-    Ok(String::new())
-}
-
-pub fn path_name(path: impl AsRef<Path>) -> Result<String, LizError> {
-    let path = path.as_ref();
-    if let Some(path) = path.file_name() {
-        if let Some(path_str) = path.to_str() {
-            return Ok(String::from(path_str));
-        }
-    }
-    Ok(String::new())
-}
-
-pub fn path_stem(path: impl AsRef<Path>) -> Result<String, LizError> {
-    let path = path.as_ref();
-    if let Some(path) = path.file_stem() {
-        if let Some(path_str) = path.to_str() {
-            return Ok(String::from(path_str));
-        }
-    }
-    Ok(String::new())
-}
-
-pub fn path_absolute(path: impl AsRef<Path>) -> Result<String, LizError> {
-    let path = path.as_ref();
-    let path = if path.is_relative() {
-        std::fs::canonicalize(path)?
+pub fn path_sep(path: &str) -> &'static str {
+    if path.contains("\\") {
+        "\\"
     } else {
-        path.to_path_buf()
-    };
-    let path_str = path
-        .to_str()
-        .ok_or("Could not convert the path to String.")?;
-    let path_str = if path_str.starts_with("\\\\?\\") || path_str.starts_with("//?/") {
-        &path_str[4..]
-    } else {
-        &path_str
-    };
-    Ok(String::from(path_str))
+        "/"
+    }
 }
 
-pub fn path_relative(path: impl AsRef<Path>, base: impl AsRef<Path>) -> Result<String, LizError> {
-    let result = path_relative_from(path, base).ok_or("Could not make relative.")?;
-    Ok(format!("{}", result.display()))
+pub fn path_parts(path: &str) -> Vec<&str> {
+    let mut result: Vec<&str> = path.split(path_sep(path)).collect();
+    if path.starts_with("/") {
+        result.insert(0, "/");
+    }
+    result
 }
 
-fn path_relative_from(path: impl AsRef<Path>, base: impl AsRef<Path>) -> Option<PathBuf> {
-    use std::path::Component;
-    let path = path.as_ref();
-    let base = base.as_ref();
-    if path.is_absolute() != base.is_absolute() {
-        if path.is_absolute() {
-            Some(PathBuf::from(path))
-        } else {
-            None
+pub fn path_parts_join(parts: &[&str]) -> String {
+    if parts.is_empty() {
+        return String::default();
+    }
+    let mut result = String::new();
+    let mut start = 1;
+    let end = parts.len();
+    if parts[0] == "/" {
+        result.push('/');
+        if end > 1 {
+            result.push_str(parts[1]);
+            start = 2;
         }
     } else {
-        let mut ita = path.components();
-        let mut itb = base.components();
-        let mut comps: Vec<Component> = vec![];
-        loop {
-            match (ita.next(), itb.next()) {
-                (None, None) => break,
-                (Some(a), None) => {
-                    comps.push(a);
-                    comps.extend(ita.by_ref());
-                    break;
-                }
-                (None, _) => comps.push(Component::ParentDir),
-                (Some(a), Some(b)) if comps.is_empty() && a == b => (),
-                (Some(a), Some(b)) if b == Component::CurDir => comps.push(a),
-                (Some(_), Some(b)) if b == Component::ParentDir => return None,
-                (Some(a), Some(_)) => {
-                    comps.push(Component::ParentDir);
-                    for _ in itb {
-                        comps.push(Component::ParentDir);
-                    }
-                    comps.push(a);
-                    comps.extend(ita.by_ref());
-                    break;
-                }
+        result.push_str(parts[0]);
+    }
+    let os_sep = *os_sep();
+    for index in start..end {
+        result.push(os_sep);
+        result.push_str(parts[index]);
+    }
+    result
+}
+
+pub fn path_name(path: &str) -> &str {
+    let parts = path_parts(path);
+    if parts.len() > 0 {
+        let last_part = parts[parts.len() - 1];
+        return last_part;
+    }
+    ""
+}
+
+pub fn path_stem(path: &str) -> &str {
+    let parts = path_parts(path);
+    if parts.len() > 0 {
+        let last_part = parts[parts.len() - 1];
+        if let Some(last_dot) = last_part.rfind(".") {
+            return &last_part[0..last_dot];
+        }
+    }
+    ""
+}
+
+pub fn path_ext(path: &str) -> &str {
+    let parts = path_parts(path);
+    if parts.len() > 0 {
+        let last_part = parts[parts.len() - 1];
+        if let Some(last_dot) = last_part.rfind(".") {
+            return &last_part[last_dot..];
+        }
+    }
+    ""
+}
+
+pub fn path_absolute(path: &str) -> Result<String, LizError> {
+    if is_absolute(path) {
+        return Ok(String::from(path));
+    }
+    let wd = pwd()?;
+    let mut base_parts = path_parts(&wd);
+    let path_parts = path_parts(&path);
+    for path_part in path_parts {
+        if path_part == "." {
+            continue;
+        } else if path_part == ".." {
+            if base_parts.pop().is_none() {
+                return Err(utils::dbg_p(
+                    "liz_files",
+                    "path_absolute",
+                    "pop",
+                    &[("path", path)],
+                    "the base path went empty",
+                ));
             }
+        } else {
+            base_parts.push(path_part);
         }
-        Some(comps.iter().map(|c| c.as_os_str()).collect())
+    }
+    Ok(path_parts_join(base_parts.as_slice()))
+}
+
+pub fn path_relative(path: &str, base: &str) -> Result<String, LizError> {
+    if !is_absolute(path) {
+        return Ok(String::from(path));
+    }
+    let base = if !is_absolute(base) {
+        path_absolute(base)?
+    } else {
+        String::from(base)
+    };
+    if !path.starts_with(&base) {
+        return Err(utils::dbg_p(
+            "liz_files",
+            "path_relative",
+            "starts",
+            &[("path", path), ("base", &base)],
+            "path does not starts with the base",
+        ));
+    }
+    let sep = path_sep(path);
+    let result = &path[base.len()..];
+    if result.starts_with(sep) {
+        Ok(format!(".{}", result))
+    } else {
+        Ok(String::from(result))
     }
 }
 
-pub fn path_parent(path: impl AsRef<Path>) -> Result<String, LizError> {
+pub fn path_parent(path: &str) -> Result<String, LizError> {
     let path = path_absolute(path)?;
-    let path = Path::new(&path);
-    if let Some(path) = path.parent() {
-        if let Some(path_str) = path.to_str() {
-            return Ok(String::from(path_str));
-        }
+    let mut parts = path_parts(&path);
+    if parts.pop().is_none() {
+        return Err(utils::dbg_p(
+            "liz_files",
+            "path_parent",
+            "pop",
+            &[("path", &path)],
+            "the path parts went empty",
+        ));
     }
-    Ok(String::new())
+    Ok(path_parts_join(parts.as_slice()))
 }
 
-pub fn path_parent_find(path: impl AsRef<Path>, with_name: &str) -> Result<String, LizError> {
-    let mut path = format!("{}", PathBuf::from(path.as_ref()).display());
+pub fn path_parent_find(path: &str, with_name: &str) -> Result<String, LizError> {
+    let path = path_absolute(path)?;
+    let mut parts = path_parts(&path);
     loop {
-        let parent = path_parent(&path)?;
-        if parent.is_empty() {
-            break;
+        if let Some(part) = parts.pop() {
+            if part == with_name {
+                parts.push(part);
+                return Ok(path_parts_join(parts.as_slice()));
+            }
         } else {
-            let name = path_stem(&parent)?;
-            if name == with_name {
-                return Ok(parent);
-            } else {
-                path = parent;
-            }
+            return Err(utils::dbg_p(
+                "liz_files",
+                "path_parent_find",
+                "pop",
+                &[("path", &path)],
+                "the path parts went empty",
+            ));
         }
     }
-    Ok(String::new())
 }
 
-pub fn path_join(path: impl AsRef<Path>, child: &str) -> Result<String, LizError> {
-    let path = path.as_ref().join(child);
-    let path_str = path.to_str().ok_or("Could not get the display path.")?;
-    Ok(String::from(path_str))
-}
-
-pub fn path_list(path: impl AsRef<Path>) -> Result<Vec<String>, LizError> {
-    let mut result = Vec::new();
-    for entry in fs::read_dir(path)? {
-        if let Ok(entry) = entry {
-            if let Some(path) = entry.path().to_str() {
-                result.push(String::from(path));
-            }
-        }
+pub fn path_join(path: &str, child: &str) -> Result<String, LizError> {
+    if is_absolute(child) {
+        return Err(utils::dbg_p(
+            "liz_files",
+            "path_join",
+            "is_absolute",
+            &[("child", &child)],
+            "the child is absolute",
+        ));
     }
-    return Ok(result);
-}
-
-pub fn path_list_subs(path: impl AsRef<Path>) -> Result<Vec<String>, LizError> {
-    let mut results = Vec::new();
-    path_list_subs_make(path, &mut results)?;
-    return Ok(results);
-}
-
-fn path_list_subs_make(path: impl AsRef<Path>, results: &mut Vec<String>) -> Result<(), LizError> {
-    for entry in fs::read_dir(&path)? {
-        if let Ok(entry) = entry {
-            if let Some(path) = entry.path().to_str() {
-                results.push(String::from(path));
-                let file_type = entry.file_type()?;
-                if file_type.is_dir() {
-                    path_list_subs_make(&path, results)?;
-                }
-            }
+    let mut base_parts = path_parts(path)
+        .into_iter()
+        .map(String::from)
+        .collect::<Vec<String>>();
+    let inital_size = base_parts.len();
+    let has_more = !is_absolute(path);
+    let mut take_more = false;
+    let child_parts = path_parts(child);
+    let mut child_index = 0;
+    loop {
+        if child_index >= child_parts.len() {
+            break;
         }
-    }
-    return Ok(());
-}
-
-pub fn path_list_dirs(path: impl AsRef<Path>) -> Result<Vec<String>, LizError> {
-    let mut result = Vec::new();
-    for entry in fs::read_dir(path)? {
-        if let Ok(entry) = entry {
-            let file_type = entry.file_type()?;
-            if file_type.is_dir() {
-                if let Some(path) = entry.path().to_str() {
-                    result.push(String::from(path));
-                }
-            }
-        }
-    }
-    return Ok(result);
-}
-
-pub fn path_list_dirs_subs(path: impl AsRef<Path>) -> Result<Vec<String>, LizError> {
-    let mut results = Vec::new();
-    path_list_dirs_subs_make(path, &mut results)?;
-    return Ok(results);
-}
-
-fn path_list_dirs_subs_make(
-    path: impl AsRef<Path>,
-    results: &mut Vec<String>,
-) -> Result<(), LizError> {
-    for entry in fs::read_dir(&path)? {
-        if let Ok(entry) = entry {
-            if let Some(path) = entry.path().to_str() {
-                let file_type = entry.file_type()?;
-                if file_type.is_dir() {
-                    results.push(String::from(path));
-                    path_list_dirs_subs_make(&path, results)?;
-                }
-            }
-        }
-    }
-    return Ok(());
-}
-
-pub fn path_list_files(path: impl AsRef<Path>) -> Result<Vec<String>, LizError> {
-    let mut result = Vec::new();
-    for entry in fs::read_dir(path)? {
-        if let Ok(entry) = entry {
-            let file_type = entry.file_type()?;
-            if file_type.is_file() {
-                if let Some(path) = entry.path().to_str() {
-                    result.push(String::from(path));
-                }
-            }
-        }
-    }
-    return Ok(result);
-}
-
-pub fn path_list_files_subs(path: impl AsRef<Path>) -> Result<Vec<String>, LizError> {
-    let mut results = Vec::new();
-    path_list_files_subs_make(path, &mut results)?;
-    return Ok(results);
-}
-
-fn path_list_files_subs_make(
-    path: impl AsRef<Path>,
-    results: &mut Vec<String>,
-) -> Result<(), LizError> {
-    for entry in fs::read_dir(&path)? {
-        if let Ok(entry) = entry {
-            if let Some(path) = entry.path().to_str() {
-                let file_type = entry.file_type()?;
-                if file_type.is_file() {
-                    results.push(String::from(path));
-                }
-                if file_type.is_dir() {
-                    path_list_files_subs_make(&path, results)?;
-                }
-            }
-        }
-    }
-    return Ok(());
-}
-
-pub fn path_list_files_ext(path: impl AsRef<Path>, ext: &str) -> Result<Vec<String>, LizError> {
-    let mut result = Vec::new();
-    let ext = ext.to_lowercase();
-    for entry in fs::read_dir(path)? {
-        if let Ok(entry) = entry {
-            let file_type = entry.file_type()?;
-            if file_type.is_file() {
-                if let Some(path) = entry.path().to_str() {
-                    if path.to_lowercase().ends_with(&ext) {
-                        result.push(String::from(path));
+        let part = child_parts[child_index];
+        child_index = child_index + 1;
+        if part == "." {
+            continue;
+        } else if part == ".." {
+            if base_parts.pop().is_none() {
+                if !take_more && has_more {
+                    let abs_path = path_absolute(path)?;
+                    let abs_parts = path_parts(&abs_path);
+                    let dif_parts = abs_parts.len() - inital_size;
+                    for new_index in 0..dif_parts {
+                        base_parts.insert(new_index, abs_parts[new_index].into());
                     }
+                    take_more = true;
+                    child_index = child_index - 1;
+                } else {
+                    return Err(utils::dbg_p(
+                        "liz_files",
+                        "path_join",
+                        "pop",
+                        &[("path", &path), ("child", &child)],
+                        "the path parts went empty",
+                    ));
                 }
+            }
+        } else {
+            base_parts.push(part.into());
+        }
+    }
+    Ok(path_parts_join(
+        base_parts
+            .iter()
+            .map(|p| p.as_ref())
+            .collect::<Vec<&str>>()
+            .as_slice(),
+    ))
+}
+
+pub fn path_list(path: &str) -> Result<Vec<String>, LizError> {
+    let mut results = Vec::new();
+    let entries = std::fs::read_dir(path)?;
+    for entry in entries {
+        let entry = entry?;
+        results.push(utils::display(entry.path()));
+    }
+    Ok(results)
+}
+
+pub fn path_list_in(path: &str) -> Result<Vec<String>, LizError> {
+    let mut results = Vec::new();
+    path_list_in_make(path, &mut results)?;
+    Ok(results)
+}
+
+fn path_list_in_make(path: &str, results: &mut Vec<String>) -> Result<(), LizError> {
+    for entry in std::fs::read_dir(path)? {
+        let entry = entry?;
+        results.push(utils::display(entry.path()));
+        let file_type = entry.file_type()?;
+        if file_type.is_dir() {
+            path_list_in_make(path, results)?;
+        }
+    }
+    Ok(())
+}
+
+pub fn path_list_dirs(path: &str) -> Result<Vec<String>, LizError> {
+    let mut results = Vec::new();
+    let entries = std::fs::read_dir(path)?;
+    for entry in entries {
+        let entry = entry?;
+        let file_type = entry.file_type()?;
+        if file_type.is_dir() {
+            results.push(utils::display(entry.path()));
+        }
+    }
+    Ok(results)
+}
+
+pub fn path_list_dirs_in(path: &str) -> Result<Vec<String>, LizError> {
+    let mut results = Vec::new();
+    path_list_dirs_in_make(path, &mut results)?;
+    return Ok(results);
+}
+
+fn path_list_dirs_in_make(path: &str, results: &mut Vec<String>) -> Result<(), LizError> {
+    for entry in std::fs::read_dir(path)? {
+        let entry = entry?;
+        let file_type = entry.file_type()?;
+        if file_type.is_dir() {
+            results.push(utils::display(entry.path()));
+            path_list_dirs_in_make(path, results)?;
+        }
+    }
+    Ok(())
+}
+
+pub fn path_list_files(path: &str) -> Result<Vec<String>, LizError> {
+    let mut results = Vec::new();
+    let entries = std::fs::read_dir(path)?;
+    for entry in entries {
+        let entry = entry?;
+        let file_type = entry.file_type()?;
+        if file_type.is_file() {
+            results.push(utils::display(entry.path()));
+        }
+    }
+    Ok(results)
+}
+
+pub fn path_list_files_in(path: &str) -> Result<Vec<String>, LizError> {
+    let mut results = Vec::new();
+    path_list_files_in_make(path, &mut results)?;
+    Ok(results)
+}
+
+fn path_list_files_in_make(path: &str, results: &mut Vec<String>) -> Result<(), LizError> {
+    for entry in std::fs::read_dir(path)? {
+        let entry = entry?;
+        let file_type = entry.file_type()?;
+        if file_type.is_dir() {
+            path_list_files_in_make(path, results)?;
+        }
+        if file_type.is_file() {
+            results.push(utils::display(entry.path()));
+        }
+    }
+    Ok(())
+}
+
+pub fn path_list_files_ext(path: &str, ext: &str) -> Result<Vec<String>, LizError> {
+    let mut results = Vec::new();
+    let entries = std::fs::read_dir(path)?;
+    for entry in entries {
+        let entry = entry?;
+        let file_type = entry.file_type()?;
+        if file_type.is_file() {
+            let name = utils::display(entry.path());
+            if name.to_lowercase().ends_with(&ext.to_lowercase()) {
+                results.push(name);
             }
         }
     }
-    return Ok(result);
+    Ok(results)
 }
 
-pub fn path_list_files_exts(
-    path: impl AsRef<Path>,
-    exts: &[&str],
-) -> Result<Vec<String>, LizError> {
-    let mut result = Vec::new();
-    for entry in fs::read_dir(path)? {
-        if let Ok(entry) = entry {
-            let file_type = entry.file_type()?;
-            if file_type.is_file() {
-                if let Some(path) = entry.path().to_str() {
-                    for ext in exts {
-                        if path.to_lowercase().ends_with(&ext.to_lowercase()) {
-                            result.push(String::from(path));
-                        }
-                    }
-                }
-            }
-        }
-    }
-    return Ok(result);
+pub fn path_list_files_ext_in(path: &str, ext: &str) -> Result<Vec<String>, LizError> {
+    let mut results = Vec::new();
+    path_list_files_ext_in_make(path, ext, &mut results)?;
+    Ok(results)
 }
 
-pub fn path_list_files_ext_subs(
-    path: impl AsRef<Path>,
+fn path_list_files_ext_in_make(
+    path: &str,
     ext: &str,
-) -> Result<Vec<String>, LizError> {
-    let mut results = Vec::new();
-    let ext = ext.to_lowercase();
-    path_list_files_ext_subs_make(path, &ext, &mut results)?;
-    return Ok(results);
-}
-
-fn path_list_files_ext_subs_make(
-    path: impl AsRef<Path>,
-    ext: &str,
     results: &mut Vec<String>,
 ) -> Result<(), LizError> {
-    for entry in fs::read_dir(&path)? {
-        if let Ok(entry) = entry {
-            if let Some(path) = entry.path().to_str() {
-                let file_type = entry.file_type()?;
-                if file_type.is_file() {
-                    if path.to_lowercase().ends_with(&ext) {
-                        results.push(String::from(path));
-                    }
-                }
-                if file_type.is_dir() {
-                    path_list_files_ext_subs_make(&path, ext, results)?;
+    for entry in std::fs::read_dir(path)? {
+        let entry = entry?;
+        let file_type = entry.file_type()?;
+        if file_type.is_dir() {
+            path_list_files_ext_in_make(path, ext, results)?;
+        }
+        if file_type.is_file() {
+            let name = utils::display(entry.path());
+            if name.to_lowercase().ends_with(&ext.to_lowercase()) {
+                results.push(name);
+            }
+        }
+    }
+    Ok(())
+}
+
+pub fn path_list_files_exts(path: &str, exts: &[&str]) -> Result<Vec<String>, LizError> {
+    let mut results = Vec::new();
+    let entries = std::fs::read_dir(path)?;
+    for entry in entries {
+        let entry = entry?;
+        let file_type = entry.file_type()?;
+        if file_type.is_file() {
+            let name = utils::display(entry.path());
+            for ext in exts {
+                if name.to_lowercase().ends_with(&ext.to_lowercase()) {
+                    results.push(name);
+                    break;
                 }
             }
         }
     }
-    return Ok(());
+    Ok(results)
 }
 
-pub fn path_list_files_exts_subs(
-    path: impl AsRef<Path>,
-    exts: &[&str],
-) -> Result<Vec<String>, LizError> {
+pub fn path_list_files_exts_in(path: &str, exts: &[&str]) -> Result<Vec<String>, LizError> {
     let mut results = Vec::new();
-    path_list_files_exts_subs_make(path, &exts, &mut results)?;
-    return Ok(results);
+    path_list_files_exts_in_make(path, exts, &mut results)?;
+    Ok(results)
 }
 
-fn path_list_files_exts_subs_make(
-    path: impl AsRef<Path>,
+fn path_list_files_exts_in_make(
+    path: &str,
     exts: &[&str],
     results: &mut Vec<String>,
 ) -> Result<(), LizError> {
-    for entry in fs::read_dir(&path)? {
-        if let Ok(entry) = entry {
-            if let Some(path) = entry.path().to_str() {
-                let file_type = entry.file_type()?;
-                if file_type.is_file() {
-                    for ext in exts {
-                        if path.to_lowercase().ends_with(&ext.to_lowercase()) {
-                            results.push(String::from(path));
-                        }
-                    }
-                }
-                if file_type.is_dir() {
-                    path_list_files_exts_subs_make(&path, exts, results)?;
+    for entry in std::fs::read_dir(path)? {
+        let entry = entry?;
+        let file_type = entry.file_type()?;
+        if file_type.is_dir() {
+            path_list_files_exts_in_make(path, exts, results)?;
+        }
+        if file_type.is_file() {
+            let name = utils::display(entry.path());
+            for ext in exts {
+                if name.to_lowercase().ends_with(&ext.to_lowercase()) {
+                    results.push(name);
+                    break;
                 }
             }
         }
     }
-    return Ok(());
+    Ok(())
 }

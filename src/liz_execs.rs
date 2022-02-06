@@ -2,8 +2,6 @@ use rlua::{Context, Table, UserData};
 use simple_error::SimpleError;
 
 use std::io::{Read, Write};
-use std::path::Path;
-use std::path::PathBuf;
 use std::process::{Command, Stdio};
 use std::sync::Arc;
 use std::sync::RwLock;
@@ -55,35 +53,32 @@ impl Spawned {
 
 impl UserData for Spawned {}
 
-pub fn spawn(
-    path: impl AsRef<Path>,
-    args: Option<Vec<String>>,
-    context: Context,
-) -> Result<Spawned, LizError> {
-    let globals = context.globals();
+pub fn spawn(ctx: Context, path: &str, args: Option<Vec<String>>) -> Result<Spawned, LizError> {
+    let globals = ctx.globals();
     let liz: Table = globals.get("liz")?;
 
-    let path = path.as_ref();
-    let path: PathBuf = if path.is_relative() {
-        let stack_dir: String = utils::get_stack_dir(&liz)?;
-        let base_dir = Path::new(&stack_dir);
-        let path_join = base_dir.join(path);
-        path_join.into()
+    let path = utils::add_liz_extension(path);
+    let path = if liz_files::is_relative(&path) {
+        let stack_dir = utils::get_stack_dir(&liz)?;
+        liz_files::path_join(&stack_dir, &path)?
     } else {
-        path.into()
+        path
     };
 
-    let mut spawn_path = liz_files::path_absolute(path)?;
-    let spawn_path_check = spawn_path.to_lowercase();
-    if !(spawn_path_check.ends_with(".liz") || spawn_path_check.ends_with(".lua")) {
-        spawn_path.push_str(".liz");
-    }
+    let spawn_pwd = liz_files::pwd()?;
+    liz.set("spawn_pwd", spawn_pwd)?;
+
+    let spawn_dir = liz_files::path_parent(&path)?;
+    utils::put_stack_dir(&ctx, &liz, spawn_dir.clone())?;
+    liz.set("spawn_dir", spawn_dir)?;
+
+    let spawn_path = liz_files::path_absolute(&path)?;
     liz.set("spawn_path", spawn_path.clone())?;
 
     let spawned = Spawned::new();
     let spawned_clone = spawned.clone();
     thread::spawn(move || {
-        let returned = crate::run(spawn_path, args);
+        let returned = crate::run(&spawn_path, args);
         {
             let mut lock = spawned_clone.results.write().unwrap();
             *lock = Some(returned);
@@ -96,10 +91,10 @@ pub fn join(spawned: Spawned) -> Result<Vec<String>, LizError> {
     spawned.join()
 }
 
-pub fn cmd<S: AsRef<str>, P: AsRef<Path>>(
+pub fn cmd(
     name: &str,
-    args: &[S],
-    dir: Option<P>,
+    args: &[impl AsRef<str>],
+    dir: Option<impl AsRef<str>>,
     print: Option<bool>,
     throw: Option<bool>,
 ) -> Result<(i32, String), LizError> {
@@ -107,7 +102,7 @@ pub fn cmd<S: AsRef<str>, P: AsRef<Path>>(
     for arg in args {
         cmd.arg(arg.as_ref());
     }
-    let dir: PathBuf = if let Some(dir) = dir {
+    let dir: String = if let Some(dir) = dir {
         dir.as_ref().into()
     } else {
         ".".into()
@@ -149,4 +144,20 @@ pub fn pause() {
         write!(stdout, "\n").unwrap();
         stdout.flush().unwrap();
     }
+}
+
+pub fn get_os() -> &'static str {
+    std::env::consts::OS
+}
+
+pub fn is_lin() -> bool {
+    std::env::consts::OS == "linux"
+}
+
+pub fn is_mac() -> bool {
+    std::env::consts::OS == "macos"
+}
+
+pub fn is_win() -> bool {
+    std::env::consts::OS == "windows"
 }
