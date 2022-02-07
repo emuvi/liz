@@ -19,7 +19,7 @@ pub fn inject_all(ctx: Context, path: &str, args: Option<Vec<String>>) -> Result
     let path = if liz_files::is_symlink(&path) {
         liz_files::path_walk(&path).map_err(|err| debug!("path_walk", &["path", path], err))?
     } else {
-        path.into()
+        path
     };
 
     let rise_pwd = liz_files::pwd().map_err(|err| debug!("pwd", (), err))?;
