@@ -9,7 +9,7 @@ use std::thread;
 use std::time::Duration;
 
 use crate::liz_files;
-use crate::utils;
+use crate::utils::{self, debug};
 use crate::LizError;
 
 #[derive(Clone)]
@@ -55,25 +55,39 @@ impl UserData for Spawned {}
 
 pub fn spawn(ctx: Context, path: &str, args: Option<Vec<String>>) -> Result<Spawned, LizError> {
     let globals = ctx.globals();
-    let liz: Table = globals.get("liz")?;
+    let liz: Table = globals
+        .get("liz")
+        .map_err(|err| debug!("get", &[("liz")], err))?;
 
     let path = utils::add_liz_extension(path);
     let path = if liz_files::is_relative(&path) {
-        let stack_dir = utils::get_stack_dir(&liz)?;
-        liz_files::path_join(&stack_dir, &path)?
+        let stack_dir =
+            utils::get_stack_dir(&liz).map_err(|err| debug!("get_stack_dir", (), err))?;
+        liz_files::path_join(&stack_dir, &path).map_err(|err| {
+            debug!(
+                "path_join",
+                &[("stack_dir", stack_dir), ("path", path)],
+                err
+            )
+        })?
     } else {
         path
     };
 
-    let spawn_pwd = liz_files::pwd()?;
+    let spawn_pwd = liz_files::pwd().map_err(|err| debug!("pwd", (), err))?;
     liz.set("spawn_pwd", spawn_pwd)?;
 
-    let spawn_dir = liz_files::path_parent(&path)?;
-    utils::put_stack_dir(&ctx, &liz, spawn_dir.clone())?;
-    liz.set("spawn_dir", spawn_dir)?;
+    let spawn_dir = liz_files::path_parent(&path)
+        .map_err(|err| debug!("path_parent", &[("path", path)], err))?;
+    utils::put_stack_dir(&ctx, &liz, spawn_dir.clone())
+        .map_err(|err| debug!("put_stack_dir", &[("spawn_dir", spawn_dir)], err))?;
+    liz.set("spawn_dir", spawn_dir)
+        .map_err(|err| debug!("set", &[("spawn_dir", spawn_dir)], err))?;
 
-    let spawn_path = liz_files::path_absolute(&path)?;
-    liz.set("spawn_path", spawn_path.clone())?;
+    let spawn_path = liz_files::path_absolute(&path)
+        .map_err(|err| debug!("path_absolute", &[("path", path)], err))?;
+    liz.set("spawn_path", spawn_path.clone())
+        .map_err(|err| debug!("set", &[("spawn_path", spawn_path)], err))?;
 
     let spawned = Spawned::new();
     let spawned_clone = spawned.clone();
@@ -107,12 +121,19 @@ pub fn cmd(
     } else {
         ".".into()
     };
-    cmd.current_dir(dir);
+    cmd.current_dir(&dir);
     let mut child = cmd
         .stdin(Stdio::null())
         .stderr(Stdio::piped())
         .stdout(Stdio::piped())
-        .spawn()?;
+        .spawn()
+        .map_err(|err| {
+            debug!(
+                "spawn",
+                &[("name", name), ("args", args), ("dir", dir)],
+                err
+            )
+        })?;
     let mut out = String::new();
     child.stderr.take().unwrap().read_to_string(&mut out)?;
     child.stdout.take().unwrap().read_to_string(&mut out)?;

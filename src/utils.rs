@@ -212,26 +212,54 @@ fn from_json_value<'a>(ctx: Context<'a>, value: JsonValue) -> Result<LuaValue<'a
     Ok(result)
 }
 
-pub fn dbg(file: &str, func: &str, call: &str, err: impl std::error::Error) -> LizError {
-    throw(format!(
-        "Could not perform {}::{}::{} because {}",
-        file, func, call, err
-    ))
-}
-
-pub fn dbg_p(
-    file: &str,
-    func: &str,
-    call: &str,
-    params: &[(&str, &(impl std::fmt::Debug + ?Sized))],
-    err: impl std::fmt::Display,
-) -> LizError {
-    throw(format!(
-        "Could not perform {}::{}::{} with {:?} because {}",
-        file, func, call, params, err
-    ))
-}
-
 fn throw(message: String) -> LizError {
     Box::new(simple_error::SimpleError::new(message))
 }
+
+pub fn dbg_v(
+    file: &str,
+    line: u32,
+    func: &str,
+    call: &str,
+    vals: String,
+    err: impl std::fmt::Display,
+) -> LizError {
+    throw(format!(
+        "Could not perform {}[{}] - {} on {} with {} because {}",
+        file, line, func, call, vals, err
+    ))
+}
+
+macro_rules! dbg_fnc {
+    () => {{
+        fn f() {}
+        fn type_name_of<T>(_: T) -> &'static str {
+            std::any::type_name::<T>()
+        }
+        let name = type_name_of(f);
+        &name[..name.len() - 3].trim_end_matches("::{{closure}}")
+    }}
+}
+
+macro_rules! dbg_fmt {
+    ($expression:expr) => {
+        format!("{:?}", stringify!($expression))
+    };
+}
+
+macro_rules! debug {
+    ($call:expr, $vals:expr, $err:expr) => {
+        crate::utils::dbg_v(
+            file!(),
+            line!(),
+            crate::utils::dbg_fnc!(),
+            $call,
+            crate::utils::dbg_fmt!(vals),
+            $err,
+        )
+    };
+}
+
+pub(crate) use dbg_fnc;
+pub(crate) use dbg_fmt;
+pub(crate) use debug;

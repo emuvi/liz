@@ -1,7 +1,3 @@
-use rlua::{Context, Lua, MultiValue, Table};
-
-use std::error::Error;
-
 pub mod liz_codes;
 pub mod liz_execs;
 pub mod liz_files;
@@ -17,6 +13,12 @@ mod wiz_execs;
 mod wiz_files;
 mod wiz_texts;
 mod wiz_trans;
+
+use rlua::{Context, Lua, MultiValue, Table};
+
+use std::error::Error;
+
+use utils::debug;
 
 pub type LizError = Box<dyn Error + Send + Sync>;
 
@@ -44,7 +46,7 @@ pub fn race(path: &str, handler: &Lua) -> Result<Vec<String>, LizError> {
     handler.context(|ctx| result = Some(race_in(ctx, path)));
     result
         .ok_or("Could not reach a result")
-        .map_err(|err| utils::dbg_p("lib", "race", "ok_or", &[("path", path)], err))?
+        .map_err(|err| debug!("ok_or", &[("path", path)], err))?
 }
 
 pub fn race_in(ctx: Context, path: &str) -> Result<Vec<String>, LizError> {

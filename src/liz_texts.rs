@@ -1,11 +1,11 @@
 use simple_error::simple_error;
 
-use std::fs::{self, File};
+use std::fs::File;
 use std::io::{prelude::*, BufReader};
 use std::sync::{Arc, Mutex};
 use std::thread::JoinHandle;
 
-use crate::utils;
+use crate::utils::debug;
 use crate::LizError;
 
 pub fn ask(message: &str) -> Result<String, LizError> {
@@ -14,7 +14,7 @@ pub fn ask(message: &str) -> Result<String, LizError> {
     let mut buffer = String::new();
     std::io::stdin()
         .read_line(&mut buffer)
-        .map_err(|err| utils::dbg("liz_texts", "ask", "read_line", err))?;
+        .map_err(|err| debug!("read_line", (), err))?;
     Ok(buffer)
 }
 
@@ -24,10 +24,10 @@ pub fn ask_int(message: &str) -> Result<i32, LizError> {
     let mut buffer = String::new();
     std::io::stdin()
         .read_line(&mut buffer)
-        .map_err(|err| utils::dbg("liz_texts", "ask_int", "read_line", err))?;
+        .map_err(|err| debug!("read_line", (), err))?;
     let result = buffer
         .parse::<i32>()
-        .map_err(|err| utils::dbg("liz_texts", "ask_int", "parse", err))?;
+        .map_err(|err| debug!("parse", (), err))?;
     Ok(result)
 }
 
@@ -257,57 +257,48 @@ pub fn text_file_founds(found: &str) -> Vec<String> {
 }
 
 pub fn read(path: &str) -> Result<String, LizError> {
-    let mut file = fs::OpenOptions::new()
+    let mut file = std::fs::OpenOptions::new()
         .create(false)
         .write(false)
         .read(true)
         .open(path)
-        .map_err(|err| utils::dbg_p("liz_texts", "read", "open", &[("path", path)], err))?;
+        .map_err(|err| debug!("open", &[("path", path)], err))?;
     let mut result = String::new();
-    file.read_to_string(&mut result).map_err(|err| {
-        utils::dbg_p(
-            "liz_texts",
-            "read",
-            "read_to_string",
-            &[("path", path)],
-            err,
-        )
-    })?;
+    file.read_to_string(&mut result)
+        .map_err(|err| debug!("read_to_string", &[("path", path)], err))?;
     Ok(result)
 }
 
 pub fn write(path: &str, contents: &str) -> Result<(), LizError> {
-    let mut file = fs::OpenOptions::new()
+    let mut file = std::fs::OpenOptions::new()
         .create(true)
         .write(true)
         .truncate(true)
         .append(false)
         .open(path)
-        .map_err(|err| utils::dbg_p("texts", "write", "open", &[("path", path)], err))?;
-    Ok(write!(file, "{}", contents)
-        .map_err(|err| utils::dbg_p("texts", "write", "write", &[("path", path)], err))?)
+        .map_err(|err| debug!("open", &[("path", path)], err))?;
+    Ok(write!(file, "{}", contents).map_err(|err| debug!("write", &[("path", path)], err))?)
 }
 
 pub fn append(path: &str, contents: &str) -> Result<(), LizError> {
-    let mut file = fs::OpenOptions::new()
+    let mut file = std::fs::OpenOptions::new()
         .create(true)
         .write(true)
         .truncate(false)
         .append(true)
         .open(path)
-        .map_err(|err| utils::dbg_p("texts", "append", "open", &[("path", path)], err))?;
-    Ok(writeln!(file, "{}", contents)
-        .map_err(|err| utils::dbg_p("texts", "append", "write", &[("path", path)], err))?)
+        .map_err(|err| debug!("open", &[("path", path)], err))?;
+    Ok(writeln!(file, "{}", contents).map_err(|err| debug!("writeln", &[("path", path)], err))?)
 }
 
 pub fn write_lines(path: &str, lines: &[impl AsRef<str>]) -> Result<(), LizError> {
-    let mut file = fs::OpenOptions::new()
+    let mut file = std::fs::OpenOptions::new()
         .create(true)
         .write(true)
         .truncate(true)
         .append(false)
         .open(path)
-        .map_err(|err| utils::dbg_p("texts", "write_lines", "open", &[("path", path)], err))?;
+        .map_err(|err| debug!("open", &[("path", path)], err))?;
     for line in lines {
         writeln!(file, "{}", line.as_ref())?;
     }
@@ -315,17 +306,16 @@ pub fn write_lines(path: &str, lines: &[impl AsRef<str>]) -> Result<(), LizError
 }
 
 pub fn append_lines(path: &str, lines: &[impl AsRef<str>]) -> Result<(), LizError> {
-    let mut file = fs::OpenOptions::new()
+    let mut file = std::fs::OpenOptions::new()
         .create(true)
         .write(true)
         .truncate(false)
         .append(true)
         .open(path)
-        .map_err(|err| utils::dbg_p("liz_texts", "append_lines", "open", &[("path", path)], err))?;
+        .map_err(|err| debug!("open", &[("path", path)], err))?;
     for line in lines {
-        writeln!(file, "{}", line.as_ref()).map_err(|err| {
-            utils::dbg_p("liz_texts", "append_lines", "write", &[("path", path)], err)
-        })?;
+        writeln!(file, "{}", line.as_ref())
+            .map_err(|err| debug!("write", &[("path", path)], err))?;
     }
     Ok(())
 }

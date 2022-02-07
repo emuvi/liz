@@ -1,6 +1,6 @@
 use std::path::Path;
 
-use crate::utils;
+use crate::utils::{self, debug};
 use crate::LizError;
 
 pub fn has(path: &str) -> bool {
@@ -16,76 +16,49 @@ pub fn is_file(path: &str) -> bool {
 }
 
 pub fn is_absolute(path: &str) -> bool {
-    if path.starts_with("/") || path.starts_with("\\") {
-        return true;
-    }
-    is_absolute_win(path)
-}
-
-fn is_absolute_win(path: &str) -> bool {
-    let mut first_is_letter = false;
-    let mut second_is_colon = false;
-    for (i, c) in path.chars().enumerate() {
-        if i == 0 {
-            first_is_letter = c.is_alphabetic();
-        } else if i == 1 {
-            second_is_colon = c == ':';
-        } else {
-            break;
-        }
-    }
-    first_is_letter && second_is_colon
+    Path::new(path).is_absolute()
 }
 
 pub fn is_relative(path: &str) -> bool {
-    !is_absolute(path)
+    Path::new(path).is_relative()
+}
+
+pub fn is_symlink(path: &str) -> bool {
+    Path::new(path).is_symlink()
 }
 
 pub fn cd(path: &str) -> Result<(), LizError> {
-    std::env::set_current_dir(path).map_err(|err| {
-        utils::dbg_p("liz_files", "cd", "set_current_dir", &[("path", path)], err)
-    })?;
+    std::env::set_current_dir(path)
+        .map_err(|err| debug!("set_current_dir", &[("path", path)], err))?;
     Ok(())
 }
 
 pub fn pwd() -> Result<String, LizError> {
-    let result = std::env::current_dir()
-        .map_err(|err| utils::dbg("liz_files", "pwd", "current_dir", err))?;
+    let result = std::env::current_dir().map_err(|err| debug!("current_dir", (), err))?;
     Ok(utils::display(result))
 }
 
 pub fn rn(origin: &str, destiny: &str) -> Result<(), LizError> {
-    std::fs::rename(origin, destiny).map_err(|err| {
-        utils::dbg_p(
-            "liz_files",
-            "rn",
-            "rename",
-            &[("origin", origin), ("destiny", destiny)],
-            err,
-        )
-    })?;
+    std::fs::rename(origin, destiny)
+        .map_err(|err| debug!("rename", &[("origin", origin), ("destiny", destiny)], err))?;
     Ok(())
 }
 
 pub fn cp(origin: &str, destiny: &str) -> Result<(), LizError> {
     if is_dir(origin) {
         copy_directory(origin, destiny).map_err(|err| {
-            utils::dbg_p(
-                "liz_files",
-                "cp",
+            debug!(
                 "copy_directory",
                 &[("origin", origin), ("destiny", destiny)],
-                err,
+                err
             )
         })?;
     } else {
         copy_file(origin, destiny).map_err(|err| {
-            utils::dbg_p(
-                "liz_files",
-                "cp",
+            debug!(
                 "copy_file",
                 &[("origin", origin), ("destiny", destiny)],
-                err,
+                err
             )
         })?;
     }
@@ -93,57 +66,38 @@ pub fn cp(origin: &str, destiny: &str) -> Result<(), LizError> {
 }
 
 fn copy_directory(origin: &str, destiny: &str) -> Result<(), LizError> {
-    std::fs::create_dir_all(destiny).map_err(|err| {
-        utils::dbg_p(
-            "liz_files",
-            "copy_directory",
-            "create_dir_all",
-            &[("destiny", destiny)],
-            err,
-        )
-    })?;
-    for entry in std::fs::read_dir(origin).map_err(|err| {
-        utils::dbg_p(
-            "liz_files",
-            "copy_directory",
-            "read_dir",
-            &[("origin", origin)],
-            err,
-        )
-    })? {
-        let entry = entry.map_err(|err| utils::dbg("liz_files", "copy_directory", "entry", err))?;
+    std::fs::create_dir_all(destiny)
+        .map_err(|err| debug!("create_dir_all", &[("destiny", destiny)], err))?;
+    for entry in
+        std::fs::read_dir(origin).map_err(|err| debug!("read_dir", &[("origin", origin)], err))?
+    {
+        let entry = entry.map_err(|err| debug!("entry", (), err))?;
         let file_type = entry
             .file_type()
-            .map_err(|err| utils::dbg("liz_files", "copy_directory", "file_type", err))?;
+            .map_err(|err| debug!("file_type", (), err))?;
         let entry_str = utils::display(entry.path());
         let entry_name = path_name(&entry_str);
         let entry_dest = path_join(&destiny, &entry_name).map_err(|err| {
-            utils::dbg_p(
-                "liz_files",
-                "copy_directory",
+            debug!(
                 "path_join",
                 &[("destiny", &destiny), ("entry_name", &entry_name)],
-                err,
+                err
             )
         })?;
         if file_type.is_dir() {
             copy_directory(&entry_str, &entry_dest).map_err(|err| {
-                utils::dbg_p(
-                    "liz_files",
-                    "copy_directory",
+                debug!(
                     "copy_directory",
                     &[("entry_str", &entry_str), ("entry_dest", &entry_dest)],
-                    err,
+                    err
                 )
             })?;
         } else {
             std::fs::copy(&entry_str, &entry_dest).map_err(|err| {
-                utils::dbg_p(
-                    "liz_files",
-                    "copy_directory",
+                debug!(
                     "copy",
                     &[("entry_str", &entry_str), ("entry_dest", &entry_dest)],
-                    err,
+                    err
                 )
             })?;
         }
@@ -152,33 +106,12 @@ fn copy_directory(origin: &str, destiny: &str) -> Result<(), LizError> {
 }
 
 fn copy_file(origin: &str, destiny: &str) -> Result<(), LizError> {
-    let parent = path_parent(destiny).map_err(|err| {
-        utils::dbg_p(
-            "liz_files",
-            "copy_file",
-            "path_parent",
-            &[("destiny", destiny)],
-            err,
-        )
-    })?;
-    std::fs::create_dir_all(&parent).map_err(|err| {
-        utils::dbg_p(
-            "liz_files",
-            "copy_file",
-            "create_dir_all",
-            &[("parent", &parent)],
-            err,
-        )
-    })?;
-    std::fs::copy(origin, destiny).map_err(|err| {
-        utils::dbg_p(
-            "liz_files",
-            "copy_file",
-            "copy",
-            &[("origin", origin), ("destiny", destiny)],
-            err,
-        )
-    })?;
+    let parent =
+        path_parent(destiny).map_err(|err| debug!("path_parent", &[("destiny", destiny)], err))?;
+    std::fs::create_dir_all(&parent)
+        .map_err(|err| debug!("create_dir_all", &[("parent", &parent)], err))?;
+    std::fs::copy(origin, destiny)
+        .map_err(|err| debug!("copy", &[("origin", origin), ("destiny", destiny)], err))?;
     Ok(())
 }
 
@@ -193,41 +126,23 @@ pub fn cp_tmp(origin: &str, destiny: &str) -> Result<(), LizError> {
         }
         let destiny_tmp = utils::display(destiny_tmp);
         cp(destiny, &destiny_tmp).map_err(|err| {
-            utils::dbg_p(
-                "liz_files",
-                "cp_tmp",
+            debug!(
                 "cp",
-                &[("destiny", destiny), ("destiny_tmp", &destiny_tmp)],
-                err,
+                &[("destiny", destiny), ("destiny_tmp", destiny_tmp)],
+                err
             )
         })?;
-        rm(destiny).map_err(|err| {
-            utils::dbg_p("liz_files", "cp_tmp", "rm", &[("destiny", destiny)], err)
-        })?;
+        rm(destiny).map_err(|err| debug!("rm", &[("destiny", destiny)], err))?;
     }
-    cp(origin, destiny).map_err(|err| {
-        utils::dbg_p(
-            "liz_files",
-            "cp_tmp",
-            "cp",
-            &[("origin", origin), ("destiny", destiny)],
-            err,
-        )
-    })?;
+    cp(origin, destiny)
+        .map_err(|err| debug!("cp", &[("origin", origin), ("destiny", destiny)], err))?;
     Ok(())
 }
 
 pub fn mv(origin: &str, destiny: &str) -> Result<(), LizError> {
-    cp(origin, destiny).map_err(|err| {
-        utils::dbg_p(
-            "liz_files",
-            "mv",
-            "cp",
-            &[("origin", origin), ("destiny", destiny)],
-            err,
-        )
-    })?;
-    rm(origin).map_err(|err| utils::dbg_p("liz_files", "mv", "rm", &[("origin", origin)], err))?;
+    cp(origin, destiny)
+        .map_err(|err| debug!("cp", &[("origin", origin), ("destiny", destiny)], err))?;
+    rm(origin).map_err(|err| debug!("rm", &[("origin", origin)], err))?;
     Ok(())
 }
 
@@ -380,6 +295,12 @@ pub fn path_ext(path: &str) -> &str {
     ""
 }
 
+pub fn path_walk(path: &str) -> Result<String, LizError> {
+    Ok(utils::display(std::fs::read_link(path).map_err(|err| {
+        debug!("read_link", &["path", path], err)
+    })?))
+}
+
 pub fn path_absolute(path: &str) -> Result<String, LizError> {
     if is_absolute(path) {
         return Ok(String::from(path));
@@ -392,13 +313,7 @@ pub fn path_absolute(path: &str) -> Result<String, LizError> {
             continue;
         } else if path_part == ".." {
             if base_parts.pop().is_none() {
-                return Err(utils::dbg_p(
-                    "liz_files",
-                    "path_absolute",
-                    "pop",
-                    &[("path", path)],
-                    "the base path went empty",
-                ));
+                return Err(debug!("pop", &[("path", path)], "the base path went empty"));
             }
         } else {
             base_parts.push(path_part);
@@ -424,12 +339,10 @@ pub fn path_relative(path: &str, base: &str) -> Result<String, LizError> {
         String::from(base)
     };
     if !path.starts_with(&base) {
-        return Err(utils::dbg_p(
-            "liz_files",
-            "path_relative",
-            "starts",
+        return Err(debug!(
+            "starts_with",
             &[("path", path), ("base", &base)],
-            "path does not starts with the base",
+            "path does not starts with the base"
         ));
     }
     let sep = path_sep(path);
@@ -445,12 +358,10 @@ pub fn path_parent(path: &str) -> Result<String, LizError> {
     let path = path_absolute(path)?;
     let mut parts = path_parts(&path);
     if parts.pop().is_none() {
-        return Err(utils::dbg_p(
-            "liz_files",
-            "path_parent",
+        return Err(debug!(
             "pop",
             &[("path", &path)],
-            "the path parts went empty",
+            "the path parts went empty"
         ));
     }
     Ok(path_parts_join(parts.as_slice()))
@@ -466,12 +377,10 @@ pub fn path_parent_find(path: &str, with_name: &str) -> Result<String, LizError>
                 return Ok(path_parts_join(parts.as_slice()));
             }
         } else {
-            return Err(utils::dbg_p(
-                "liz_files",
-                "path_parent_find",
+            return Err(debug!(
                 "pop",
                 &[("path", &path)],
-                "the path parts went empty",
+                "the path parts went empty"
             ));
         }
     }
@@ -479,12 +388,10 @@ pub fn path_parent_find(path: &str, with_name: &str) -> Result<String, LizError>
 
 pub fn path_join(path: &str, child: &str) -> Result<String, LizError> {
     if is_absolute(child) {
-        return Err(utils::dbg_p(
-            "liz_files",
-            "path_join",
+        return Err(debug!(
             "is_absolute",
             &[("child", &child)],
-            "the child is absolute",
+            "the child is absolute"
         ));
     }
     let mut base_parts = path_parts(path)
@@ -516,12 +423,10 @@ pub fn path_join(path: &str, child: &str) -> Result<String, LizError> {
                     take_more = true;
                     child_index = child_index - 1;
                 } else {
-                    return Err(utils::dbg_p(
-                        "liz_files",
-                        "path_join",
+                    return Err(debug!(
                         "pop",
                         &[("path", &path), ("child", &child)],
-                        "the path parts went empty",
+                        "the path parts went empty"
                     ));
                 }
             }
