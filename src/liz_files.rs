@@ -251,12 +251,6 @@ pub fn path_ext(path: &str) -> &str {
     ""
 }
 
-pub fn path_walk(path: &str) -> Result<String, LizError> {
-    Ok(utils::display(
-        std::fs::read_link(path).map_err(|err| debug!(err, "read_link", path))?,
-    ))
-}
-
 pub fn path_absolute(path: &str) -> Result<String, LizError> {
     if is_absolute(path) {
         return Ok(String::from(path));
@@ -307,6 +301,12 @@ pub fn path_relative(path: &str, base: &str) -> Result<String, LizError> {
     } else {
         Ok(String::from(result))
     }
+}
+
+pub fn path_walk(path: &str) -> Result<String, LizError> {
+    Ok(utils::display(
+        std::fs::read_link(path).map_err(|err| debug!(err, "read_link", path))?,
+    ))
 }
 
 pub fn path_parent(path: &str) -> Result<String, LizError> {

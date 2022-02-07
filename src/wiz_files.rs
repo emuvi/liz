@@ -16,6 +16,8 @@ pub fn inject_files<'a>(ctx: Context<'a>, liz: &Table<'a>) -> Result<(), LizErro
 
     let is_relative = ctx.create_function(|_, path: String| Ok(liz_files::is_relative(&path)))?;
 
+    let is_symlink = ctx.create_function(|_, path: String| Ok(liz_files::is_symlink(&path)))?;
+
     let cd =
         ctx.create_function(|ctx, path: String| utils::treat_error(ctx, liz_files::cd(&path)))?;
 
@@ -84,6 +86,10 @@ pub fn inject_files<'a>(ctx: Context<'a>, liz: &Table<'a>) -> Result<(), LizErro
 
     let path_relative = ctx.create_function(|ctx, (path, base): (String, String)| {
         utils::treat_error(ctx, liz_files::path_relative(&path, &base))
+    })?;
+
+    let path_walk = ctx.create_function(|ctx, path: String| {
+        utils::treat_error(ctx, liz_files::path_walk(&path))
     })?;
 
     let path_parent = ctx.create_function(|ctx, path: String| {
@@ -163,6 +169,7 @@ pub fn inject_files<'a>(ctx: Context<'a>, liz: &Table<'a>) -> Result<(), LizErro
     liz.set("is_file", is_file)?;
     liz.set("is_absolute", is_absolute)?;
     liz.set("is_relative", is_relative)?;
+    liz.set("is_symlink", is_symlink)?;
     liz.set("cd", cd)?;
     liz.set("pwd", pwd)?;
     liz.set("rn", rn)?;
@@ -182,6 +189,7 @@ pub fn inject_files<'a>(ctx: Context<'a>, liz: &Table<'a>) -> Result<(), LizErro
     liz.set("path_ext", path_ext)?;
     liz.set("path_absolute", path_absolute)?;
     liz.set("path_relative", path_relative)?;
+    liz.set("path_walk", path_walk)?;
     liz.set("path_parent", path_parent)?;
     liz.set("path_parent_find", path_parent_find)?;
     liz.set("path_join", path_join)?;
