@@ -224,10 +224,22 @@ pub fn dbg_v(
     vals: String,
     err: impl std::fmt::Display,
 ) -> LizError {
-    throw(format!(
-        "Could not perform {}[{}] - {} on {} with {} because {}",
-        file, line, func, call, vals, err
-    ))
+    if vals.is_empty() {
+        throw(format!(
+            "Could not perform {}[{}]({}) on {} because {}",
+            file, line, func, call, err
+        ))
+    } else {
+        throw(format!(
+            "Could not perform {}[{}]({}) on {} with {} because {}",
+            file,
+            line,
+            func,
+            call,
+            vals.replace("\"", "'"),
+            err
+        ))
+    }
 }
 
 macro_rules! dbg_fnc {
@@ -238,28 +250,31 @@ macro_rules! dbg_fnc {
         }
         let name = type_name_of(f);
         &name[..name.len() - 3].trim_end_matches("::{{closure}}")
-    }}
+    }};
 }
 
 macro_rules! dbg_fmt {
-    ($expression:expr) => {
-        format!("{:?}", stringify!($expression))
-    };
+    () => (String::default());
+    ($v:expr) => (format!("{} = {:?}", stringify!($v), $v));
+    ($v:expr, $($n:expr),+) => (format!("{} = {:?}, {}", stringify!($v), $v, crate::utils::dbg_fmt!($($n),+)));
 }
 
 macro_rules! debug {
-    ($call:expr, $vals:expr, $err:expr) => {
+    ($err:expr, $call:expr) => (
+        crate::utils::dbg_v(file!(), line!(), crate::utils::dbg_fnc!(), $call, crate::utils::dbg_fmt!(), $err)
+    );
+    ($err:expr, $call:expr, $($v:expr),+) => (
         crate::utils::dbg_v(
             file!(),
             line!(),
             crate::utils::dbg_fnc!(),
             $call,
-            crate::utils::dbg_fmt!(vals),
+            crate::utils::dbg_fmt!($($v),+),
             $err,
         )
-    };
+    );
 }
 
-pub(crate) use dbg_fnc;
 pub(crate) use dbg_fmt;
+pub(crate) use dbg_fnc;
 pub(crate) use debug;

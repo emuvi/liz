@@ -23,8 +23,8 @@ use utils::debug;
 pub type LizError = Box<dyn Error + Send + Sync>;
 
 pub fn run(path: &str, args: Option<Vec<String>>) -> Result<Vec<String>, LizError> {
-    let handler = rise(path, args)?;
-    race(path, &handler)
+    let handler = rise(path, args).map_err(|err| debug!(err, "rise", path))?;
+    race(path, &handler).map_err(|err| debug!(err, "race", path))
 }
 
 pub fn rise(path: &str, args: Option<Vec<String>>) -> Result<Lua, LizError> {
@@ -36,7 +36,7 @@ pub fn rise(path: &str, args: Option<Vec<String>>) -> Result<Lua, LizError> {
         }
     });
     if let Some(err) = error {
-        return Err(err);
+        return Err(debug!(err, "inject_all", path));
     }
     Ok(handler)
 }
@@ -44,9 +44,11 @@ pub fn rise(path: &str, args: Option<Vec<String>>) -> Result<Lua, LizError> {
 pub fn race(path: &str, handler: &Lua) -> Result<Vec<String>, LizError> {
     let mut result: Option<Result<Vec<String>, LizError>> = None;
     handler.context(|ctx| result = Some(race_in(ctx, path)));
-    result
-        .ok_or("Could not reach a result")
-        .map_err(|err| debug!("ok_or", &[("path", path)], err))?
+    if result.is_none() {
+        return Err(debug!("Could not reach a result", "is_none", path));
+    }
+    let result = result.unwrap();
+    result.map_err(|err| debug!(err, "race_in", path))
 }
 
 pub fn race_in(ctx: Context, path: &str) -> Result<Vec<String>, LizError> {

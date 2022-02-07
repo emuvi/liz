@@ -6,10 +6,9 @@ use crate::utils;
 use crate::LizError;
 
 pub fn inject_codes<'a>(ctx: Context<'a>, liz: &Table<'a>) -> Result<(), LizError> {
-    let source = ctx.create_function(|ctx, path: String| {
-        utils::treat_error(ctx, liz_codes::source(&path))
-    })?;
-    
+    let source =
+        ctx.create_function(|ctx, path: String| utils::treat_error(ctx, liz_codes::source(&path)))?;
+
     let git_root_find = ctx.create_function(|ctx, path: String| {
         utils::treat_error(ctx, liz_codes::git_root_find(&path))
     })?;

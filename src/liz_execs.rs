@@ -55,39 +55,29 @@ impl UserData for Spawned {}
 
 pub fn spawn(ctx: Context, path: &str, args: Option<Vec<String>>) -> Result<Spawned, LizError> {
     let globals = ctx.globals();
-    let liz: Table = globals
-        .get("liz")
-        .map_err(|err| debug!("get", &[("liz")], err))?;
+    let liz: Table = globals.get("liz")?;
 
     let path = utils::add_liz_extension(path);
     let path = if liz_files::is_relative(&path) {
-        let stack_dir =
-            utils::get_stack_dir(&liz).map_err(|err| debug!("get_stack_dir", (), err))?;
-        liz_files::path_join(&stack_dir, &path).map_err(|err| {
-            debug!(
-                "path_join",
-                &[("stack_dir", stack_dir), ("path", path)],
-                err
-            )
-        })?
+        let stack_dir = utils::get_stack_dir(&liz).map_err(|err| debug!(err, "get_stack_dir"))?;
+        liz_files::path_join(&stack_dir, &path)
+            .map_err(|err| debug!(err, "path_join", stack_dir, path))?
     } else {
         path
     };
 
-    let spawn_pwd = liz_files::pwd().map_err(|err| debug!("pwd", (), err))?;
+    let spawn_pwd = liz_files::pwd().map_err(|err| debug!(err, "pwd"))?;
     liz.set("spawn_pwd", spawn_pwd)?;
 
-    let spawn_dir = liz_files::path_parent(&path)
-        .map_err(|err| debug!("path_parent", &[("path", path)], err))?;
+    let spawn_dir =
+        liz_files::path_parent(&path).map_err(|err| debug!(err, "path_parent", path))?;
     utils::put_stack_dir(&ctx, &liz, spawn_dir.clone())
-        .map_err(|err| debug!("put_stack_dir", &[("spawn_dir", spawn_dir)], err))?;
-    liz.set("spawn_dir", spawn_dir)
-        .map_err(|err| debug!("set", &[("spawn_dir", spawn_dir)], err))?;
+        .map_err(|err| debug!(err, "put_stack_dir", spawn_dir))?;
+    liz.set("spawn_dir", spawn_dir)?;
 
-    let spawn_path = liz_files::path_absolute(&path)
-        .map_err(|err| debug!("path_absolute", &[("path", path)], err))?;
-    liz.set("spawn_path", spawn_path.clone())
-        .map_err(|err| debug!("set", &[("spawn_path", spawn_path)], err))?;
+    let spawn_path =
+        liz_files::path_absolute(&path).map_err(|err| debug!(err, "path_absolute", path))?;
+    liz.set("spawn_path", spawn_path.clone())?;
 
     let spawned = Spawned::new();
     let spawned_clone = spawned.clone();
@@ -113,9 +103,14 @@ pub fn cmd(
     throw: Option<bool>,
 ) -> Result<(i32, String), LizError> {
     let mut cmd = Command::new(name);
-    for arg in args {
-        cmd.arg(arg.as_ref());
-    }
+    let args = args
+        .iter()
+        .map(|arg| {
+            let arg = arg.as_ref();
+            cmd.arg(arg);
+            arg.into()
+        })
+        .collect::<Vec<&str>>();
     let dir: String = if let Some(dir) = dir {
         dir.as_ref().into()
     } else {
@@ -127,13 +122,7 @@ pub fn cmd(
         .stderr(Stdio::piped())
         .stdout(Stdio::piped())
         .spawn()
-        .map_err(|err| {
-            debug!(
-                "spawn",
-                &[("name", name), ("args", args), ("dir", dir)],
-                err
-            )
-        })?;
+        .map_err(|err| debug!(err, "spawn", name, args, dir))?;
     let mut out = String::new();
     child.stderr.take().unwrap().read_to_string(&mut out)?;
     child.stdout.take().unwrap().read_to_string(&mut out)?;

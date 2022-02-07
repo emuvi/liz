@@ -8,6 +8,12 @@ struct Slab {
     part: String,
 }
 
+impl Slab {
+    fn is_space(&self) -> bool {
+        self.part.trim().is_empty()
+    }
+}
+
 impl Slabs {
     pub fn new() -> Slabs {
         Slabs { list: Vec::new() }

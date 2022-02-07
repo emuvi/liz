@@ -39,7 +39,7 @@ fn main() -> Result<(), LizError> {
     if to_race.is_empty() {
         to_race.push(format!("default"));
     }
-    let first = &to_race[0];
+    let first_path = &to_race[0];
     if verbose {
         if let Some(ref to_rise_args) = to_rise_args {
             println!("Rising with args: {:?}", to_rise_args);
@@ -47,7 +47,7 @@ fn main() -> Result<(), LizError> {
             println!("Rising with no args");
         }
     }
-    let handler = liz::rise(first, to_rise_args)?;
+    let handler = liz::rise(first_path, to_rise_args)?;
     for race_path in to_race {
         let results = liz::race(&race_path, &handler)?;
         if verbose {
