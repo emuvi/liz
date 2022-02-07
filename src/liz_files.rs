@@ -273,11 +273,38 @@ pub fn path_sep(path: &str) -> &'static str {
 }
 
 pub fn path_parts(path: &str) -> Vec<&str> {
-    let mut result: Vec<&str> = path.split(path_sep(path)).collect();
-    if path.starts_with("/") {
-        result.insert(0, "/");
+    let sep = path_sep(path);
+    let mut result: Vec<&str> = path.split(sep).collect();
+    if !result.is_empty() {
+        if result[0].is_empty() {
+            result[0] = sep;
+        }
     }
     result
+}
+
+#[test]
+fn path_parts_test() {
+    let parts = path_parts("/home/pointel/test");
+    assert_eq!(parts.len(), 4);
+    assert_eq!(parts[0], "/");
+    assert_eq!(parts[1], "home");
+    assert_eq!(parts[2], "pointel");
+    assert_eq!(parts[3], "test");
+    let parts = path_parts("pointel/test");
+    assert_eq!(parts.len(), 2);
+    assert_eq!(parts[0], "pointel");
+    assert_eq!(parts[1], "test");
+    let parts = path_parts("./pointel/test");
+    assert_eq!(parts.len(), 3);
+    assert_eq!(parts[0], ".");
+    assert_eq!(parts[1], "pointel");
+    assert_eq!(parts[2], "test");
+    let parts = path_parts("C:\\pointel\\test");
+    assert_eq!(parts.len(), 3);
+    assert_eq!(parts[0], "C:");
+    assert_eq!(parts[1], "pointel");
+    assert_eq!(parts[2], "test");
 }
 
 pub fn path_parts_join(parts: &[&str]) -> String {
@@ -296,12 +323,30 @@ pub fn path_parts_join(parts: &[&str]) -> String {
     } else {
         result.push_str(parts[0]);
     }
-    let os_sep = *os_sep();
+    let os_sep = if parts[0].contains(":") {
+        '\\'
+    } else {
+        *os_sep()
+    };
     for index in start..end {
         result.push(os_sep);
         result.push_str(parts[index]);
     }
     result
+}
+
+#[test]
+fn path_parts_join_test() {
+    let parts = path_parts("/home/pointel/test");
+    assert_eq!(path_parts_join(parts.as_slice()), "/home/pointel/test");
+    let parts = path_parts("pointel/test");
+    assert_eq!(path_parts_join(parts.as_slice()), "pointel/test");
+    let parts = path_parts("./pointel/test");
+    assert_eq!(path_parts_join(parts.as_slice()), "./pointel/test");
+    let parts = path_parts("../../pointel/test");
+    assert_eq!(path_parts_join(parts.as_slice()), "../../pointel/test");
+    let parts = path_parts("C:\\pointel\\test");
+    assert_eq!(path_parts_join(parts.as_slice()), "C:\\pointel\\test");
 }
 
 pub fn path_name(path: &str) -> &str {
@@ -360,6 +405,13 @@ pub fn path_absolute(path: &str) -> Result<String, LizError> {
         }
     }
     Ok(path_parts_join(base_parts.as_slice()))
+}
+
+#[test]
+fn path_absolute_test() {
+    let wd = pwd().unwrap();
+    assert_eq!(path_absolute("test").unwrap(), format!("{}/test", wd));
+    assert_eq!(path_absolute("./test").unwrap(), format!("{}/test", wd));
 }
 
 pub fn path_relative(path: &str, base: &str) -> Result<String, LizError> {
