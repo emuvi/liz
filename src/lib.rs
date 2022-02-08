@@ -1,7 +1,7 @@
 pub mod liz_codes;
 pub mod liz_execs;
 pub mod liz_files;
-pub mod liz_slabs;
+pub mod liz_forms;
 pub mod liz_texts;
 pub mod liz_trans;
 

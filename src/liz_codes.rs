@@ -2,8 +2,8 @@ use rlua::{UserData, UserDataMethods};
 
 use crate::liz_execs;
 use crate::liz_files;
-use crate::liz_slabs;
-use crate::liz_slabs::Slabs;
+use crate::liz_forms;
+use crate::liz_forms::Slabs;
 use crate::liz_texts;
 use crate::utils;
 use crate::LizError;
@@ -22,7 +22,7 @@ pub fn source(path: &str) -> Result<Source, LizError> {
     } else {
         String::new()
     };
-    let slabs = liz_slabs::parse(&text, name);
+    let slabs = liz_forms::Slabs::parse(&text, name);
     Ok(Source { path, slabs })
 }
 
