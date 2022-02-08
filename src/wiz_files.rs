@@ -80,6 +80,14 @@ pub fn inject_files<'a>(ctx: Context<'a>, liz: &Table<'a>) -> Result<(), LizErro
     let path_ext =
         ctx.create_function(|_, path: String| Ok(String::from(liz_files::path_ext(&path))))?;
 
+    let path_ext_is = ctx.create_function(|_, (path, ext): (String, String)| {
+        Ok(liz_files::path_ext_is(&path, &ext))
+    })?;
+
+    let path_ext_is_on = ctx.create_function(|_, (path, exts): (String, Vec<String>)| {
+        Ok(liz_files::path_ext_is_on(&path, exts.as_slice()))
+    })?;
+
     let path_absolute = ctx.create_function(|ctx, path: String| {
         utils::treat_error(ctx, liz_files::path_absolute(&path))
     })?;
@@ -187,6 +195,8 @@ pub fn inject_files<'a>(ctx: Context<'a>, liz: &Table<'a>) -> Result<(), LizErro
     liz.set("path_name", path_name)?;
     liz.set("path_stem", path_stem)?;
     liz.set("path_ext", path_ext)?;
+    liz.set("path_ext_is", path_ext_is)?;
+    liz.set("path_ext_is_on", path_ext_is_on)?;
     liz.set("path_absolute", path_absolute)?;
     liz.set("path_relative", path_relative)?;
     liz.set("path_walk", path_walk)?;

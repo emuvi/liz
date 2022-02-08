@@ -240,6 +240,7 @@ pub fn path_stem(path: &str) -> &str {
     ""
 }
 
+/// This is a path ext doc.
 pub fn path_ext(path: &str) -> &str {
     let parts = path_parts(path);
     if parts.len() > 0 {
@@ -249,6 +250,20 @@ pub fn path_ext(path: &str) -> &str {
         }
     }
     ""
+}
+
+pub fn path_ext_is(path: &str, ext: &str) -> bool {
+    path_ext(path).to_lowercase() == ext.to_lowercase()
+}
+
+pub fn path_ext_is_on(path: &str, exts: &[impl AsRef<str>]) -> bool {
+    let ext = path_ext(path).to_lowercase();
+    for case in exts {
+        if ext == case.as_ref().to_lowercase() {
+            return true;
+        }
+    }
+    false
 }
 
 pub fn path_absolute(path: &str) -> Result<String, LizError> {
