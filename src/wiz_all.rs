@@ -1,9 +1,9 @@
 use rlua::{Context, MultiValue, Value};
 
-use crate::liz_files;
+use crate::liz_paths;
 use crate::wiz_codes;
 use crate::wiz_execs;
-use crate::wiz_files;
+use crate::wiz_paths;
 use crate::wiz_texts;
 use crate::wiz_trans;
 
@@ -15,22 +15,22 @@ pub fn inject_all(lane: Context, path: &str, args: Option<Vec<String>>) -> Resul
     liz.set("args", args)?;
 
     let path = utils::add_liz_extension(path);
-    let path = if liz_files::is_symlink(&path) {
-        liz_files::path_walk(&path).map_err(|err| debug!(err, "path_walk", path))?
+    let path = if liz_paths::is_symlink(&path) {
+        liz_paths::path_walk(&path).map_err(|err| debug!(err, "path_walk", path))?
     } else {
         path
     };
 
-    let rise_pwd = liz_files::pwd().map_err(|err| debug!(err, "pwd"))?;
+    let rise_pwd = liz_paths::pwd().map_err(|err| debug!(err, "pwd"))?;
     liz.set("rise_pwd", rise_pwd)?;
 
-    let rise_dir = liz_files::path_parent(&path).map_err(|err| debug!(err, "path_parent", path))?;
+    let rise_dir = liz_paths::path_parent(&path).map_err(|err| debug!(err, "path_parent", path))?;
     utils::put_stack_dir(&lane, &liz, rise_dir.clone())
         .map_err(|err| debug!(err, "put_stack_dir", rise_dir))?;
     liz.set("rise_dir", rise_dir)?;
 
     let rise_path =
-        liz_files::path_absolute(&path).map_err(|err| debug!(err, "path_absolute", path))?;
+        liz_paths::path_absolute(&path).map_err(|err| debug!(err, "path_absolute", path))?;
     liz.set("rise_path", rise_path)?;
 
     let print_stack_dir =
@@ -58,7 +58,7 @@ pub fn inject_all(lane: Context, path: &str, args: Option<Vec<String>>) -> Resul
 
     wiz_codes::inject_codes(lane, &liz)?;
     wiz_execs::inject_execs(lane, &liz)?;
-    wiz_files::inject_files(lane, &liz)?;
+    wiz_paths::inject_paths(lane, &liz)?;
     wiz_texts::inject_texts(lane, &liz)?;
     wiz_trans::inject_trans(lane, &liz)?;
 

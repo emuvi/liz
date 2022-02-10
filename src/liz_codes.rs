@@ -1,7 +1,7 @@
 use rlua::{UserData, UserDataMethods};
 
 use crate::liz_execs;
-use crate::liz_files;
+use crate::liz_paths;
 use crate::liz_forms;
 use crate::liz_forms::Slabs;
 use crate::liz_texts;
@@ -16,8 +16,8 @@ pub struct Source {
 
 pub fn source(path: &str) -> Result<Source, LizError> {
     let path = String::from(path);
-    let name = liz_files::path_name(&path);
-    let text = if liz_files::is_file(&path) {
+    let name = liz_paths::path_name(&path);
+    let text = if liz_paths::is_file(&path) {
         liz_texts::read(&path)?
     } else {
         String::new()
@@ -47,13 +47,13 @@ impl UserData for Source {
 }
 
 pub fn git_root_find(path: &str) -> Result<Option<String>, LizError> {
-    let mut actual = liz_files::path_absolute(path)?;
+    let mut actual = liz_paths::path_absolute(path)?;
     loop {
-        let check = liz_files::path_join(&actual, ".git")?;
-        if liz_files::is_dir(&check) {
+        let check = liz_paths::path_join(&actual, ".git")?;
+        if liz_paths::is_dir(&check) {
             return Ok(Some(actual));
         }
-        actual = liz_files::path_parent(&actual)?;
+        actual = liz_paths::path_parent(&actual)?;
         if actual.is_empty() {
             break;
         }
@@ -63,7 +63,7 @@ pub fn git_root_find(path: &str) -> Result<Option<String>, LizError> {
 
 pub fn git_is_ignored(path: &str) -> Result<bool, LizError> {
     if let Some(root) = git_root_find(path)? {
-        let relative = liz_files::path_relative(path, &root)?;
+        let relative = liz_paths::path_relative(path, &root)?;
         let (code, output) = liz_execs::cmd(
             "git",
             &["check-ignore", &relative],

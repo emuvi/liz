@@ -1,4 +1,4 @@
-use crate::liz_files;
+use crate::liz_paths;
 
 #[derive(Clone)]
 pub struct Tokenizer {}
@@ -88,9 +88,9 @@ impl Slab {
 
 impl Kind {
     fn from(name: &str) -> Kind {
-        if liz_files::path_ext_is_on(name, &[".txt", ".md"]) {
+        if liz_paths::path_ext_is_on(name, &[".txt", ".md"]) {
             Kind::Text
-        } else if liz_files::path_ext_is_on(name, &[".el"]) {
+        } else if liz_paths::path_ext_is_on(name, &[".el"]) {
             Kind::Lisp
         } else {
             Kind::C

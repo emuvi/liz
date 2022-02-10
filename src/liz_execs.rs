@@ -8,7 +8,7 @@ use std::sync::RwLock;
 use std::thread;
 use std::time::Duration;
 
-use crate::liz_files;
+use crate::liz_paths;
 use crate::utils::{self, debug};
 use crate::LizError;
 
@@ -58,25 +58,25 @@ pub fn spawn(lane: Context, path: &str, args: Option<Vec<String>>) -> Result<Spa
     let liz: Table = globals.get("liz")?;
 
     let path = utils::add_liz_extension(path);
-    let path = if liz_files::is_relative(&path) {
+    let path = if liz_paths::is_relative(&path) {
         let stack_dir = utils::get_stack_dir(&liz).map_err(|err| debug!(err, "get_stack_dir"))?;
-        liz_files::path_join(&stack_dir, &path)
+        liz_paths::path_join(&stack_dir, &path)
             .map_err(|err| debug!(err, "path_join", stack_dir, path))?
     } else {
         path
     };
 
-    let spawn_pwd = liz_files::pwd().map_err(|err| debug!(err, "pwd"))?;
+    let spawn_pwd = liz_paths::pwd().map_err(|err| debug!(err, "pwd"))?;
     liz.set("spawn_pwd", spawn_pwd)?;
 
     let spawn_dir =
-        liz_files::path_parent(&path).map_err(|err| debug!(err, "path_parent", path))?;
+        liz_paths::path_parent(&path).map_err(|err| debug!(err, "path_parent", path))?;
     utils::put_stack_dir(&lane, &liz, spawn_dir.clone())
         .map_err(|err| debug!(err, "put_stack_dir", spawn_dir))?;
     liz.set("spawn_dir", spawn_dir)?;
 
     let spawn_path =
-        liz_files::path_absolute(&path).map_err(|err| debug!(err, "path_absolute", path))?;
+        liz_paths::path_absolute(&path).map_err(|err| debug!(err, "path_absolute", path))?;
     liz.set("spawn_path", spawn_path.clone())?;
 
     let spawned = Spawned::new();

@@ -1,7 +1,7 @@
 pub mod liz_codes;
 pub mod liz_execs;
-pub mod liz_files;
 pub mod liz_forms;
+pub mod liz_paths;
 pub mod liz_texts;
 pub mod liz_trans;
 
@@ -10,7 +10,7 @@ pub mod utils;
 mod wiz_all;
 mod wiz_codes;
 mod wiz_execs;
-mod wiz_files;
+mod wiz_paths;
 mod wiz_texts;
 mod wiz_trans;
 
@@ -56,21 +56,21 @@ pub fn race_in(lane: Context, path: &str) -> Result<Vec<String>, LizError> {
     let liz: Table = globals.get("liz")?;
 
     let path = utils::add_liz_extension(path);
-    let path = if liz_files::is_relative(&path) {
+    let path = if liz_paths::is_relative(&path) {
         let stack_dir = utils::get_stack_dir(&liz)?;
-        liz_files::path_join(&stack_dir, &path)?
+        liz_paths::path_join(&stack_dir, &path)?
     } else {
         path
     };
 
-    let race_pwd = liz_files::pwd()?;
+    let race_pwd = liz_paths::pwd()?;
     liz.set("race_pwd", race_pwd)?;
 
-    let race_dir = liz_files::path_parent(&path)?;
+    let race_dir = liz_paths::path_parent(&path)?;
     utils::put_stack_dir(&lane, &liz, race_dir.clone())?;
     liz.set("race_dir", race_dir)?;
 
-    let race_path = liz_files::path_absolute(&path)?;
+    let race_path = liz_paths::path_absolute(&path)?;
     liz.set("race_path", race_path.clone())?;
 
     let source = std::fs::read_to_string(race_path)?;
