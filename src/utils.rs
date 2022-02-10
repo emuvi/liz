@@ -216,7 +216,7 @@ fn throw(message: String) -> LizError {
     Box::new(simple_error::SimpleError::new(message))
 }
 
-pub fn dbg_err(
+pub fn debug_err(
     file: &str,
     line: u32,
     func: &str,
@@ -224,10 +224,10 @@ pub fn dbg_err(
     vals: String,
     err: impl std::fmt::Display,
 ) -> LizError {
-    throw(dbg_str(file, line, func, call, vals, err))
+    throw(debug_str(file, line, func, call, vals, err))
 }
 
-pub fn dbg_str(
+pub fn debug_str(
     file: &str,
     line: u32,
     func: &str,
@@ -253,7 +253,6 @@ pub fn dbg_str(
     }
 }
 
-#[macro_export]
 macro_rules! dbg_fnc {
     () => {{
         fn f() {}
@@ -265,19 +264,18 @@ macro_rules! dbg_fnc {
     }};
 }
 
-#[macro_export]
 macro_rules! dbg_fmt {
     () => (String::default());
     ($v:expr) => (format!("{} = {:?}", stringify!($v), $v));
     ($v:expr, $($n:expr),+) => (format!("{} = {:?}, {}", stringify!($v), $v, crate::utils::dbg_fmt!($($n),+)));
 }
 
-macro_rules! debug {
+macro_rules! dbg_err {
     ($err:expr, $call:expr) => (
-        crate::utils::dbg_err(file!(), line!(), crate::utils::dbg_fnc!(), $call, crate::utils::dbg_fmt!(), $err)
+        crate::utils::debug_err(file!(), line!(), crate::utils::dbg_fnc!(), $call, crate::utils::dbg_fmt!(), $err)
     );
     ($err:expr, $call:expr, $($v:expr),+) => (
-        crate::utils::dbg_err(
+        crate::utils::debug_err(
             file!(),
             line!(),
             crate::utils::dbg_fnc!(),
@@ -290,20 +288,39 @@ macro_rules! debug {
 
 pub(crate) use dbg_fmt;
 pub(crate) use dbg_fnc;
-pub(crate) use debug;
+pub(crate) use dbg_err;
+
+#[macro_export]
+macro_rules! liz_debug_func {
+    () => {{
+        fn f() {}
+        fn type_name_of<T>(_: T) -> &'static str {
+            std::any::type_name::<T>()
+        }
+        let name = type_name_of(f);
+        &name[..name.len() - 3].trim_end_matches("::{{closure}}")
+    }};
+}
+
+#[macro_export]
+macro_rules! liz_debug_vals {
+    () => (String::default());
+    ($v:expr) => (format!("{} = {:?}", stringify!($v), $v));
+    ($v:expr, $($n:expr),+) => (format!("{} = {:?}, {}", stringify!($v), $v, liz::liz_debug_vals!($($n),+)));
+}
 
 #[macro_export]
 macro_rules! liz_debug {
     ($err:expr, $call:expr) => (
-        liz::utils::dbg_str(file!(), line!(), liz::dbg_fnc!(), $call, liz::dbg_fmt!(), $err)
+        liz::utils::debug_str(file!(), line!(), liz::liz_debug_func!(), $call, liz::liz_debug_vals!(), $err)
     );
     ($err:expr, $call:expr, $($v:expr),+) => (
-        liz::utils::dbg_str(
+        liz::utils::debug_str(
             file!(),
             line!(),
-            liz::dbg_fnc!(),
+            liz::liz_debug_func!(),
             $call,
-            liz::dbg_fmt!($($v),+),
+            liz::liz_debug_vals!($($v),+),
             $err,
         )
     );

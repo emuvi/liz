@@ -17,14 +17,13 @@ mod wiz_trans;
 use rlua::{Context, Lua, MultiValue, Table};
 
 use std::error::Error;
-
-use utils::debug;
+use utils::dbg_err;
 
 pub type LizError = Box<dyn Error + Send + Sync>;
 
 pub fn run(path: &str, args: Option<Vec<String>>) -> Result<Vec<String>, LizError> {
-    let handler = rise(path, args).map_err(|err| debug!(err, "rise", path))?;
-    race(path, &handler).map_err(|err| debug!(err, "race", path))
+    let handler = rise(path, args).map_err(|err| dbg_err!(err, "rise", path))?;
+    race(path, &handler).map_err(|err| dbg_err!(err, "race", path))
 }
 
 pub fn rise(path: &str, args: Option<Vec<String>>) -> Result<Lua, LizError> {
@@ -36,7 +35,7 @@ pub fn rise(path: &str, args: Option<Vec<String>>) -> Result<Lua, LizError> {
         }
     });
     if let Some(err) = error {
-        return Err(debug!(err, "inject_all", path));
+        return Err(dbg_err!(err, "inject_all", path));
     }
     Ok(handler)
 }
@@ -45,10 +44,10 @@ pub fn race(path: &str, handler: &Lua) -> Result<Vec<String>, LizError> {
     let mut result: Option<Result<Vec<String>, LizError>> = None;
     handler.context(|lane| result = Some(race_in(lane, path)));
     if result.is_none() {
-        return Err(debug!("Could not reach a result", "is_none", path));
+        return Err(dbg_err!("Could not reach a result", "is_none", path));
     }
     let result = result.unwrap();
-    result.map_err(|err| debug!(err, "race_in", path))
+    result.map_err(|err| dbg_err!(err, "race_in", path))
 }
 
 pub fn race_in(lane: Context, path: &str) -> Result<Vec<String>, LizError> {

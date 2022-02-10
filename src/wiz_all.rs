@@ -7,7 +7,7 @@ use crate::wiz_paths;
 use crate::wiz_texts;
 use crate::wiz_trans;
 
-use crate::utils::{self, debug};
+use crate::utils::{self, dbg_err};
 use crate::LizError;
 
 pub fn inject_all(lane: Context, path: &str, args: Option<Vec<String>>) -> Result<(), LizError> {
@@ -16,21 +16,21 @@ pub fn inject_all(lane: Context, path: &str, args: Option<Vec<String>>) -> Resul
 
     let path = utils::add_liz_extension(path);
     let path = if liz_paths::is_symlink(&path) {
-        liz_paths::path_walk(&path).map_err(|err| debug!(err, "path_walk", path))?
+        liz_paths::path_walk(&path).map_err(|err| dbg_err!(err, "path_walk", path))?
     } else {
         path
     };
 
-    let rise_pwd = liz_paths::pwd().map_err(|err| debug!(err, "pwd"))?;
+    let rise_pwd = liz_paths::pwd().map_err(|err| dbg_err!(err, "pwd"))?;
     liz.set("rise_pwd", rise_pwd)?;
 
-    let rise_dir = liz_paths::path_parent(&path).map_err(|err| debug!(err, "path_parent", path))?;
+    let rise_dir = liz_paths::path_parent(&path).map_err(|err| dbg_err!(err, "path_parent", path))?;
     utils::put_stack_dir(&lane, &liz, rise_dir.clone())
-        .map_err(|err| debug!(err, "put_stack_dir", rise_dir))?;
+        .map_err(|err| dbg_err!(err, "put_stack_dir", rise_dir))?;
     liz.set("rise_dir", rise_dir)?;
 
     let rise_path =
-        liz_paths::path_absolute(&path).map_err(|err| debug!(err, "path_absolute", path))?;
+        liz_paths::path_absolute(&path).map_err(|err| dbg_err!(err, "path_absolute", path))?;
     liz.set("rise_path", rise_path)?;
 
     let print_stack_dir =
