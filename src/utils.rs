@@ -253,6 +253,7 @@ pub fn dbg_str(
     }
 }
 
+#[macro_export]
 macro_rules! dbg_fnc {
     () => {{
         fn f() {}
@@ -264,6 +265,7 @@ macro_rules! dbg_fnc {
     }};
 }
 
+#[macro_export]
 macro_rules! dbg_fmt {
     () => (String::default());
     ($v:expr) => (format!("{} = {:?}", stringify!($v), $v));
@@ -293,15 +295,15 @@ pub(crate) use debug;
 #[macro_export]
 macro_rules! liz_debug {
     ($err:expr, $call:expr) => (
-        crate::utils::dbg_str(file!(), line!(), crate::utils::dbg_fnc!(), $call, crate::utils::dbg_fmt!(), $err)
+        liz::utils::dbg_str(file!(), line!(), liz::dbg_fnc!(), $call, liz::dbg_fmt!(), $err)
     );
     ($err:expr, $call:expr, $($v:expr),+) => (
-        crate::utils::dbg_str(
+        liz::utils::dbg_str(
             file!(),
             line!(),
-            crate::utils::dbg_fnc!(),
+            liz::dbg_fnc!(),
             $call,
-            crate::utils::dbg_fmt!($($v),+),
+            liz::dbg_fmt!($($v),+),
             $err,
         )
     );
