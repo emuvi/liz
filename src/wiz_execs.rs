@@ -45,6 +45,8 @@ pub fn inject_execs<'a>(lane: Context<'a>, liz: &Table<'a>) -> Result<(), LizErr
 
     let pause = lane.create_function(|_, ()| Ok(liz_execs::pause()))?;
 
+    let exe_ext = lane.create_function(|_, ()| Ok(liz_execs::exe_ext()))?;
+
     let get_os = lane.create_function(|_, ()| Ok(liz_execs::get_os()))?;
 
     let is_lin = lane.create_function(|_, ()| Ok(liz_execs::is_lin()))?;
@@ -60,6 +62,7 @@ pub fn inject_execs<'a>(lane: Context<'a>, liz: &Table<'a>) -> Result<(), LizErr
     liz.set("join", join)?;
     liz.set("cmd", cmd)?;
     liz.set("pause", pause)?;
+    liz.set("exe_ext", exe_ext)?;
     liz.set("get_os", get_os)?;
     liz.set("is_lin", is_lin)?;
     liz.set("is_mac", is_mac)?;

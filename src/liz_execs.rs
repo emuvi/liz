@@ -156,6 +156,10 @@ pub fn pause() {
     }
 }
 
+pub fn exe_ext() -> &'static str {
+    std::env::consts::EXE_EXTENSION
+}
+
 pub fn get_os() -> &'static str {
     std::env::consts::OS
 }

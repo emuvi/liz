@@ -48,8 +48,6 @@ pub fn inject_paths<'a>(lane: Context<'a>, liz: &Table<'a>) -> Result<(), LizErr
     let touch =
         lane.create_function(|lane, path: String| utils::treat_error(lane, liz_paths::touch(&path)))?;
 
-    let exe_ext = lane.create_function(|_, ()| Ok(liz_paths::exe_ext()))?;
-
     let os_sep = lane.create_function(|_, ()| Ok(String::from(*liz_paths::os_sep())))?;
 
     let path_sep = lane.create_function(|_, path: String| Ok(liz_paths::path_sep(&path)))?;
@@ -191,7 +189,6 @@ pub fn inject_paths<'a>(lane: Context<'a>, liz: &Table<'a>) -> Result<(), LizErr
     liz.set("rm", rm)?;
     liz.set("mkdir", mkdir)?;
     liz.set("touch", touch)?;
-    liz.set("exe_ext", exe_ext)?;
     liz.set("os_sep", os_sep)?;
     liz.set("path_sep", path_sep)?;
     liz.set("path_parts", path_parts)?;
