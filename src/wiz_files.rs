@@ -112,6 +112,10 @@ pub fn inject_files<'a>(ctx: Context<'a>, liz: &Table<'a>) -> Result<(), LizErro
         utils::treat_error(ctx, liz_files::path_join(&path, &child))
     })?;
 
+    let path_join_if_relative = ctx.create_function(|ctx, (base, path): (String, String)| {
+        utils::treat_error(ctx, liz_files::path_join_if_relative(&base, &path))
+    })?;
+
     let path_list = ctx.create_function(|ctx, path: String| {
         utils::treat_error(ctx, liz_files::path_list(&path))
     })?;
@@ -203,6 +207,7 @@ pub fn inject_files<'a>(ctx: Context<'a>, liz: &Table<'a>) -> Result<(), LizErro
     liz.set("path_parent", path_parent)?;
     liz.set("path_parent_find", path_parent_find)?;
     liz.set("path_join", path_join)?;
+    liz.set("path_join_if_relative", path_join_if_relative)?;
     liz.set("path_list", path_list)?;
     liz.set("path_list_in", path_list_in)?;
     liz.set("path_list_dirs", path_list_dirs)?;

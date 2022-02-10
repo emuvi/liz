@@ -397,6 +397,14 @@ pub fn path_join(path: &str, child: &str) -> Result<String, LizError> {
     ))
 }
 
+pub fn path_join_if_relative(base: &str, path: &str) -> Result<String, LizError> {
+    if is_relative(path) {
+        path_join(base, path)
+    } else {
+        Ok(path.into())
+    }
+}
+
 pub fn path_list(path: &str) -> Result<Vec<String>, LizError> {
     let mut results = Vec::new();
     let entries = std::fs::read_dir(path)?;
