@@ -240,7 +240,6 @@ pub fn path_stem(path: &str) -> &str {
     ""
 }
 
-/// This is a path ext doc.
 pub fn path_ext(path: &str) -> &str {
     let parts = path_parts(path);
     if parts.len() > 0 {

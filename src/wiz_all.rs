@@ -10,8 +10,8 @@ use crate::wiz_trans;
 use crate::utils::{self, debug};
 use crate::LizError;
 
-pub fn inject_all(ctx: Context, path: &str, args: Option<Vec<String>>) -> Result<(), LizError> {
-    let liz = ctx.create_table()?;
+pub fn inject_all(lane: Context, path: &str, args: Option<Vec<String>>) -> Result<(), LizError> {
+    let liz = lane.create_table()?;
     liz.set("args", args)?;
 
     let path = utils::add_liz_extension(path);
@@ -25,7 +25,7 @@ pub fn inject_all(ctx: Context, path: &str, args: Option<Vec<String>>) -> Result
     liz.set("rise_pwd", rise_pwd)?;
 
     let rise_dir = liz_files::path_parent(&path).map_err(|err| debug!(err, "path_parent", path))?;
-    utils::put_stack_dir(&ctx, &liz, rise_dir.clone())
+    utils::put_stack_dir(&lane, &liz, rise_dir.clone())
         .map_err(|err| debug!(err, "put_stack_dir", rise_dir))?;
     liz.set("rise_dir", rise_dir)?;
 
@@ -34,20 +34,20 @@ pub fn inject_all(ctx: Context, path: &str, args: Option<Vec<String>>) -> Result
     liz.set("rise_path", rise_path)?;
 
     let print_stack_dir =
-        ctx.create_function(|ctx, ()| utils::treat_error(ctx, utils::print_stack_dir(ctx)))?;
+        lane.create_function(|lane, ()| utils::treat_error(lane, utils::print_stack_dir(lane)))?;
 
     let last_stack_dir =
-        ctx.create_function(|ctx, ()| utils::treat_error(ctx, utils::last_stack_dir(ctx)))?;
+        lane.create_function(|lane, ()| utils::treat_error(lane, utils::last_stack_dir(lane)))?;
 
-    let to_json_multi = ctx.create_function(|ctx, values: MultiValue| {
-        utils::treat_error(ctx, utils::to_json_multi(values))
+    let to_json_multi = lane.create_function(|lane, values: MultiValue| {
+        utils::treat_error(lane, utils::to_json_multi(values))
     })?;
 
     let to_json =
-        ctx.create_function(|ctx, value: Value| utils::treat_error(ctx, utils::to_json(value)))?;
+        lane.create_function(|lane, value: Value| utils::treat_error(lane, utils::to_json(value)))?;
 
-    let from_json = ctx.create_function(|ctx, source: String| {
-        utils::treat_error(ctx, utils::from_json(ctx, source))
+    let from_json = lane.create_function(|lane, source: String| {
+        utils::treat_error(lane, utils::from_json(lane, source))
     })?;
 
     liz.set("print_stack_dir", print_stack_dir)?;
@@ -56,13 +56,13 @@ pub fn inject_all(ctx: Context, path: &str, args: Option<Vec<String>>) -> Result
     liz.set("to_json", to_json)?;
     liz.set("from_json", from_json)?;
 
-    wiz_codes::inject_codes(ctx, &liz)?;
-    wiz_execs::inject_execs(ctx, &liz)?;
-    wiz_files::inject_files(ctx, &liz)?;
-    wiz_texts::inject_texts(ctx, &liz)?;
-    wiz_trans::inject_trans(ctx, &liz)?;
+    wiz_codes::inject_codes(lane, &liz)?;
+    wiz_execs::inject_execs(lane, &liz)?;
+    wiz_files::inject_files(lane, &liz)?;
+    wiz_texts::inject_texts(lane, &liz)?;
+    wiz_trans::inject_trans(lane, &liz)?;
 
-    let globals = ctx.globals();
+    let globals = lane.globals();
     globals.set("liz", liz)?;
 
     Ok(())

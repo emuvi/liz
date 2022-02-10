@@ -53,8 +53,8 @@ impl Spawned {
 
 impl UserData for Spawned {}
 
-pub fn spawn(ctx: Context, path: &str, args: Option<Vec<String>>) -> Result<Spawned, LizError> {
-    let globals = ctx.globals();
+pub fn spawn(lane: Context, path: &str, args: Option<Vec<String>>) -> Result<Spawned, LizError> {
+    let globals = lane.globals();
     let liz: Table = globals.get("liz")?;
 
     let path = utils::add_liz_extension(path);
@@ -71,7 +71,7 @@ pub fn spawn(ctx: Context, path: &str, args: Option<Vec<String>>) -> Result<Spaw
 
     let spawn_dir =
         liz_files::path_parent(&path).map_err(|err| debug!(err, "path_parent", path))?;
-    utils::put_stack_dir(&ctx, &liz, spawn_dir.clone())
+    utils::put_stack_dir(&lane, &liz, spawn_dir.clone())
         .map_err(|err| debug!(err, "put_stack_dir", spawn_dir))?;
     liz.set("spawn_dir", spawn_dir)?;
 

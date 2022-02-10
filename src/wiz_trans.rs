@@ -7,16 +7,16 @@ use crate::utils;
 
 use crate::LizError;
 
-pub fn inject_trans<'a>(ctx: Context<'a>, liz: &Table<'a>) -> Result<(), LizError> {
-    let get = ctx.create_function(
-        |ctx, (url, headers): (String, Option<HashMap<String, String>>)| {
-            utils::treat_error(ctx, liz_trans::get(&url, headers))
+pub fn inject_trans<'a>(lane: Context<'a>, liz: &Table<'a>) -> Result<(), LizError> {
+    let get = lane.create_function(
+        |lane, (url, headers): (String, Option<HashMap<String, String>>)| {
+            utils::treat_error(lane, liz_trans::get(&url, headers))
         },
     )?;
 
-    let post = ctx.create_function(
-        |ctx, (url, text, headers): (String, String, Option<HashMap<String, String>>)| {
-            utils::treat_error(ctx, liz_trans::post(&url, text, headers))
+    let post = lane.create_function(
+        |lane, (url, text, headers): (String, String, Option<HashMap<String, String>>)| {
+            utils::treat_error(lane, liz_trans::post(&url, text, headers))
         },
     )?;
 

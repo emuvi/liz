@@ -5,105 +5,105 @@ use crate::utils;
 
 use crate::LizError;
 
-pub fn inject_texts<'a>(ctx: Context<'a>, liz: &Table<'a>) -> Result<(), LizError> {
-    let ask = ctx.create_function(|ctx, message: String| {
-        utils::treat_error(ctx, liz_texts::ask(&message))
+pub fn inject_texts<'a>(lane: Context<'a>, liz: &Table<'a>) -> Result<(), LizError> {
+    let ask = lane.create_function(|lane, message: String| {
+        utils::treat_error(lane, liz_texts::ask(&message))
     })?;
 
-    let ask_int = ctx.create_function(|ctx, message: String| {
-        utils::treat_error(ctx, liz_texts::ask_int(&message))
+    let ask_int = lane.create_function(|lane, message: String| {
+        utils::treat_error(lane, liz_texts::ask_int(&message))
     })?;
 
-    let ask_float = ctx.create_function(|ctx, message: String| {
-        utils::treat_error(ctx, liz_texts::ask_float(&message))
+    let ask_float = lane.create_function(|lane, message: String| {
+        utils::treat_error(lane, liz_texts::ask_float(&message))
     })?;
 
-    let ask_bool = ctx.create_function(|ctx, message: String| {
-        utils::treat_error(ctx, liz_texts::ask_bool(&message))
+    let ask_bool = lane.create_function(|lane, message: String| {
+        utils::treat_error(lane, liz_texts::ask_bool(&message))
     })?;
 
-    let len = ctx.create_function(|_, text: String| Ok(liz_texts::len(&text)))?;
+    let len = lane.create_function(|_, text: String| Ok(liz_texts::len(&text)))?;
 
-    let del = ctx.create_function(|_, (text, start, end): (String, usize, usize)| {
+    let del = lane.create_function(|_, (text, start, end): (String, usize, usize)| {
         Ok(liz_texts::del(&text, start, end))
     })?;
 
-    let trim = ctx.create_function(|_, text: String| Ok(liz_texts::trim(&text)))?;
+    let trim = lane.create_function(|_, text: String| Ok(liz_texts::trim(&text)))?;
 
-    let is_empty = ctx.create_function(|_, text: String| Ok(liz_texts::is_empty(&text)))?;
+    let is_empty = lane.create_function(|_, text: String| Ok(liz_texts::is_empty(&text)))?;
 
-    let is_ascii = ctx.create_function(|_, text: String| Ok(liz_texts::is_ascii(&text)))?;
+    let is_ascii = lane.create_function(|_, text: String| Ok(liz_texts::is_ascii(&text)))?;
 
-    let tolower = ctx.create_function(|_, text: String| Ok(liz_texts::tolower(&text)))?;
+    let tolower = lane.create_function(|_, text: String| Ok(liz_texts::tolower(&text)))?;
 
-    let toupper = ctx.create_function(|_, text: String| Ok(liz_texts::toupper(&text)))?;
+    let toupper = lane.create_function(|_, text: String| Ok(liz_texts::toupper(&text)))?;
 
-    let contains = ctx.create_function(|_, (text, part): (String, String)| {
+    let contains = lane.create_function(|_, (text, part): (String, String)| {
         Ok(liz_texts::contains(&text, &part))
     })?;
 
     let find =
-        ctx.create_function(|_, (text, part): (String, String)| Ok(liz_texts::find(&text, &part)))?;
+        lane.create_function(|_, (text, part): (String, String)| Ok(liz_texts::find(&text, &part)))?;
 
-    let rfind = ctx
+    let rfind = lane
         .create_function(|_, (text, part): (String, String)| Ok(liz_texts::rfind(&text, &part)))?;
 
-    let starts_with = ctx.create_function(|_, (text, contents): (String, String)| {
+    let starts_with = lane.create_function(|_, (text, contents): (String, String)| {
         Ok(liz_texts::starts_with(&text, &contents))
     })?;
 
-    let ends_with = ctx.create_function(|_, (text, contents): (String, String)| {
+    let ends_with = lane.create_function(|_, (text, contents): (String, String)| {
         Ok(liz_texts::ends_with(&text, &contents))
     })?;
 
-    let split = ctx.create_function(|_, (text, pattern): (String, String)| {
+    let split = lane.create_function(|_, (text, pattern): (String, String)| {
         Ok(liz_texts::split(&text, &pattern))
     })?;
 
-    let split_spaces = ctx.create_function(|_, text: String| Ok(liz_texts::split_spaces(&text)))?;
+    let split_spaces = lane.create_function(|_, text: String| Ok(liz_texts::split_spaces(&text)))?;
 
-    let text_file_find = ctx.create_function(|ctx, (path, contents): (String, String)| {
-        utils::treat_error(ctx, liz_texts::text_file_find(&path, &contents))
+    let text_file_find = lane.create_function(|lane, (path, contents): (String, String)| {
+        utils::treat_error(lane, liz_texts::text_file_find(&path, &contents))
     })?;
 
     let text_file_find_any =
-        ctx.create_function(|ctx, (path, contents): (String, Vec<String>)| {
+        lane.create_function(|lane, (path, contents): (String, Vec<String>)| {
             utils::treat_error(
-                ctx,
+                lane,
                 liz_texts::text_file_find_any(&path, contents.as_slice()),
             )
         })?;
 
     let text_files_find =
-        ctx.create_function(|ctx, (paths, contents): (Vec<String>, String)| {
-            utils::treat_error(ctx, liz_texts::text_files_find(paths, contents))
+        lane.create_function(|lane, (paths, contents): (Vec<String>, String)| {
+            utils::treat_error(lane, liz_texts::text_files_find(paths, contents))
         })?;
 
     let text_files_find_any =
-        ctx.create_function(|ctx, (paths, contents): (Vec<String>, Vec<String>)| {
-            utils::treat_error(ctx, liz_texts::text_files_find_any(paths, contents))
+        lane.create_function(|lane, (paths, contents): (Vec<String>, Vec<String>)| {
+            utils::treat_error(lane, liz_texts::text_files_find_any(paths, contents))
         })?;
 
     let text_file_founds =
-        ctx.create_function(|_, found: String| Ok(liz_texts::text_file_founds(&found)))?;
+        lane.create_function(|_, found: String| Ok(liz_texts::text_file_founds(&found)))?;
 
     let read =
-        ctx.create_function(|ctx, path: String| utils::treat_error(ctx, liz_texts::read(&path)))?;
+        lane.create_function(|lane, path: String| utils::treat_error(lane, liz_texts::read(&path)))?;
 
-    let write = ctx.create_function(|ctx, (path, contents): (String, String)| {
-        utils::treat_error(ctx, liz_texts::write(&path, &contents))
+    let write = lane.create_function(|lane, (path, contents): (String, String)| {
+        utils::treat_error(lane, liz_texts::write(&path, &contents))
     })?;
 
-    let append = ctx.create_function(|ctx, (path, contents): (String, String)| {
-        utils::treat_error(ctx, liz_texts::append(&path, &contents))
+    let append = lane.create_function(|lane, (path, contents): (String, String)| {
+        utils::treat_error(lane, liz_texts::append(&path, &contents))
     })?;
 
-    let write_lines = ctx.create_function(|ctx, (path, lines): (String, Vec<String>)| {
-        utils::treat_error(ctx, liz_texts::write_lines(&path, lines.as_slice()))
+    let write_lines = lane.create_function(|lane, (path, lines): (String, Vec<String>)| {
+        utils::treat_error(lane, liz_texts::write_lines(&path, lines.as_slice()))
     })?;
 
-    let append_lines = ctx.create_function(|ctx, (path, lines): (String, Vec<String>)| {
-        utils::treat_error(ctx, liz_texts::append_lines(&path, lines.as_slice()))
+    let append_lines = lane.create_function(|lane, (path, lines): (String, Vec<String>)| {
+        utils::treat_error(lane, liz_texts::append_lines(&path, lines.as_slice()))
     })?;
 
     liz.set("ask", ask)?;

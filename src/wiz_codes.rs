@@ -5,20 +5,20 @@ use crate::utils;
 
 use crate::LizError;
 
-pub fn inject_codes<'a>(ctx: Context<'a>, liz: &Table<'a>) -> Result<(), LizError> {
+pub fn inject_codes<'a>(lane: Context<'a>, liz: &Table<'a>) -> Result<(), LizError> {
     let source =
-        ctx.create_function(|ctx, path: String| utils::treat_error(ctx, liz_codes::source(&path)))?;
+        lane.create_function(|lane, path: String| utils::treat_error(lane, liz_codes::source(&path)))?;
 
-    let git_root_find = ctx.create_function(|ctx, path: String| {
-        utils::treat_error(ctx, liz_codes::git_root_find(&path))
+    let git_root_find = lane.create_function(|lane, path: String| {
+        utils::treat_error(lane, liz_codes::git_root_find(&path))
     })?;
 
-    let git_is_ignored = ctx.create_function(|ctx, path: String| {
-        utils::treat_error(ctx, liz_codes::git_is_ignored(&path))
+    let git_is_ignored = lane.create_function(|lane, path: String| {
+        utils::treat_error(lane, liz_codes::git_is_ignored(&path))
     })?;
 
-    let git_has_changes = ctx.create_function(|ctx, path: String| {
-        utils::treat_error(ctx, liz_codes::git_has_changes(&path))
+    let git_has_changes = lane.create_function(|lane, path: String| {
+        utils::treat_error(lane, liz_codes::git_has_changes(&path))
     })?;
 
     liz.set("source", source)?;

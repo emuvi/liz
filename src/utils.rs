@@ -33,14 +33,14 @@ pub fn get_parent(path: impl AsRef<Path>) -> Result<PathBuf, LizError> {
     Ok(PathBuf::from(parent))
 }
 
-pub fn get_liz<'a>(ctx: &Context<'a>) -> Result<Table<'a>, LizError> {
-    let globals = ctx.globals();
+pub fn get_liz<'a>(lane: &Context<'a>) -> Result<Table<'a>, LizError> {
+    let globals = lane.globals();
     let liz: Table = globals.get("liz")?;
     Ok(liz)
 }
 
-pub fn print_stack_dir(ctx: Context) -> Result<(), LizError> {
-    let liz = get_liz(&ctx)?;
+pub fn print_stack_dir(lane: Context) -> Result<(), LizError> {
+    let liz = get_liz(&lane)?;
     let stack: Table = liz.get("stack_dir")?;
     let size = stack.raw_len();
     for index in 1..size + 1 {
@@ -50,10 +50,10 @@ pub fn print_stack_dir(ctx: Context) -> Result<(), LizError> {
     Ok(())
 }
 
-pub fn put_stack_dir<'a>(ctx: &Context<'a>, liz: &Table<'a>, dir: String) -> Result<(), LizError> {
+pub fn put_stack_dir<'a>(lane: &Context<'a>, liz: &Table<'a>, dir: String) -> Result<(), LizError> {
     let contains = liz.contains_key("stack_dir")?;
     if !contains {
-        let stack = ctx.create_table()?;
+        let stack = lane.create_table()?;
         liz.set("stack_dir", stack)?;
     }
     let stack: Table = liz.get("stack_dir")?;
@@ -69,8 +69,8 @@ pub fn get_stack_dir(liz: &Table) -> Result<String, LizError> {
     Ok(result)
 }
 
-pub fn last_stack_dir(ctx: Context) -> Result<String, LizError> {
-    let liz = get_liz(&ctx)?;
+pub fn last_stack_dir(lane: Context) -> Result<String, LizError> {
+    let liz = get_liz(&lane)?;
     Ok(get_stack_dir(&liz)?)
 }
 
@@ -81,11 +81,11 @@ pub fn pop_stack_dir(liz: &Table) -> Result<(), LizError> {
     Ok(())
 }
 
-pub fn treat_error<T>(ctx: Context, result: Result<T, LizError>) -> Result<T, rlua::Error> {
+pub fn treat_error<T>(lane: Context, result: Result<T, LizError>) -> Result<T, rlua::Error> {
     match result {
         Ok(returned) => Ok(returned),
         Err(error) => {
-            match get_liz(&ctx) {
+            match get_liz(&lane) {
                 Ok(liz) => {
                     let mut new = true;
                     if let Ok(has) = liz.contains_key("err") {
@@ -170,12 +170,12 @@ pub fn to_json(value: LuaValue) -> Result<String, LizError> {
     Ok(result)
 }
 
-pub fn from_json<'a>(ctx: Context<'a>, source: String) -> Result<LuaValue<'a>, LizError> {
+pub fn from_json<'a>(lane: Context<'a>, source: String) -> Result<LuaValue<'a>, LizError> {
     let json: JsonValue = serde_json::from_str(&source)?;
-    from_json_value(ctx, json)
+    from_json_value(lane, json)
 }
 
-fn from_json_value<'a>(ctx: Context<'a>, value: JsonValue) -> Result<LuaValue<'a>, LizError> {
+fn from_json_value<'a>(lane: Context<'a>, value: JsonValue) -> Result<LuaValue<'a>, LizError> {
     let result = match value {
         JsonValue::Null => LuaValue::Nil,
         JsonValue::Bool(data) => LuaValue::Boolean(data),
@@ -189,21 +189,21 @@ fn from_json_value<'a>(ctx: Context<'a>, value: JsonValue) -> Result<LuaValue<'a
             }
         }
         JsonValue::String(data) => {
-            let data = ctx.create_string(&data)?;
+            let data = lane.create_string(&data)?;
             LuaValue::String(data)
         }
         JsonValue::Array(data) => {
-            let table = ctx.create_table()?;
+            let table = lane.create_table()?;
             for (index, item) in data.into_iter().enumerate() {
-                let item_value = from_json_value(ctx, item)?;
+                let item_value = from_json_value(lane, item)?;
                 table.set(index + 1, item_value)?;
             }
             LuaValue::Table(table)
         }
         JsonValue::Object(data) => {
-            let table = ctx.create_table()?;
+            let table = lane.create_table()?;
             for (name, item) in data {
-                let item_value = from_json_value(ctx, item)?;
+                let item_value = from_json_value(lane, item)?;
                 table.set(name, item_value)?;
             }
             LuaValue::Table(table)

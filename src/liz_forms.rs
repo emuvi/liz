@@ -1,10 +1,7 @@
 use crate::liz_files;
 
 #[derive(Clone)]
-pub struct Tokenizer {
-    list: Vec<Slab>,
-    kind: Kind,
-}
+pub struct Tokenizer {}
 
 #[derive(Clone)]
 pub struct Slabs {

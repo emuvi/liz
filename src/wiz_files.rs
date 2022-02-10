@@ -5,63 +5,63 @@ use crate::utils;
 
 use crate::LizError;
 
-pub fn inject_files<'a>(ctx: Context<'a>, liz: &Table<'a>) -> Result<(), LizError> {
-    let has = ctx.create_function(|_, path: String| Ok(liz_files::has(&path)))?;
+pub fn inject_files<'a>(lane: Context<'a>, liz: &Table<'a>) -> Result<(), LizError> {
+    let has = lane.create_function(|_, path: String| Ok(liz_files::has(&path)))?;
 
-    let is_dir = ctx.create_function(|_, path: String| Ok(liz_files::is_dir(&path)))?;
+    let is_dir = lane.create_function(|_, path: String| Ok(liz_files::is_dir(&path)))?;
 
-    let is_file = ctx.create_function(|_, path: String| Ok(liz_files::is_file(&path)))?;
+    let is_file = lane.create_function(|_, path: String| Ok(liz_files::is_file(&path)))?;
 
-    let is_absolute = ctx.create_function(|_, path: String| Ok(liz_files::is_absolute(&path)))?;
+    let is_absolute = lane.create_function(|_, path: String| Ok(liz_files::is_absolute(&path)))?;
 
-    let is_relative = ctx.create_function(|_, path: String| Ok(liz_files::is_relative(&path)))?;
+    let is_relative = lane.create_function(|_, path: String| Ok(liz_files::is_relative(&path)))?;
 
-    let is_symlink = ctx.create_function(|_, path: String| Ok(liz_files::is_symlink(&path)))?;
+    let is_symlink = lane.create_function(|_, path: String| Ok(liz_files::is_symlink(&path)))?;
 
     let cd =
-        ctx.create_function(|ctx, path: String| utils::treat_error(ctx, liz_files::cd(&path)))?;
+        lane.create_function(|lane, path: String| utils::treat_error(lane, liz_files::cd(&path)))?;
 
-    let pwd = ctx.create_function(|ctx, ()| utils::treat_error(ctx, liz_files::pwd()))?;
+    let pwd = lane.create_function(|lane, ()| utils::treat_error(lane, liz_files::pwd()))?;
 
-    let rn = ctx.create_function(|ctx, (origin, destiny): (String, String)| {
-        utils::treat_error(ctx, liz_files::rn(&origin, &destiny))
+    let rn = lane.create_function(|lane, (origin, destiny): (String, String)| {
+        utils::treat_error(lane, liz_files::rn(&origin, &destiny))
     })?;
 
-    let cp = ctx.create_function(|ctx, (origin, destiny): (String, String)| {
-        utils::treat_error(ctx, liz_files::cp(&origin, &destiny))
+    let cp = lane.create_function(|lane, (origin, destiny): (String, String)| {
+        utils::treat_error(lane, liz_files::cp(&origin, &destiny))
     })?;
 
-    let cp_tmp = ctx.create_function(|ctx, (origin, destiny): (String, String)| {
-        utils::treat_error(ctx, liz_files::cp_tmp(&origin, &destiny))
+    let cp_tmp = lane.create_function(|lane, (origin, destiny): (String, String)| {
+        utils::treat_error(lane, liz_files::cp_tmp(&origin, &destiny))
     })?;
 
-    let mv = ctx.create_function(|ctx, (origin, destiny): (String, String)| {
-        utils::treat_error(ctx, liz_files::mv(&origin, &destiny))
+    let mv = lane.create_function(|lane, (origin, destiny): (String, String)| {
+        utils::treat_error(lane, liz_files::mv(&origin, &destiny))
     })?;
 
     let rm =
-        ctx.create_function(|ctx, path: String| utils::treat_error(ctx, liz_files::rm(&path)))?;
+        lane.create_function(|lane, path: String| utils::treat_error(lane, liz_files::rm(&path)))?;
 
     let mkdir =
-        ctx.create_function(|ctx, path: String| utils::treat_error(ctx, liz_files::mkdir(&path)))?;
+        lane.create_function(|lane, path: String| utils::treat_error(lane, liz_files::mkdir(&path)))?;
 
     let touch =
-        ctx.create_function(|ctx, path: String| utils::treat_error(ctx, liz_files::touch(&path)))?;
+        lane.create_function(|lane, path: String| utils::treat_error(lane, liz_files::touch(&path)))?;
 
-    let exe_ext = ctx.create_function(|_, ()| Ok(liz_files::exe_ext()))?;
+    let exe_ext = lane.create_function(|_, ()| Ok(liz_files::exe_ext()))?;
 
-    let os_sep = ctx.create_function(|_, ()| Ok(String::from(*liz_files::os_sep())))?;
+    let os_sep = lane.create_function(|_, ()| Ok(String::from(*liz_files::os_sep())))?;
 
-    let path_sep = ctx.create_function(|_, path: String| Ok(liz_files::path_sep(&path)))?;
+    let path_sep = lane.create_function(|_, path: String| Ok(liz_files::path_sep(&path)))?;
 
-    let path_parts = ctx.create_function(|_, path: String| {
+    let path_parts = lane.create_function(|_, path: String| {
         Ok(liz_files::path_parts(&path)
             .into_iter()
             .map(String::from)
             .collect::<Vec<String>>())
     })?;
 
-    let path_parts_join = ctx.create_function(|_, parts: Vec<String>| {
+    let path_parts_join = lane.create_function(|_, parts: Vec<String>| {
         Ok(liz_files::path_parts_join(
             parts
                 .iter()
@@ -72,86 +72,86 @@ pub fn inject_files<'a>(ctx: Context<'a>, liz: &Table<'a>) -> Result<(), LizErro
     })?;
 
     let path_name =
-        ctx.create_function(|_, path: String| Ok(String::from(liz_files::path_name(&path))))?;
+        lane.create_function(|_, path: String| Ok(String::from(liz_files::path_name(&path))))?;
 
     let path_stem =
-        ctx.create_function(|_, path: String| Ok(String::from(liz_files::path_stem(&path))))?;
+        lane.create_function(|_, path: String| Ok(String::from(liz_files::path_stem(&path))))?;
 
     let path_ext =
-        ctx.create_function(|_, path: String| Ok(String::from(liz_files::path_ext(&path))))?;
+        lane.create_function(|_, path: String| Ok(String::from(liz_files::path_ext(&path))))?;
 
-    let path_ext_is = ctx.create_function(|_, (path, ext): (String, String)| {
+    let path_ext_is = lane.create_function(|_, (path, ext): (String, String)| {
         Ok(liz_files::path_ext_is(&path, &ext))
     })?;
 
-    let path_ext_is_on = ctx.create_function(|_, (path, exts): (String, Vec<String>)| {
+    let path_ext_is_on = lane.create_function(|_, (path, exts): (String, Vec<String>)| {
         Ok(liz_files::path_ext_is_on(&path, exts.as_slice()))
     })?;
 
-    let path_absolute = ctx.create_function(|ctx, path: String| {
-        utils::treat_error(ctx, liz_files::path_absolute(&path))
+    let path_absolute = lane.create_function(|lane, path: String| {
+        utils::treat_error(lane, liz_files::path_absolute(&path))
     })?;
 
-    let path_relative = ctx.create_function(|ctx, (path, base): (String, String)| {
-        utils::treat_error(ctx, liz_files::path_relative(&path, &base))
+    let path_relative = lane.create_function(|lane, (path, base): (String, String)| {
+        utils::treat_error(lane, liz_files::path_relative(&path, &base))
     })?;
 
-    let path_walk = ctx.create_function(|ctx, path: String| {
-        utils::treat_error(ctx, liz_files::path_walk(&path))
+    let path_walk = lane.create_function(|lane, path: String| {
+        utils::treat_error(lane, liz_files::path_walk(&path))
     })?;
 
-    let path_parent = ctx.create_function(|ctx, path: String| {
-        utils::treat_error(ctx, liz_files::path_parent(&path))
+    let path_parent = lane.create_function(|lane, path: String| {
+        utils::treat_error(lane, liz_files::path_parent(&path))
     })?;
 
-    let path_parent_find = ctx.create_function(|ctx, (path, with_name): (String, String)| {
-        utils::treat_error(ctx, liz_files::path_parent_find(&path, &with_name))
+    let path_parent_find = lane.create_function(|lane, (path, with_name): (String, String)| {
+        utils::treat_error(lane, liz_files::path_parent_find(&path, &with_name))
     })?;
 
-    let path_join = ctx.create_function(|ctx, (path, child): (String, String)| {
-        utils::treat_error(ctx, liz_files::path_join(&path, &child))
+    let path_join = lane.create_function(|lane, (path, child): (String, String)| {
+        utils::treat_error(lane, liz_files::path_join(&path, &child))
     })?;
 
-    let path_join_if_relative = ctx.create_function(|ctx, (base, path): (String, String)| {
-        utils::treat_error(ctx, liz_files::path_join_if_relative(&base, &path))
+    let path_join_if_relative = lane.create_function(|lane, (base, path): (String, String)| {
+        utils::treat_error(lane, liz_files::path_join_if_relative(&base, &path))
     })?;
 
-    let path_list = ctx.create_function(|ctx, path: String| {
-        utils::treat_error(ctx, liz_files::path_list(&path))
+    let path_list = lane.create_function(|lane, path: String| {
+        utils::treat_error(lane, liz_files::path_list(&path))
     })?;
 
-    let path_list_in = ctx.create_function(|ctx, path: String| {
-        utils::treat_error(ctx, liz_files::path_list_in(&path))
+    let path_list_in = lane.create_function(|lane, path: String| {
+        utils::treat_error(lane, liz_files::path_list_in(&path))
     })?;
 
-    let path_list_dirs = ctx.create_function(|ctx, path: String| {
-        utils::treat_error(ctx, liz_files::path_list_dirs(&path))
+    let path_list_dirs = lane.create_function(|lane, path: String| {
+        utils::treat_error(lane, liz_files::path_list_dirs(&path))
     })?;
 
-    let path_list_dirs_in = ctx.create_function(|ctx, path: String| {
-        utils::treat_error(ctx, liz_files::path_list_dirs_in(&path))
+    let path_list_dirs_in = lane.create_function(|lane, path: String| {
+        utils::treat_error(lane, liz_files::path_list_dirs_in(&path))
     })?;
 
-    let path_list_files = ctx.create_function(|ctx, path: String| {
-        utils::treat_error(ctx, liz_files::path_list_files(&path))
+    let path_list_files = lane.create_function(|lane, path: String| {
+        utils::treat_error(lane, liz_files::path_list_files(&path))
     })?;
 
-    let path_list_files_in = ctx.create_function(|ctx, path: String| {
-        utils::treat_error(ctx, liz_files::path_list_files_in(&path))
+    let path_list_files_in = lane.create_function(|lane, path: String| {
+        utils::treat_error(lane, liz_files::path_list_files_in(&path))
     })?;
 
-    let path_list_files_ext = ctx.create_function(|ctx, (path, ext): (String, String)| {
-        utils::treat_error(ctx, liz_files::path_list_files_ext(&path, &ext))
+    let path_list_files_ext = lane.create_function(|lane, (path, ext): (String, String)| {
+        utils::treat_error(lane, liz_files::path_list_files_ext(&path, &ext))
     })?;
 
-    let path_list_files_ext_in = ctx.create_function(|ctx, (path, ext): (String, String)| {
-        utils::treat_error(ctx, liz_files::path_list_files_ext_in(&path, &ext))
+    let path_list_files_ext_in = lane.create_function(|lane, (path, ext): (String, String)| {
+        utils::treat_error(lane, liz_files::path_list_files_ext_in(&path, &ext))
     })?;
 
     let path_list_files_exts =
-        ctx.create_function(|ctx, (path, exts): (String, Vec<String>)| {
+        lane.create_function(|lane, (path, exts): (String, Vec<String>)| {
             utils::treat_error(
-                ctx,
+                lane,
                 liz_files::path_list_files_exts(
                     &path,
                     exts.iter()
@@ -163,9 +163,9 @@ pub fn inject_files<'a>(ctx: Context<'a>, liz: &Table<'a>) -> Result<(), LizErro
         })?;
 
     let path_list_files_exts_in =
-        ctx.create_function(|ctx, (path, exts): (String, Vec<String>)| {
+        lane.create_function(|lane, (path, exts): (String, Vec<String>)| {
             utils::treat_error(
-                ctx,
+                lane,
                 liz_files::path_list_files_exts_in(
                     &path,
                     exts.iter()

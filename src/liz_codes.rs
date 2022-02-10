@@ -39,9 +39,9 @@ impl UserData for Source {
 
         methods.add_method("build", |_, src, ()| Ok(src.slabs.build()));
 
-        methods.add_method("write", |ctx, src, ()| {
+        methods.add_method("write", |lane, src, ()| {
             let text = src.slabs.build();
-            utils::treat_error(ctx, liz_texts::write(&src.path, &text))
+            utils::treat_error(lane, liz_texts::write(&src.path, &text))
         });
     }
 }
