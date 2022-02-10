@@ -127,10 +127,6 @@ pub fn touch(path: &str) -> Result<(), LizError> {
     Ok(())
 }
 
-pub fn exe_ext() -> &'static str {
-    std::env::consts::EXE_EXTENSION
-}
-
 pub fn os_sep() -> &'static char {
     &std::path::MAIN_SEPARATOR
 }
