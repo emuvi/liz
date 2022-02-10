@@ -266,7 +266,7 @@ macro_rules! dbg_fnc {
 
 macro_rules! dbg_fmt {
     () => (String::default());
-    ($v:expr) => (format!("{} = {:?}", stringify!($v), $v));
+    ($v:expr) => (format!("{} = '{:?}'", stringify!($v), $v));
     ($v:expr, $($n:expr),+) => (format!("{} = {:?}, {}", stringify!($v), $v, crate::utils::dbg_fmt!($($n),+)));
 }
 
@@ -305,7 +305,7 @@ macro_rules! liz_debug_func {
 #[macro_export]
 macro_rules! liz_debug_vals {
     () => (String::default());
-    ($v:expr) => (format!("{} = {:?}", stringify!($v), $v));
+    ($v:expr) => (format!("{} = '{:?}'", stringify!($v), $v));
     ($v:expr, $($n:expr),+) => (format!("{} = {:?}, {}", stringify!($v), $v, liz::liz_debug_vals!($($n),+)));
 }
 
