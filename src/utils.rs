@@ -216,7 +216,7 @@ fn throw(message: String) -> LizError {
     Box::new(simple_error::SimpleError::new(message))
 }
 
-pub fn dbg_v(
+pub fn dbg_err(
     file: &str,
     line: u32,
     func: &str,
@@ -224,13 +224,24 @@ pub fn dbg_v(
     vals: String,
     err: impl std::fmt::Display,
 ) -> LizError {
+    throw(dbg_str(file, line, func, call, vals, err))
+}
+
+pub fn dbg_str(
+    file: &str,
+    line: u32,
+    func: &str,
+    call: &str,
+    vals: String,
+    err: impl std::fmt::Display,
+) -> String {
     if vals.is_empty() {
-        throw(format!(
+        format!(
             "Could not perform {}[{}]({}) on {} because {}",
             file, line, func, call, err
-        ))
+        )
     } else {
-        throw(format!(
+        format!(
             "Could not perform {}[{}]({}) on {} with {} because {}",
             file,
             line,
@@ -238,7 +249,7 @@ pub fn dbg_v(
             call,
             vals.replace("\"", "'"),
             err
-        ))
+        )
     }
 }
 
@@ -261,10 +272,10 @@ macro_rules! dbg_fmt {
 
 macro_rules! debug {
     ($err:expr, $call:expr) => (
-        crate::utils::dbg_v(file!(), line!(), crate::utils::dbg_fnc!(), $call, crate::utils::dbg_fmt!(), $err)
+        crate::utils::dbg_err(file!(), line!(), crate::utils::dbg_fnc!(), $call, crate::utils::dbg_fmt!(), $err)
     );
     ($err:expr, $call:expr, $($v:expr),+) => (
-        crate::utils::dbg_v(
+        crate::utils::dbg_err(
             file!(),
             line!(),
             crate::utils::dbg_fnc!(),
@@ -278,3 +289,20 @@ macro_rules! debug {
 pub(crate) use dbg_fmt;
 pub(crate) use dbg_fnc;
 pub(crate) use debug;
+
+#[macro_export]
+macro_rules! liz_debug {
+    ($err:expr, $call:expr) => (
+        crate::utils::dbg_str(file!(), line!(), crate::utils::dbg_fnc!(), $call, crate::utils::dbg_fmt!(), $err)
+    );
+    ($err:expr, $call:expr, $($v:expr),+) => (
+        crate::utils::dbg_str(
+            file!(),
+            line!(),
+            crate::utils::dbg_fnc!(),
+            $call,
+            crate::utils::dbg_fmt!($($v),+),
+            $err,
+        )
+    );
+}
