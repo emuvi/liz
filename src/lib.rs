@@ -21,12 +21,12 @@ use utils::dbg_err;
 
 pub type LizError = Box<dyn Error + Send + Sync>;
 
-pub fn run(path: &str, args: Option<Vec<String>>) -> Result<Vec<String>, LizError> {
+pub fn run(path: &str, args: &Option<Vec<String>>) -> Result<Vec<String>, LizError> {
     let handler = rise(path, args).map_err(|err| dbg_err!(err, "rise", path))?;
     race(path, &handler).map_err(|err| dbg_err!(err, "race", path))
 }
 
-pub fn rise(path: &str, args: Option<Vec<String>>) -> Result<Lua, LizError> {
+pub fn rise(path: &str, args: &Option<Vec<String>>) -> Result<Lua, LizError> {
     let handler = Lua::new();
     let mut error: Option<LizError> = None;
     handler.context(|lane| {

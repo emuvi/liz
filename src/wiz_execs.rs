@@ -8,7 +8,7 @@ use crate::LizError;
 
 pub fn inject_execs<'a>(lane: Context<'a>, liz: &Table<'a>) -> Result<(), LizError> {
     let run = lane.create_function(|lane, (path, args): (String, Option<Vec<String>>)| {
-        utils::treat_error(lane, crate::run(&path, args))
+        utils::treat_error(lane, crate::run(&path, &args))
     })?;
 
     let race = lane.create_function(|lane, path: String| {
@@ -20,7 +20,7 @@ pub fn inject_execs<'a>(lane: Context<'a>, liz: &Table<'a>) -> Result<(), LizErr
     })?;
 
     let spawn = lane.create_function(|lane, (path, args): (String, Option<Vec<String>>)| {
-        utils::treat_error(lane, liz_execs::spawn(lane, &path, args))
+        utils::treat_error(lane, liz_execs::spawn(lane, &path, &args))
     })?;
 
     let join = lane.create_function(|lane, spawned: Spawned| {

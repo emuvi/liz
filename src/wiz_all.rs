@@ -10,9 +10,9 @@ use crate::wiz_trans;
 use crate::utils::{self, dbg_err};
 use crate::LizError;
 
-pub fn inject_all(lane: Context, path: &str, args: Option<Vec<String>>) -> Result<(), LizError> {
+pub fn inject_all(lane: Context, path: &str, args: &Option<Vec<String>>) -> Result<(), LizError> {
     let liz = lane.create_table()?;
-    liz.set("args", args)?;
+    liz.set("args", args.clone())?;
 
     let path = utils::add_liz_extension(path);
     let path = if liz_paths::is_symlink(&path) {

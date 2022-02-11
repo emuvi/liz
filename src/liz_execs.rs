@@ -14,12 +14,16 @@ use crate::LizError;
 
 #[derive(Clone)]
 pub struct Spawned {
+    path: String,
+    args: Option<Vec<String>>,
     results: Arc<RwLock<Option<Result<Vec<String>, LizError>>>>,
 }
 
 impl Spawned {
-    fn new() -> Spawned {
+    fn new(path: String, args: Option<Vec<String>>) -> Spawned {
         Spawned {
+            path,
+            args,
             results: Arc::new(RwLock::new(None)),
         }
     }
@@ -53,7 +57,7 @@ impl Spawned {
 
 impl UserData for Spawned {}
 
-pub fn spawn(lane: Context, path: &str, args: Option<Vec<String>>) -> Result<Spawned, LizError> {
+pub fn spawn(lane: Context, path: &str, args: &Option<Vec<String>>) -> Result<Spawned, LizError> {
     let globals = lane.globals();
     let liz: Table = globals.get("liz")?;
 
@@ -79,10 +83,10 @@ pub fn spawn(lane: Context, path: &str, args: Option<Vec<String>>) -> Result<Spa
         liz_paths::path_absolute(&path).map_err(|err| dbg_err!(err, "path_absolute", path))?;
     liz.set("spawn_path", spawn_path.clone())?;
 
-    let spawned = Spawned::new();
+    let spawned = Spawned::new(spawn_path, args.clone());
     let spawned_clone = spawned.clone();
     thread::spawn(move || {
-        let returned = crate::run(&spawn_path, args);
+        let returned = crate::run(&spawned_clone.path, &spawned_clone.args);
         {
             let mut lock = spawned_clone.results.write().unwrap();
             *lock = Some(returned);
