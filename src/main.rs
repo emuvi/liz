@@ -62,7 +62,7 @@ fn print_help() {
         "liz {}
 Éverton M. Vieira <everton.muvi@gmail.com>
 
-Liz ( LuaWizard ) is a library and a command that features a bunch of functionalities for lua scripts inside the liz global variable.
+Liz ( LuaWizard ) is a library and a command program that features a bunch of functionalities for lua scripts inside the liz global variable.
     
 USAGE:
     liz [FLAGS] [PATH]... [-- ARGS] 
@@ -73,7 +73,7 @@ FLAGS:
     -h, --help      Prints the usage information;
 
 PATH:
-    Address of the scripts to be loaded and executed. It is not necessary to put the extension .liz but if no path was specified, Liz will try to execute the ./default.liz path.
+    Address of the script to be loaded and executed. It is not necessary to put the extension .liz but if no path was specified, Liz will try to execute the ./default.liz path.
 
 ARGS:
     Arguments that can be passed for the scripts on the liz.args global variable.",
