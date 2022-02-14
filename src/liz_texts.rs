@@ -5,8 +5,23 @@ use std::io::{prelude::*, BufReader};
 use std::sync::{Arc, Mutex};
 use std::thread::JoinHandle;
 
+use crate::liz_codes::Forming;
+use crate::liz_forms::Forms;
+use crate::liz_parse;
+use crate::liz_paths;
 use crate::utils::dbg_err;
 use crate::LizError;
+
+pub fn text(path: &str) -> Result<Forming, LizError> {
+    let path = String::from(path);
+    let text = if liz_paths::is_file(&path) {
+        read(&path)?
+    } else {
+        String::new()
+    };
+    let forms = Forms::parse(&text, &liz_parse::TEXT_PARSER);
+    Ok(Forming { path, forms })
+}
 
 pub fn ask(message: &str) -> Result<String, LizError> {
     print!("{}", message);
@@ -25,7 +40,9 @@ pub fn ask_int(message: &str) -> Result<i32, LizError> {
     std::io::stdin()
         .read_line(&mut buffer)
         .map_err(|err| dbg_err!(err, "read_line"))?;
-    let result = buffer.parse::<i32>().map_err(|err| dbg_err!(err, "parse"))?;
+    let result = buffer
+        .parse::<i32>()
+        .map_err(|err| dbg_err!(err, "parse"))?;
     Ok(result)
 }
 

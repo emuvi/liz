@@ -6,6 +6,9 @@ use crate::utils;
 use crate::LizError;
 
 pub fn inject_texts<'a>(lane: Context<'a>, liz: &Table<'a>) -> Result<(), LizError> {
+    let text =
+        lane.create_function(|lane, path: String| utils::treat_error(lane, liz_texts::text(&path)))?;
+
     let ask = lane.create_function(|lane, message: String| {
         utils::treat_error(lane, liz_texts::ask(&message))
     })?;
@@ -106,6 +109,7 @@ pub fn inject_texts<'a>(lane: Context<'a>, liz: &Table<'a>) -> Result<(), LizErr
         utils::treat_error(lane, liz_texts::append_lines(&path, lines.as_slice()))
     })?;
 
+    liz.set("text", text)?;
     liz.set("ask", ask)?;
     liz.set("ask_int", ask_int)?;
     liz.set("ask_float", ask_float)?;

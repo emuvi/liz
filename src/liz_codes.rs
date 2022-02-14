@@ -9,23 +9,23 @@ use crate::utils;
 use crate::LizError;
 
 #[derive(Clone)]
-pub struct Source {
+pub struct Forming {
     pub path: String,
     pub forms: Forms,
 }
 
-pub fn source(path: &str) -> Result<Source, LizError> {
+pub fn code(path: &str) -> Result<Forming, LizError> {
     let path = String::from(path);
     let text = if liz_paths::is_file(&path) {
         liz_texts::read(&path)?
     } else {
         String::new()
     };
-    let forms = Forms::parse(&text, &liz_parse::DEFAULT_PARSER);
-    Ok(Source { path, forms })
+    let forms = Forms::parse(&text, &liz_parse::CODE_PARSER);
+    Ok(Forming { path, forms })
 }
 
-impl UserData for Source {
+impl UserData for Forming {
     fn add_methods<'lua, M: UserDataMethods<'lua, Self>>(methods: &mut M) {
         methods.add_method_mut("put", |_, src, part: String| {
             src.forms.put(&part);

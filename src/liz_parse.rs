@@ -5,19 +5,29 @@ pub trait Parser {
 }
 
 pub struct DefaultParser {
-    pub group_single_quotes: bool,
-    pub group_double_quotes: bool,
-    pub group_non_alfanumeric: bool,
+    code_like: bool
 }
 
-pub static DEFAULT_PARSER: DefaultParser = DefaultParser {
-    group_single_quotes: true,
-    group_double_quotes: true,
-    group_non_alfanumeric: true,
+pub static CODE_PARSER: DefaultParser = DefaultParser {
+    code_like: true
+};
+
+pub static TEXT_PARSER: DefaultParser = DefaultParser {
+    code_like: false
 };
 
 impl Parser for DefaultParser {
     fn eval(&self, text: &str) -> Vec<Form> {
-        Vec::new()
+        let mut result = Vec::new();
+        let mut part = String::new();
+        for ch in text.chars() {
+            if self.code_like {
+                part.push(ch);
+            }
+        }
+        if !part.is_empty() {
+            result.push(Form::new(&part));
+        }
+        result
     }
 }
