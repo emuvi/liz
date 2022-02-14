@@ -5,15 +5,15 @@ pub trait Parser {
 }
 
 pub struct DefaultParser {
-    code_like: bool
+    is_code: bool
 }
 
 pub static CODE_PARSER: DefaultParser = DefaultParser {
-    code_like: true
+    is_code: true
 };
 
 pub static TEXT_PARSER: DefaultParser = DefaultParser {
-    code_like: false
+    is_code: false
 };
 
 impl Parser for DefaultParser {
@@ -21,7 +21,7 @@ impl Parser for DefaultParser {
         let mut result = Vec::new();
         let mut part = String::new();
         for ch in text.chars() {
-            if self.code_like {
+            if self.is_code {
                 part.push(ch);
             }
         }
