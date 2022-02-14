@@ -62,7 +62,7 @@ fn print_help() {
         "liz {}
 Éverton M. Vieira <everton.muvi@gmail.com>
 
-Liz ( LuaWizard ) is a library and a command program that features a bunch of functionalities for lua scripts inside the liz global variable.
+Liz ( LuaWizard ) is a library and a command program that features a bunch of functionalities for lua scripts inside the liz global variable. 
     
 USAGE:
     liz [FLAGS] [PATH]... [-- ARGS] 

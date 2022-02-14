@@ -1,46 +1,45 @@
 use rlua::{UserData, UserDataMethods};
 
 use crate::liz_execs;
+use crate::liz_forms::Forms;
+use crate::liz_parse;
 use crate::liz_paths;
-use crate::liz_forms;
-use crate::liz_forms::Slabs;
 use crate::liz_texts;
 use crate::utils;
 use crate::LizError;
 
 #[derive(Clone)]
 pub struct Source {
-    path: String,
-    slabs: Slabs,
+    pub path: String,
+    pub forms: Forms,
 }
 
 pub fn source(path: &str) -> Result<Source, LizError> {
     let path = String::from(path);
-    let name = liz_paths::path_name(&path);
     let text = if liz_paths::is_file(&path) {
         liz_texts::read(&path)?
     } else {
         String::new()
     };
-    let slabs = liz_forms::Slabs::parse(&text, name);
-    Ok(Source { path, slabs })
+    let forms = Forms::parse(&text, &liz_parse::DEFAULT_PARSER);
+    Ok(Source { path, forms })
 }
 
 impl UserData for Source {
     fn add_methods<'lua, M: UserDataMethods<'lua, Self>>(methods: &mut M) {
         methods.add_method_mut("put", |_, src, part: String| {
-            src.slabs.put(&part);
+            src.forms.put(&part);
             Ok(())
         });
 
-        methods.add_method("len", |_, src, ()| Ok(src.slabs.len()));
+        methods.add_method("len", |_, src, ()| Ok(src.forms.len()));
 
-        methods.add_method("get", |_, src, index: usize| Ok(src.slabs.get(index)));
+        methods.add_method("get", |_, src, index: usize| Ok(String::from(src.forms.get(index))));
 
-        methods.add_method("build", |_, src, ()| Ok(src.slabs.build()));
+        methods.add_method("build", |_, src, ()| Ok(src.forms.build()));
 
         methods.add_method("write", |lane, src, ()| {
-            let text = src.slabs.build();
+            let text = src.forms.build();
             utils::treat_error(lane, liz_texts::write(&src.path, &text))
         });
     }
