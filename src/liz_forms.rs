@@ -13,7 +13,7 @@ pub struct Form {
 impl Forms {
     pub fn parse(text: &str, parser: &impl Parser) -> Forms {
         Forms {
-            list: parser.eval(text),
+            list: parser.parse(text),
         }
     }
 

@@ -1,7 +1,7 @@
 use crate::liz_forms::{self, Form};
 
 pub trait Parser {
-    fn eval(&self, text: &str) -> Vec<Form>;
+    fn parse(&self, text: &str) -> Vec<Form>;
 }
 
 pub struct BlockParser<'a> {
@@ -109,12 +109,11 @@ pub static TEXT_PARSER: BlockParser<'static> = BlockParser {
 };
 
 impl<'a> Parser for BlockParser<'a> {
-    fn eval(&self, text: &str) -> Vec<Form> {
+    fn parse(&self, text: &str) -> Vec<Form> {
         let mut result = Vec::new();
         let mut accrued = String::new();
         let mut inside: Option<&BlockKind> = None;
         let mut previous = '\0';
-
         for actual in text.chars() {
             if let Some(ref closes_block) = inside {
                 let closes_block = *closes_block;
