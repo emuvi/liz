@@ -12,7 +12,9 @@ pub struct Form {
 
 impl Forms {
     pub fn parse(text: &str, parser: &impl Parser) -> Forms {
-        Forms { list: parser.eval(text) }
+        Forms {
+            list: parser.eval(text),
+        }
     }
 
     pub fn put(&mut self, part: &str) {
@@ -43,18 +45,29 @@ impl Form {
         Form { part: part.into() }
     }
 
+    pub fn from(part: String) -> Form {
+        Form { part }
+    }
+
     pub fn is_whitespace(&self) -> bool {
         !self.part.chars().any(|ch| !ch.is_whitespace())
     }
 
     pub fn is_linespace(&self) -> bool {
-        !self.part.chars().any(|ch| LINE_SPACE_CHARS.iter().any(|lsc| ch != *lsc))
+        !self
+            .part
+            .chars()
+            .any(|ch| LINE_SPACE_CHARS.iter().any(|lsc| ch != *lsc))
     }
 
     pub fn is_linebreak(&self) -> bool {
-        !self.part.chars().any(|ch| LINE_BREAK_CHARS.iter().any(|lbc| ch != *lbc))
+        !self
+            .part
+            .chars()
+            .any(|ch| LINE_BREAK_CHARS.iter().any(|lbc| ch != *lbc))
     }
 }
 
 pub static LINE_SPACE_CHARS: &[char] = &[' ', '\t'];
+
 pub static LINE_BREAK_CHARS: &[char] = &['\n', '\r'];
