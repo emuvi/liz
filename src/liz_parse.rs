@@ -29,8 +29,10 @@ impl Parser for DefaultParser {
 }
 
 pub struct BlockParser {
-    pub order: Vec<Box<dyn BlockEval>>,
+    pub order: Vec<BlockPart>,
 }
+
+pub struct BlockPart {}
 
 pub trait BlockEval {
     fn is_begin(&self, accrued: &str, actual: char) -> BlockBound;
