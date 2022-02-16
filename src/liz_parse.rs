@@ -180,7 +180,12 @@ impl<'a> Parser for BlockParser<'a> {
                 let closes_block = *closes_block;
                 match closes_block {
                     BlockKind::BlockAmid(amid) => {}
-                    BlockKind::BlockNear(near) => {}
+                    BlockKind::BlockNear(near) => {
+                        if !near.has(actual) {
+                            helper.commit();
+                            block_now = None;
+                        }
+                    }
                     BlockKind::BlockEach(_) => {}
                     BlockKind::BlockDigit(digit) => {}
                     BlockKind::BlockRegex(regex) => {
@@ -194,7 +199,8 @@ impl<'a> Parser for BlockParser<'a> {
                         }
                     }
                 }
-            } else {
+            }
+            if block_now.is_none() {
                 for opens_block in &self.order {
                     let opens_block = *opens_block;
                     match opens_block {
