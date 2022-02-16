@@ -1,11 +1,11 @@
 use crate::liz_parse::Parser;
 
-#[derive(Clone)]
+#[derive(Debug, Clone)]
 pub struct Forms {
     pub list: Vec<Form>,
 }
 
-#[derive(Clone)]
+#[derive(Debug, Clone)]
 pub struct Form {
     pub part: String,
 }
