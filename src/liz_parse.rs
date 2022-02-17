@@ -50,19 +50,19 @@ pub struct KindTick<'a> {
     pub closer: &'a [KindTest<'a>],
 }
 
-pub type KindTest<'a> = (Is, As, KindChar<'a>, Tie);
+pub type KindTest<'a> = (If, Is, KindChar<'a>, Tie);
 
 #[derive(PartialEq)]
-pub enum Is {
+pub enum If {
     Past,
     Step,
     Next,
 }
 
 #[derive(PartialEq)]
-pub enum As {
-    ItIs,
-    IsNo,
+pub enum Is {
+    Of,
+    No,
 }
 
 #[derive(PartialEq)]
@@ -106,17 +106,17 @@ impl<'a> KindTick<'a> {
         let mut result = true;
         let mut last = true;
         for test in (*tests).iter().rev() {
-            let arg = &test.0;
-            let set = &test.1;
+            let var = &test.0;
+            let like = &test.1;
             let tester = &test.2;
             let tie = &test.3;
-            let over = match arg {
-                Is::Past => past,
-                Is::Step => step,
-                Is::Next => next,
+            let over = match var {
+                If::Past => past,
+                If::Step => step,
+                If::Next => next,
             };
             let mut partial = tester.check(over);
-            if *set == As::IsNo {
+            if *like == Is::No {
                 partial = !partial;
             }
             if last {
@@ -155,13 +155,13 @@ pub static BLOCK_ANGLE_BRACKET: BlockKind<'static> = BlockKind::BlockAmid(KindAm
 });
 
 pub static BLOCK_REGULAR: BlockKind<'static> = BlockKind::BlockTick(KindTick {
-    opener: &[(Is::Step, As::ItIs, KindChar::Alphabetic, Tie::And)],
-    closer: &[(Is::Step, As::IsNo, KindChar::AlphaNumeric, Tie::And)],
+    opener: &[(If::Step, Is::Of, KindChar::Alphabetic, Tie::And)],
+    closer: &[(If::Step, Is::No, KindChar::AlphaNumeric, Tie::And)],
 });
 
 pub static BLOCK_NUMBERS: BlockKind<'static> = BlockKind::BlockTick(KindTick {
-    opener: &[(Is::Step, As::ItIs, KindChar::Digit(10), Tie::And)],
-    closer: &[(Is::Step, As::IsNo, KindChar::Digit(10), Tie::And)],
+    opener: &[(If::Step, Is::Of, KindChar::Digit(10), Tie::And)],
+    closer: &[(If::Step, Is::No, KindChar::Digit(10), Tie::And)],
 });
 
 pub static BLOCK_LINE_SPACE: BlockKind<'static> =
