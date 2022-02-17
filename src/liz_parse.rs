@@ -1,4 +1,4 @@
-use regex::Regex;
+use regex::Rexp;
 use std::collections::HashMap;
 
 use crate::liz_forms::{self, Form};
@@ -15,8 +15,8 @@ pub enum BlockKind<'a> {
     BlockAmid(KindAmid<'a>),
     BlockNear(KindChar<'a>),
     BlockEach(KindChar<'a>),
-    BlockDigit(KindDigit<'a>),
-    BlockRegex(&'a str),
+    BlockTick(KindTick<'a>),
+    BlockRexp(&'a str),
 }
 
 pub enum KindChar<'a> {
@@ -63,31 +63,50 @@ pub struct KindAmid<'a> {
     pub escape: KindChar<'a>,
 }
 
-pub struct KindDigit<'a> {
-    pub can_start_on: KindChar<'a>,
-    pub main_must_be: KindChar<'a>,
-    pub can_have_too: KindChar<'a>,
-}
-
 pub struct KindTick<'a> {
     pub prior: Option<&'a [KindTest<'a>]>,
     pub actual: Option<&'a [KindTest<'a>]>,
     pub next: Option<&'a [KindTest<'a>]>,
 }
 
+impl<'a> KindTick<'a> {
+    pub fn begins(&self, prior: char, actual: char) -> bool {
+        KindTick::check(&self.prior, prior) && KindTick::check(&self.actual, actual)
+    }
+    
+    pub fn ends(&self, actual: char, next: char) -> bool {
+        KindTick::check(&self.actual, actual) && KindTick::check(&self.next, next)
+    }
+    
+    fn check(tests: &Option<&'a [KindTest<'a>]>, over: char) -> bool {
+        let mut result = true;
+        if let Some(tests) = tests {
+            let mut first = true;
+            for test in *tests {
+                let mut partial = test.tester.check(over);
+                if test.invert {
+                    partial = !partial;
+                }
+                if first {
+                    first = false;
+                    result = partial;
+                } else {
+                    if test.or_tie {
+                        result = result || partial;
+                    } else {
+                        result = result && partial;
+                    }
+                }
+            }
+        }
+        result
+    }
+}
+
 pub struct KindTest<'a> {
     pub invert: bool,
     pub tester: KindChar<'a>,
-    pub joints: Option<KindJoint>
-}
-
-pub enum KindJoint {
-    And, Or
-}
-
-impl<'a> KindTick<'a> {
-    pub fn begins(prior: char, actual: char) -> bool {false}
-    pub fn ends(actual: char, next: char) -> bool {false}
+    pub or_tie: bool,
 }
 
 pub static BLOCK_SINGLE_QUOTES: BlockKind<'static> = BlockKind::BlockAmid(KindAmid {
@@ -110,14 +129,10 @@ pub static BLOCK_ANGLE_BRACKET: BlockKind<'static> = BlockKind::BlockAmid(KindAm
     escape: KindChar::IsInList(KindList{ list: &[] }),
 });
 
-pub static BLOCK_NUMBERS: BlockKind<'static> = BlockKind::BlockDigit(KindDigit {
-    can_start_on: KindChar::IsInList(KindList{ list: &['-'] }),
-    main_must_be: KindChar::IsInList(KindList{
-        list: &['0', '1', '2', '3', '4', '5', '6', '7', '8', '9'],
-    }),
-    can_have_too: KindChar::IsInList(KindList{
-        list: &['.', ',', '_'],
-    }),
+pub static BLOCK_NUMBERS: BlockKind<'static> = BlockKind::BlockTick(KindTick {
+    prior: None,
+    actual: None,
+    next: None,
 });
 
 pub static BLOCK_LINE_SPACE: BlockKind<'static> = BlockKind::BlockNear(KindChar::IsInList(KindList{
@@ -197,12 +212,12 @@ impl BlockParserHelper {
 impl<'a> Parser for BlockParser<'a> {
     fn parse(&self, text: &str) -> Vec<Form> {
         let mut helper = BlockParserHelper::new();
-        let mut crexps: HashMap<&str, Regex> = HashMap::new();
+        let mut crexps: HashMap<&str, Rexp> = HashMap::new();
         for block in self.order {
             let block = *block;
             match block {
-                BlockKind::BlockRegex(regex) => {
-                    let crexp = Regex::new(regex).unwrap();
+                BlockKind::BlockRexp(regex) => {
+                    let crexp = Rexp::new(regex).unwrap();
                     crexps.insert(regex, crexp);
                 }
                 _ => {}
@@ -244,13 +259,13 @@ impl<'a> Parser for BlockParser<'a> {
                         }
                     }
                     BlockKind::BlockEach(_) => {}
-                    BlockKind::BlockDigit(digit) => {
-                        if !digit.main_must_be.check(actual) && !digit.can_have_too.check(actual) {
+                    BlockKind::BlockTick(tick) => {
+                        if tick.ends(actual, next) {
                             helper.commit();
                             block_now = None;
                         }
                     }
-                    BlockKind::BlockRegex(regex) => {
+                    BlockKind::BlockRexp(regex) => {
                         let crexp = crexps.get(regex).unwrap();
                         helper.accrue(actual);
                         let commit = !crexp.is_match(&helper.accrued);
@@ -285,15 +300,13 @@ impl<'a> Parser for BlockParser<'a> {
                                 accrue = false;
                             }
                         }
-                        BlockKind::BlockDigit(digit) => {
-                            if digit.main_must_be.check(actual)
-                                || (digit.can_start_on.check(actual) && digit.main_must_be.check(next))
-                            {
+                        BlockKind::BlockTick(tick) => {
+                            if tick.begins(prior, actual)  {
                                 helper.commit();
                                 block_now = Some(opens_block);
                             }
                         }
-                        BlockKind::BlockRegex(regex) => {
+                        BlockKind::BlockRexp(regex) => {
                             let crexp = crexps.get(regex).unwrap();
                             if crexp.is_match(&helper.accrued) {
                                 block_now = Some(opens_block);
