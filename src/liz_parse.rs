@@ -1,4 +1,4 @@
-use regex::Rexp;
+use regex::Regex;
 use std::collections::HashMap;
 
 use crate::liz_forms::{self, Form};
@@ -8,13 +8,13 @@ pub trait Parser {
 }
 
 pub struct BlockParser<'a> {
-    pub order: &'a [&'a BlockKind<'a>],
+    pub blocks: &'a [&'a BlockKind<'a>],
 }
 
 pub enum BlockKind<'a> {
-    BlockAmid(KindAmid<'a>),
-    BlockNear(KindChar<'a>),
     BlockEach(KindChar<'a>),
+    BlockNear(KindChar<'a>),
+    BlockAmid(KindAmid<'a>),
     BlockTick(KindTick<'a>),
     BlockRexp(&'a str),
 }
@@ -31,6 +31,46 @@ pub enum KindChar<'a> {
     IsInList(KindList<'a>),
 }
 
+pub struct KindList<'a> {
+    pub list: &'a [char],
+}
+
+/// It is inclusive on opener and closer. 
+/// Wich means it will include the opener and closer steps to the block.
+pub struct KindAmid<'a> {
+    pub opener: KindChar<'a>,
+    pub closer: KindChar<'a>,
+    pub escape: KindChar<'a>,
+}
+
+/// It is inclusive on opener and exclusive on closer. 
+/// Wich means it will include the step on open to the block but not on close.
+pub struct KindTick<'a> {
+    pub opener: &'a [KindTest<'a>],
+    pub closer: &'a [KindTest<'a>],
+}
+
+pub type KindTest<'a> = (Arg, As, KindChar<'a>, Tie);
+
+#[derive(PartialEq)]
+pub enum Arg {
+    Past,
+    Step,
+    Next,
+}
+
+#[derive(PartialEq)]
+pub enum As {
+    Is,
+    Not,
+}
+
+#[derive(PartialEq)]
+pub enum Tie {
+    And,
+    Or,
+}
+
 impl<'a> KindChar<'a> {
     pub fn check(&self, over: char) -> bool {
         match &self {
@@ -42,13 +82,9 @@ impl<'a> KindChar<'a> {
             KindChar::IsLowerCase => over.is_lowercase(),
             KindChar::IsUpperCase => over.is_uppercase(),
             KindChar::IsWhiteSpace => over.is_whitespace(),
-            KindChar::IsInList(list) => list.has(over)
+            KindChar::IsInList(list) => list.has(over),
         }
     }
-}
-
-pub struct KindList<'a> {
-    pub list: &'a [char],
 }
 
 impl<'a> KindList<'a> {
@@ -57,45 +93,40 @@ impl<'a> KindList<'a> {
     }
 }
 
-pub struct KindAmid<'a> {
-    pub opener: KindChar<'a>,
-    pub closer: KindChar<'a>,
-    pub escape: KindChar<'a>,
-}
-
-pub struct KindTick<'a> {
-    pub prior: Option<&'a [KindTest<'a>]>,
-    pub actual: Option<&'a [KindTest<'a>]>,
-    pub next: Option<&'a [KindTest<'a>]>,
-}
-
 impl<'a> KindTick<'a> {
-    pub fn begins(&self, prior: char, actual: char) -> bool {
-        KindTick::check(&self.prior, prior) && KindTick::check(&self.actual, actual)
+    pub fn check_opens(&self, past: char, step: char, next: char) -> bool {
+        KindTick::check(self.opener, past, step, next)
     }
-    
-    pub fn ends(&self, actual: char, next: char) -> bool {
-        KindTick::check(&self.actual, actual) && KindTick::check(&self.next, next)
+
+    pub fn check_closes(&self, past: char, step: char, next: char) -> bool {
+        KindTick::check(self.closer, past, step, next)
     }
-    
-    fn check(tests: &Option<&'a [KindTest<'a>]>, over: char) -> bool {
+
+    fn check(tests: &'a [KindTest<'a>], past: char, step: char, next: char) -> bool {
         let mut result = true;
-        if let Some(tests) = tests {
-            let mut first = true;
-            for test in *tests {
-                let mut partial = test.tester.check(over);
-                if test.invert {
-                    partial = !partial;
-                }
-                if first {
-                    first = false;
-                    result = partial;
+        let mut last = true;
+        for test in (*tests).iter().rev() {
+            let arg = &test.0;
+            let set = &test.1;
+            let tester = &test.2;
+            let tie = &test.3;
+            let over = match arg {
+                Arg::Past => past,
+                Arg::Step => step,
+                Arg::Next => next,
+            };
+            let mut partial = tester.check(over);
+            if *set == As::Not {
+                partial = !partial;
+            }
+            if last {
+                last = false;
+                result = partial;
+            } else {
+                if *tie == Tie::And {
+                    result = partial && result;
                 } else {
-                    if test.or_tie {
-                        result = result || partial;
-                    } else {
-                        result = result && partial;
-                    }
+                    result = partial || result;
                 }
             }
         }
@@ -103,62 +134,65 @@ impl<'a> KindTick<'a> {
     }
 }
 
-pub struct KindTest<'a> {
-    pub invert: bool,
-    pub tester: KindChar<'a>,
-    pub or_tie: bool,
-}
-
 pub static BLOCK_SINGLE_QUOTES: BlockKind<'static> = BlockKind::BlockAmid(KindAmid {
-    opener: KindChar::IsInList(KindList{ list: &['\''] }),
-    closer: KindChar::IsInList(KindList{ list: &['\''] }),
-    escape: KindChar::IsInList(KindList{ list: &['\\'] }),
+    opener: KindChar::IsInList(KindList { list: &['\''] }),
+    closer: KindChar::IsInList(KindList { list: &['\''] }),
+    escape: KindChar::IsInList(KindList { list: &['\\'] }),
 });
 
 pub static BLOCK_DOUBLE_QUOTES: BlockKind<'static> = BlockKind::BlockAmid(KindAmid {
-    opener: KindChar::IsInList(KindList{ list: &['"'] }),
-    closer: KindChar::IsInList(KindList{ list: &['"'] }),
-    escape: KindChar::IsInList(KindList{ list: &['\\'] }),
+    opener: KindChar::IsInList(KindList { list: &['"'] }),
+    closer: KindChar::IsInList(KindList { list: &['"'] }),
+    escape: KindChar::IsInList(KindList { list: &['\\'] }),
 });
 
 pub static BLOCK_ANGLE_BRACKET: BlockKind<'static> = BlockKind::BlockAmid(KindAmid {
-    opener: KindChar::IsInList(KindList{ list: &['<'] }),
-    closer: KindChar::IsInList(KindList{
+    opener: KindChar::IsInList(KindList { list: &['<'] }),
+    closer: KindChar::IsInList(KindList {
         list: &['>', ' ', '\t', '\n', '\r'],
     }),
-    escape: KindChar::IsInList(KindList{ list: &[] }),
+    escape: KindChar::IsInList(KindList { list: &[] }),
+});
+
+pub static BLOCK_REGULAR: BlockKind<'static> = BlockKind::BlockTick(KindTick {
+    opener: &[(Arg::Step, As::Is, KindChar::IsAlphabetic, Tie::And)],
+    closer: &[(Arg::Step, As::Not, KindChar::IsAlphaNumeric, Tie::And)],
 });
 
 pub static BLOCK_NUMBERS: BlockKind<'static> = BlockKind::BlockTick(KindTick {
-    prior: None,
-    actual: None,
-    next: None,
+    opener: &[(Arg::Step, As::Is, KindChar::IsDigit(10), Tie::And)],
+    closer: &[(Arg::Step, As::Not, KindChar::IsDigit(10), Tie::And)],
 });
 
-pub static BLOCK_LINE_SPACE: BlockKind<'static> = BlockKind::BlockNear(KindChar::IsInList(KindList{
-    list: liz_forms::LINE_SPACE_CHARS,
-}));
+pub static BLOCK_LINE_SPACE: BlockKind<'static> =
+    BlockKind::BlockNear(KindChar::IsInList(KindList {
+        list: liz_forms::LINE_SPACE_CHARS,
+    }));
 
-pub static BLOCK_LINE_BREAK: BlockKind<'static> = BlockKind::BlockNear(KindChar::IsInList(KindList{
-    list: liz_forms::LINE_BREAK_CHARS,
-}));
+pub static BLOCK_LINE_BREAK: BlockKind<'static> =
+    BlockKind::BlockNear(KindChar::IsInList(KindList {
+        list: liz_forms::LINE_BREAK_CHARS,
+    }));
 
-pub static BLOCK_CODE_BRACKETS: BlockKind<'static> = BlockKind::BlockEach(KindChar::IsInList(KindList{
-    list: &['(', ')', '[', ']', '{', '}'],
-}));
+pub static BLOCK_CODE_BRACKETS: BlockKind<'static> =
+    BlockKind::BlockEach(KindChar::IsInList(KindList {
+        list: &['(', ')', '[', ']', '{', '}'],
+    }));
 
-pub static BLOCK_TEXT_BRACKETS: BlockKind<'static> = BlockKind::BlockEach(KindChar::IsInList(KindList{
-    list: &['(', ')', '[', ']', '{', '}', '<', '>'],
-}));
+pub static BLOCK_TEXT_BRACKETS: BlockKind<'static> =
+    BlockKind::BlockEach(KindChar::IsInList(KindList {
+        list: &['(', ')', '[', ']', '{', '}', '<', '>'],
+    }));
 
 pub static BLOCK_TEXT_QUOTATION: BlockKind<'static> =
-    BlockKind::BlockEach(KindChar::IsInList(KindList{ list: &['\'', '"'] }));
+    BlockKind::BlockEach(KindChar::IsInList(KindList { list: &['\'', '"'] }));
 
 pub static CODE_PARSER: BlockParser<'static> = BlockParser {
-    order: &[
+    blocks: &[
         &BLOCK_SINGLE_QUOTES,
         &BLOCK_DOUBLE_QUOTES,
         &BLOCK_ANGLE_BRACKET,
+        &BLOCK_REGULAR,
         &BLOCK_NUMBERS,
         &BLOCK_LINE_SPACE,
         &BLOCK_LINE_BREAK,
@@ -167,7 +201,8 @@ pub static CODE_PARSER: BlockParser<'static> = BlockParser {
 };
 
 pub static TEXT_PARSER: BlockParser<'static> = BlockParser {
-    order: &[
+    blocks: &[
+        &BLOCK_REGULAR,
         &BLOCK_NUMBERS,
         &BLOCK_LINE_SPACE,
         &BLOCK_LINE_BREAK,
@@ -189,7 +224,7 @@ impl BlockParserHelper {
         }
     }
 
-    fn accrue(&mut self, brick: char) {
+    fn accrue_char(&mut self, brick: char) {
         self.accrued.push(brick);
     }
 
@@ -197,14 +232,14 @@ impl BlockParserHelper {
         self.accrued.pop();
     }
 
-    fn commit(&mut self) {
+    fn commit_accrued(&mut self) {
         if !self.accrued.is_empty() {
             self.result.push(Form::from(self.accrued.clone()));
             self.accrued.clear();
         }
     }
 
-    fn got(&mut self, from: String) {
+    fn got_form(&mut self, from: String) {
         self.result.push(Form::from(from));
     }
 }
@@ -212,25 +247,25 @@ impl BlockParserHelper {
 impl<'a> Parser for BlockParser<'a> {
     fn parse(&self, text: &str) -> Vec<Form> {
         let mut helper = BlockParserHelper::new();
-        let mut crexps: HashMap<&str, Rexp> = HashMap::new();
-        for block in self.order {
+        let mut crexps: HashMap<&str, Regex> = HashMap::new();
+        for block in self.blocks {
             let block = *block;
             match block {
                 BlockKind::BlockRexp(regex) => {
-                    let crexp = Rexp::new(regex).unwrap();
+                    let crexp = Regex::new(regex).unwrap();
                     crexps.insert(regex, crexp);
                 }
                 _ => {}
             }
         }
-        let mut block_now: Option<&BlockKind> = None;
+        let mut inside_block: Option<&BlockKind> = None;
         let chars: Vec<char> = text.chars().collect();
         let mut index = 0;
         while index < chars.len() {
-            let mut accrue = true;
-            let mut check_block = true;
-            let actual = *chars.get(index).unwrap();
-            let prior = if index > 0 {
+            let mut accrue_char = true;
+            let mut check_block_opens = true;
+            let step = *chars.get(index).unwrap();
+            let past = if index > 0 {
                 *chars.get(index - 1).unwrap()
             } else {
                 '\0'
@@ -240,94 +275,99 @@ impl<'a> Parser for BlockParser<'a> {
             } else {
                 '\0'
             };
-            if let Some(ref closes_block) = block_now {
+            if let Some(ref closes_block) = inside_block {
                 let closes_block = *closes_block;
                 match closes_block {
-                    BlockKind::BlockAmid(amid) => {
-                        if amid.closer.check(actual) && !amid.escape.check(prior) {
-                            helper.accrue(actual);
-                            helper.commit();
-                            accrue = false;
-                            check_block = false;
-                            block_now = None;
-                        }
-                    }
-                    BlockKind::BlockNear(near) => {
-                        if !near.check(actual) {
-                            helper.commit();
-                            block_now = None;
-                        }
-                    }
                     BlockKind::BlockEach(_) => {}
+                    BlockKind::BlockNear(near) => {
+                        if !near.check(step) {
+                            helper.commit_accrued();
+                            inside_block = None;
+                        }
+                    }
+                    BlockKind::BlockAmid(amid) => {
+                        if amid.closer.check(step) && !amid.escape.check(past) {
+                            helper.accrue_char(step);
+                            helper.commit_accrued();
+                            accrue_char = false;
+                            check_block_opens = false;
+                            inside_block = None;
+                        }
+                    }
                     BlockKind::BlockTick(tick) => {
-                        if tick.ends(actual, next) {
-                            helper.commit();
-                            block_now = None;
+                        if tick.check_closes(past, step, next) {
+                            helper.commit_accrued();
+                            inside_block = None;
                         }
                     }
                     BlockKind::BlockRexp(regex) => {
                         let crexp = crexps.get(regex).unwrap();
-                        helper.accrue(actual);
+                        helper.accrue_char(step);
                         let commit = !crexp.is_match(&helper.accrued);
                         helper.accrue_undo();
                         if commit {
-                            helper.commit();
-                            block_now = None;
+                            helper.commit_accrued();
+                            inside_block = None;
                         }
                     }
                 }
             }
-            if check_block && block_now.is_none() {
-                for opens_block in self.order {
+            if check_block_opens && inside_block.is_none() {
+                for opens_block in self.blocks {
                     let opens_block = *opens_block;
                     match opens_block {
-                        BlockKind::BlockAmid(amid) => {
-                            if amid.opener.check(actual) {
-                                helper.commit();
-                                block_now = Some(opens_block);
+                        BlockKind::BlockEach(each) => {
+                            if each.check(step) {
+                                helper.commit_accrued();
+                                helper.got_form(String::from(step));
+                                accrue_char = false;
+                                break;
                             }
                         }
                         BlockKind::BlockNear(near) => {
-                            if near.check(actual) {
-                                helper.commit();
-                                block_now = Some(opens_block);
+                            if near.check(step) {
+                                helper.commit_accrued();
+                                inside_block = Some(opens_block);
+                                break;
                             }
                         }
-                        BlockKind::BlockEach(each) => {
-                            if each.check(actual) {
-                                helper.commit();
-                                helper.got(String::from(actual));
-                                accrue = false;
+                        BlockKind::BlockAmid(amid) => {
+                            if amid.opener.check(step) {
+                                helper.commit_accrued();
+                                inside_block = Some(opens_block);
+                                break;
                             }
                         }
                         BlockKind::BlockTick(tick) => {
-                            if tick.begins(prior, actual)  {
-                                helper.commit();
-                                block_now = Some(opens_block);
+                            if tick.check_opens(past, step, next) {
+                                helper.commit_accrued();
+                                inside_block = Some(opens_block);
+                                break;
                             }
                         }
                         BlockKind::BlockRexp(regex) => {
                             let crexp = crexps.get(regex).unwrap();
                             if crexp.is_match(&helper.accrued) {
-                                block_now = Some(opens_block);
+                                inside_block = Some(opens_block);
+                                break;
                             }
                         }
                     }
                 }
             }
-            if accrue {
-                helper.accrue(actual);
+            if accrue_char {
+                helper.accrue_char(step);
             }
             index += 1;
         }
-        helper.commit();
+        helper.commit_accrued();
         helper.result
     }
 }
 
 #[test]
 fn test_code_parser() {
-    let test01 = "token1  token2";
+    let test01 = "token1 123.+token2";
     let results = CODE_PARSER.parse(test01);
     println!("{:?}", results);
 }
