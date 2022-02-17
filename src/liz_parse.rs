@@ -20,22 +20,22 @@ pub enum BlockKind<'a> {
 }
 
 pub enum KindChar<'a> {
-    IsControl,
-    IsDigit(u32),
-    IsNumeric,
-    IsAlphabetic,
-    IsAlphaNumeric,
-    IsLowerCase,
-    IsUpperCase,
-    IsWhiteSpace,
-    IsInList(KindList<'a>),
+    Control,
+    Digit(u32),
+    Numeric,
+    Alphabetic,
+    AlphaNumeric,
+    LowerCase,
+    UpperCase,
+    WhiteSpace,
+    InList(KindList<'a>),
 }
 
 pub struct KindList<'a> {
     pub list: &'a [char],
 }
 
-/// It is inclusive on opener and closer. 
+/// It is inclusive on opener and closer.
 /// Wich means it will include the opener and closer steps to the block.
 pub struct KindAmid<'a> {
     pub opener: KindChar<'a>,
@@ -43,17 +43,17 @@ pub struct KindAmid<'a> {
     pub escape: KindChar<'a>,
 }
 
-/// It is inclusive on opener and exclusive on closer. 
+/// It is inclusive on opener and exclusive on closer.
 /// Wich means it will include the step on open to the block but not on close.
 pub struct KindTick<'a> {
     pub opener: &'a [KindTest<'a>],
     pub closer: &'a [KindTest<'a>],
 }
 
-pub type KindTest<'a> = (Arg, As, KindChar<'a>, Tie);
+pub type KindTest<'a> = (Is, As, KindChar<'a>, Tie);
 
 #[derive(PartialEq)]
-pub enum Arg {
+pub enum Is {
     Past,
     Step,
     Next,
@@ -61,8 +61,8 @@ pub enum Arg {
 
 #[derive(PartialEq)]
 pub enum As {
-    Is,
-    Not,
+    ItIs,
+    IsNo,
 }
 
 #[derive(PartialEq)]
@@ -74,15 +74,15 @@ pub enum Tie {
 impl<'a> KindChar<'a> {
     pub fn check(&self, over: char) -> bool {
         match &self {
-            KindChar::IsControl => over.is_control(),
-            KindChar::IsDigit(radix) => over.is_digit(*radix),
-            KindChar::IsNumeric => over.is_numeric(),
-            KindChar::IsAlphabetic => over.is_alphabetic(),
-            KindChar::IsAlphaNumeric => over.is_alphanumeric(),
-            KindChar::IsLowerCase => over.is_lowercase(),
-            KindChar::IsUpperCase => over.is_uppercase(),
-            KindChar::IsWhiteSpace => over.is_whitespace(),
-            KindChar::IsInList(list) => list.has(over),
+            KindChar::Control => over.is_control(),
+            KindChar::Digit(radix) => over.is_digit(*radix),
+            KindChar::Numeric => over.is_numeric(),
+            KindChar::Alphabetic => over.is_alphabetic(),
+            KindChar::AlphaNumeric => over.is_alphanumeric(),
+            KindChar::LowerCase => over.is_lowercase(),
+            KindChar::UpperCase => over.is_uppercase(),
+            KindChar::WhiteSpace => over.is_whitespace(),
+            KindChar::InList(list) => list.has(over),
         }
     }
 }
@@ -111,12 +111,12 @@ impl<'a> KindTick<'a> {
             let tester = &test.2;
             let tie = &test.3;
             let over = match arg {
-                Arg::Past => past,
-                Arg::Step => step,
-                Arg::Next => next,
+                Is::Past => past,
+                Is::Step => step,
+                Is::Next => next,
             };
             let mut partial = tester.check(over);
-            if *set == As::Not {
+            if *set == As::IsNo {
                 partial = !partial;
             }
             if last {
@@ -135,57 +135,57 @@ impl<'a> KindTick<'a> {
 }
 
 pub static BLOCK_SINGLE_QUOTES: BlockKind<'static> = BlockKind::BlockAmid(KindAmid {
-    opener: KindChar::IsInList(KindList { list: &['\''] }),
-    closer: KindChar::IsInList(KindList { list: &['\''] }),
-    escape: KindChar::IsInList(KindList { list: &['\\'] }),
+    opener: KindChar::InList(KindList { list: &['\''] }),
+    closer: KindChar::InList(KindList { list: &['\''] }),
+    escape: KindChar::InList(KindList { list: &['\\'] }),
 });
 
 pub static BLOCK_DOUBLE_QUOTES: BlockKind<'static> = BlockKind::BlockAmid(KindAmid {
-    opener: KindChar::IsInList(KindList { list: &['"'] }),
-    closer: KindChar::IsInList(KindList { list: &['"'] }),
-    escape: KindChar::IsInList(KindList { list: &['\\'] }),
+    opener: KindChar::InList(KindList { list: &['"'] }),
+    closer: KindChar::InList(KindList { list: &['"'] }),
+    escape: KindChar::InList(KindList { list: &['\\'] }),
 });
 
 pub static BLOCK_ANGLE_BRACKET: BlockKind<'static> = BlockKind::BlockAmid(KindAmid {
-    opener: KindChar::IsInList(KindList { list: &['<'] }),
-    closer: KindChar::IsInList(KindList {
+    opener: KindChar::InList(KindList { list: &['<'] }),
+    closer: KindChar::InList(KindList {
         list: &['>', ' ', '\t', '\n', '\r'],
     }),
-    escape: KindChar::IsInList(KindList { list: &[] }),
+    escape: KindChar::InList(KindList { list: &[] }),
 });
 
 pub static BLOCK_REGULAR: BlockKind<'static> = BlockKind::BlockTick(KindTick {
-    opener: &[(Arg::Step, As::Is, KindChar::IsAlphabetic, Tie::And)],
-    closer: &[(Arg::Step, As::Not, KindChar::IsAlphaNumeric, Tie::And)],
+    opener: &[(Is::Step, As::ItIs, KindChar::Alphabetic, Tie::And)],
+    closer: &[(Is::Step, As::IsNo, KindChar::AlphaNumeric, Tie::And)],
 });
 
 pub static BLOCK_NUMBERS: BlockKind<'static> = BlockKind::BlockTick(KindTick {
-    opener: &[(Arg::Step, As::Is, KindChar::IsDigit(10), Tie::And)],
-    closer: &[(Arg::Step, As::Not, KindChar::IsDigit(10), Tie::And)],
+    opener: &[(Is::Step, As::ItIs, KindChar::Digit(10), Tie::And)],
+    closer: &[(Is::Step, As::IsNo, KindChar::Digit(10), Tie::And)],
 });
 
 pub static BLOCK_LINE_SPACE: BlockKind<'static> =
-    BlockKind::BlockNear(KindChar::IsInList(KindList {
+    BlockKind::BlockNear(KindChar::InList(KindList {
         list: liz_forms::LINE_SPACE_CHARS,
     }));
 
 pub static BLOCK_LINE_BREAK: BlockKind<'static> =
-    BlockKind::BlockNear(KindChar::IsInList(KindList {
+    BlockKind::BlockNear(KindChar::InList(KindList {
         list: liz_forms::LINE_BREAK_CHARS,
     }));
 
 pub static BLOCK_CODE_BRACKETS: BlockKind<'static> =
-    BlockKind::BlockEach(KindChar::IsInList(KindList {
+    BlockKind::BlockEach(KindChar::InList(KindList {
         list: &['(', ')', '[', ']', '{', '}'],
     }));
 
 pub static BLOCK_TEXT_BRACKETS: BlockKind<'static> =
-    BlockKind::BlockEach(KindChar::IsInList(KindList {
+    BlockKind::BlockEach(KindChar::InList(KindList {
         list: &['(', ')', '[', ']', '{', '}', '<', '>'],
     }));
 
 pub static BLOCK_TEXT_QUOTATION: BlockKind<'static> =
-    BlockKind::BlockEach(KindChar::IsInList(KindList { list: &['\'', '"'] }));
+    BlockKind::BlockEach(KindChar::InList(KindList { list: &['\'', '"'] }));
 
 pub static CODE_PARSER: BlockParser<'static> = BlockParser {
     blocks: &[
