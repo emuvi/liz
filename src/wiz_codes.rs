@@ -9,8 +9,9 @@ pub fn inject_codes<'a>(lane: Context<'a>, liz: &Table<'a>) -> Result<(), LizErr
     let code = lane
         .create_function(|lane, path: String| utils::treat_error(lane, liz_codes::code(&path)))?;
 
-    let form = lane
-        .create_function(|_, part: String| Ok(liz_codes::form(&part)))?;
+    let edit = lane.create_function(|_, ()| Ok(liz_codes::edit()))?;
+
+    let form = lane.create_function(|_, part: String| Ok(liz_codes::form(&part)))?;
 
     let git_root_find = lane.create_function(|lane, path: String| {
         utils::treat_error(lane, liz_codes::git_root_find(&path))
@@ -25,6 +26,7 @@ pub fn inject_codes<'a>(lane: Context<'a>, liz: &Table<'a>) -> Result<(), LizErr
     })?;
 
     liz.set("code", code)?;
+    liz.set("edit", edit)?;
     liz.set("form", form)?;
     liz.set("git_root_find", git_root_find)?;
     liz.set("git_is_ignored", git_is_ignored)?;

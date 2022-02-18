@@ -5,21 +5,20 @@ use std::io::{prelude::*, BufReader};
 use std::sync::{Arc, Mutex};
 use std::thread::JoinHandle;
 
-use crate::liz_codes::Forming;
+use crate::liz_forms::Forms;
 use crate::liz_parse::{Parser, TEXT_PARSER};
 use crate::liz_paths;
 use crate::utils::dbg_err;
 use crate::LizError;
 
-pub fn text(path: &str) -> Result<Forming, LizError> {
+pub fn text(path: &str) -> Result<Forms, LizError> {
     let path = String::from(path);
     let text = if liz_paths::is_file(&path) {
         read(&path)?
     } else {
         String::new()
     };
-    let forms = TEXT_PARSER.parse(&text);
-    Ok(Forming { path, forms })
+    Ok(TEXT_PARSER.parse(&text))
 }
 
 pub fn ask(message: &str) -> Result<String, LizError> {

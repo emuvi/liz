@@ -8,45 +8,36 @@ use crate::liz_texts;
 use crate::utils;
 use crate::LizError;
 
-#[derive(Clone)]
-pub struct Forming {
-    pub path: String,
-    pub forms: Forms,
-}
-
-pub fn code(path: &str) -> Result<Forming, LizError> {
+pub fn code(path: &str) -> Result<Forms, LizError> {
     let path = String::from(path);
     let text = if liz_paths::is_file(&path) {
         liz_texts::read(&path)?
     } else {
         String::new()
     };
-    let forms = CODE_PARSER.parse(&text);
-    Ok(Forming { path, forms })
+    Ok(CODE_PARSER.parse(&text))
 }
 
-impl UserData for Forming {
+impl UserData for Forms {
     fn add_methods<'lua, M: UserDataMethods<'lua, Self>>(methods: &mut M) {
-        methods.add_method("len", |_, var, ()| Ok(var.forms.len()));
-        methods.add_method("get", |_, var, index: usize| {
-            Ok(var.forms.get(index).clone())
-        });
+        methods.add_method("len", |_, var, ()| Ok(var.len()));
+        methods.add_method("get", |_, var, index: usize| Ok(var.get(index).clone()));
         methods.add_method_mut("set", |_, var, (index, form): (usize, Form)| {
-            Ok(var.forms.set(index, form))
+            Ok(var.set(index, form))
         });
         methods.add_method_mut("add", |_, var, (index, form): (usize, Form)| {
-            Ok(var.forms.add(index, form))
+            Ok(var.add(index, form))
         });
-        methods.add_method_mut("put", |_, var, form: Form| Ok(var.forms.put(form)));
-        methods.add_method_mut("del", |_, var, index: usize| Ok(var.forms.del(index)));
-        methods.add_method_mut("pop", |_, var, ()| Ok(var.forms.pop()));
+        methods.add_method_mut("put", |_, var, form: Form| Ok(var.put(form)));
+        methods.add_method_mut("del", |_, var, index: usize| Ok(var.del(index)));
+        methods.add_method_mut("pop", |_, var, ()| Ok(var.pop()));
         methods.add_method_mut("change_all", |_, var, (of, to): (String, String)| {
-            Ok(var.forms.change_all(&of, &to))
+            Ok(var.change_all(&of, &to))
         });
-        methods.add_method("build", |_, var, ()| Ok(var.forms.build()));
-        methods.add_method("write", |lane, var, ()| {
-            let text = var.forms.build();
-            utils::treat_error(lane, liz_texts::write(&var.path, &text))
+        methods.add_method("build", |_, var, ()| Ok(var.build()));
+        methods.add_method("write", |lane, var, path: String| {
+            let text = var.build();
+            utils::treat_error(lane, liz_texts::write(&path, &text))
         });
     }
 }
@@ -56,7 +47,17 @@ impl UserData for Form {
         methods.add_method("is_whitespace", |_, var, ()| Ok(var.is_whitespace()));
         methods.add_method("is_linespace", |_, var, ()| Ok(var.is_linespace()));
         methods.add_method("is_linebreak", |_, var, ()| Ok(var.is_linebreak()));
+        methods.add_method("is_code_brackets", |_, var, ()| Ok(var.is_code_brackets()));
+        methods.add_method("is_text_brackets", |_, var, ()| Ok(var.is_text_brackets()));
+        methods.add_method(
+            "is_text_quotation",
+            |_, var, ()| Ok(var.is_text_quotation()),
+        );
     }
+}
+
+pub fn edit() -> Forms {
+    Forms::edit()
 }
 
 pub fn form(part: &str) -> Form {
