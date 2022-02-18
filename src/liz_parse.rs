@@ -46,11 +46,14 @@ pub struct KindAmid<'a> {
 /// It is inclusive on opener and exclusive on closer.
 /// Wich means it will include the step on open to the block but not on close.
 pub struct KindTick<'a> {
-    pub opener: &'a [KindTest<'a>],
-    pub closer: &'a [KindTest<'a>],
+    pub opener: &'a [Do<'a>],
+    pub closer: &'a [Do<'a>],
 }
 
-pub type KindTest<'a> = (If, Is, KindChar<'a>, Tie);
+pub enum Do<'a> {
+    Ask(If, Is, KindChar<'a>),
+    Tie(Knot),
+}
 
 #[derive(PartialEq)]
 pub enum If {
@@ -66,7 +69,7 @@ pub enum Is {
 }
 
 #[derive(PartialEq)]
-pub enum Tie {
+pub enum Knot {
     And,
     Or,
 }
@@ -102,35 +105,44 @@ impl<'a> KindTick<'a> {
         KindTick::check(self.closer, past, step, next)
     }
 
-    fn check(tests: &'a [KindTest<'a>], past: char, step: char, next: char) -> bool {
-        let mut result = true;
-        let mut last = true;
-        for test in (*tests).iter().rev() {
-            let var = &test.0;
-            let like = &test.1;
-            let tester = &test.2;
-            let tie = &test.3;
-            let over = match var {
-                If::Past => past,
-                If::Step => step,
-                If::Next => next,
-            };
-            let mut partial = tester.check(over);
-            if *like == Is::No {
-                partial = !partial;
-            }
-            if last {
-                last = false;
-                result = partial;
-            } else {
-                if *tie == Tie::And {
-                    result = partial && result;
-                } else {
-                    result = partial || result;
+    fn check(fusion: &'a [Do<'a>], past: char, step: char, next: char) -> bool {
+        let mut stack: Vec<bool> = Vec::with_capacity(fusion.len());
+        for act in (*fusion).iter() {
+            match act {
+                Do::Ask(var, like, tester) => {
+                    let over = match var {
+                        If::Past => past,
+                        If::Step => step,
+                        If::Next => next,
+                    };
+                    let mut partial = tester.check(over);
+                    if *like == Is::No {
+                        partial = !partial;
+                    }
+                    stack.push(partial);
+                }
+                Do::Tie(joint) => {
+                    let last = if let Some(last) = stack.pop() {
+                        last
+                    } else {
+                        false
+                    };
+                    let penult = if let Some(last) = stack.pop() {
+                        last
+                    } else {
+                        false
+                    };
+                    match joint {
+                        Knot::And => {stack.push(last && penult);},
+                        Knot::Or => {stack.push(last || penult);},
+                    }
                 }
             }
         }
-        result
+        match stack.pop() {
+            Some(result) => result,
+            None => false,
+        }
     }
 }
 
@@ -155,13 +167,13 @@ pub static BLOCK_ANGLE_BRACKET: BlockKind<'static> = BlockKind::BlockAmid(KindAm
 });
 
 pub static BLOCK_REGULAR: BlockKind<'static> = BlockKind::BlockTick(KindTick {
-    opener: &[(If::Step, Is::Of, KindChar::Alphabetic, Tie::And)],
-    closer: &[(If::Step, Is::No, KindChar::AlphaNumeric, Tie::And)],
+    opener: &[Do::Ask(If::Step, Is::Of, KindChar::Alphabetic)],
+    closer: &[Do::Ask(If::Step, Is::No, KindChar::AlphaNumeric)],
 });
 
 pub static BLOCK_NUMBERS: BlockKind<'static> = BlockKind::BlockTick(KindTick {
-    opener: &[(If::Step, Is::Of, KindChar::Digit(10), Tie::And)],
-    closer: &[(If::Step, Is::No, KindChar::Digit(10), Tie::And)],
+    opener: &[Do::Ask(If::Step, Is::Of, KindChar::Digit(10))],
+    closer: &[Do::Ask(If::Step, Is::No, KindChar::Digit(10))],
 });
 
 pub static BLOCK_LINE_SPACE: BlockKind<'static> =
