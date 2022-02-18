@@ -7,7 +7,7 @@ use crate::LizError;
 
 pub fn inject_codes<'a>(lane: Context<'a>, liz: &Table<'a>) -> Result<(), LizError> {
     let code = lane
-        .create_function(|lane, path: String| utils::treat_error(lane, liz_codes::code(&path)))?;
+        .create_function(|_, source: String| Ok(liz_codes::code(&source)))?;
 
     let edit = lane.create_function(|_, ()| Ok(liz_codes::edit()))?;
 

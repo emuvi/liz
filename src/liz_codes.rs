@@ -8,16 +8,6 @@ use crate::liz_texts;
 use crate::utils;
 use crate::LizError;
 
-pub fn code(path: &str) -> Result<Forms, LizError> {
-    let path = String::from(path);
-    let text = if liz_paths::is_file(&path) {
-        liz_texts::read(&path)?
-    } else {
-        String::new()
-    };
-    Ok(CODE_PARSER.parse(&text))
-}
-
 impl UserData for Forms {
     fn add_methods<'lua, M: UserDataMethods<'lua, Self>>(methods: &mut M) {
         methods.add_method("len", |_, var, ()| Ok(var.len()));
@@ -58,6 +48,10 @@ impl UserData for Form {
 
 pub fn edit() -> Forms {
     Forms::edit()
+}
+
+pub fn code(source: &str) -> Forms {
+    CODE_PARSER.parse(source)
 }
 
 pub fn form(part: &str) -> Form {

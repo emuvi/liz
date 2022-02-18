@@ -6,8 +6,8 @@ use crate::utils;
 use crate::LizError;
 
 pub fn inject_texts<'a>(lane: Context<'a>, liz: &Table<'a>) -> Result<(), LizError> {
-    let text =
-        lane.create_function(|lane, path: String| utils::treat_error(lane, liz_texts::text(&path)))?;
+    let text = lane
+        .create_function(|_, source: String| Ok(liz_texts::text(&source)))?;
 
     let ask = lane.create_function(|lane, message: String| {
         utils::treat_error(lane, liz_texts::ask(&message))

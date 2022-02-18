@@ -7,18 +7,11 @@ use std::thread::JoinHandle;
 
 use crate::liz_forms::Forms;
 use crate::liz_parse::{Parser, TEXT_PARSER};
-use crate::liz_paths;
 use crate::utils::dbg_err;
 use crate::LizError;
 
-pub fn text(path: &str) -> Result<Forms, LizError> {
-    let path = String::from(path);
-    let text = if liz_paths::is_file(&path) {
-        read(&path)?
-    } else {
-        String::new()
-    };
-    Ok(TEXT_PARSER.parse(&text))
+pub fn text(source: &str) -> Forms {
+    TEXT_PARSER.parse(source)
 }
 
 pub fn ask(message: &str) -> Result<String, LizError> {
