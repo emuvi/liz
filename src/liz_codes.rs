@@ -1,8 +1,8 @@
 use rlua::{UserData, UserDataMethods};
 
 use crate::liz_execs;
-use crate::liz_forms::Forms;
-use crate::liz_parse;
+use crate::liz_forms::{Form, Forms};
+use crate::liz_parse::{Parser, CODE_PARSER};
 use crate::liz_paths;
 use crate::liz_texts;
 use crate::utils;
@@ -21,27 +21,30 @@ pub fn code(path: &str) -> Result<Forming, LizError> {
     } else {
         String::new()
     };
-    let forms = Forms::parse(&text, &liz_parse::CODE_PARSER);
+    let forms = CODE_PARSER.parse(&text);
     Ok(Forming { path, forms })
 }
 
 impl UserData for Forming {
     fn add_methods<'lua, M: UserDataMethods<'lua, Self>>(methods: &mut M) {
-        methods.add_method_mut("put", |_, src, part: String| {
-            src.forms.put(&part);
-            Ok(())
+        methods.add_method("len", |_, var, ()| Ok(var.forms.len()));
+        methods.add_method("get", |_, var, index: usize| {
+            Ok(var.forms.get(index).clone())
         });
-
-        methods.add_method("len", |_, src, ()| Ok(src.forms.len()));
-
-        methods.add_method("get", |_, src, index: usize| Ok(String::from(src.forms.get(index))));
-
-        methods.add_method("build", |_, src, ()| Ok(src.forms.build()));
-
-        methods.add_method("write", |lane, src, ()| {
-            let text = src.forms.build();
-            utils::treat_error(lane, liz_texts::write(&src.path, &text))
+        methods.add_method_mut("put", |_, var, part: String| Ok(var.forms.put(&part)));
+        methods.add_method("build", |_, var, ()| Ok(var.forms.build()));
+        methods.add_method("write", |lane, var, ()| {
+            let text = var.forms.build();
+            utils::treat_error(lane, liz_texts::write(&var.path, &text))
         });
+    }
+}
+
+impl UserData for Form {
+    fn add_methods<'lua, M: UserDataMethods<'lua, Self>>(methods: &mut M) {
+        methods.add_method("is_whitespace", |_, var, ()| Ok(var.is_whitespace()));
+        methods.add_method("is_linespace", |_, var, ()| Ok(var.is_linespace()));
+        methods.add_method("is_linebreak", |_, var, ()| Ok(var.is_linebreak()));
     }
 }
 

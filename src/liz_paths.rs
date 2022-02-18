@@ -152,68 +152,80 @@ pub fn path_parts(path: &str) -> Vec<&str> {
 
 #[test]
 fn path_parts_test() {
-    let parts = path_parts("/home/pointel/test");
-    assert_eq!(parts.len(), 4);
-    assert_eq!(parts[0], "/");
-    assert_eq!(parts[1], "home");
-    assert_eq!(parts[2], "pointel");
-    assert_eq!(parts[3], "test");
-    let parts = path_parts("pointel/test");
-    assert_eq!(parts.len(), 2);
-    assert_eq!(parts[0], "pointel");
-    assert_eq!(parts[1], "test");
-    let parts = path_parts("./pointel/test");
-    assert_eq!(parts.len(), 3);
-    assert_eq!(parts[0], ".");
-    assert_eq!(parts[1], "pointel");
-    assert_eq!(parts[2], "test");
-    let parts = path_parts("C:\\pointel\\test");
-    assert_eq!(parts.len(), 3);
-    assert_eq!(parts[0], "C:");
-    assert_eq!(parts[1], "pointel");
-    assert_eq!(parts[2], "test");
+    let tester = path_parts("/home/pointel/test");
+    assert_eq!(tester.len(), 4);
+    assert_eq!(tester[0], "/");
+    assert_eq!(tester[1], "home");
+    assert_eq!(tester[2], "pointel");
+    assert_eq!(tester[3], "test");
+    let tester = path_parts("pointel/test");
+    assert_eq!(tester.len(), 2);
+    assert_eq!(tester[0], "pointel");
+    assert_eq!(tester[1], "test");
+    let tester = path_parts("./pointel/test");
+    assert_eq!(tester.len(), 3);
+    assert_eq!(tester[0], ".");
+    assert_eq!(tester[1], "pointel");
+    assert_eq!(tester[2], "test");
+    let tester = path_parts("C:\\pointel\\test");
+    assert_eq!(tester.len(), 3);
+    assert_eq!(tester[0], "C:");
+    assert_eq!(tester[1], "pointel");
+    assert_eq!(tester[2], "test");
 }
 
-pub fn path_parts_join(parts: &[&str]) -> String {
+pub fn path_parts_join(parts: &[impl AsRef<str>]) -> String {
     if parts.is_empty() {
         return String::default();
     }
     let mut result = String::new();
     let mut start = 1;
     let end = parts.len();
-    if parts[0] == "/" {
+    if parts[0].as_ref() == "/" {
         result.push('/');
         if end > 1 {
-            result.push_str(parts[1]);
+            result.push_str(parts[1].as_ref());
             start = 2;
         }
     } else {
-        result.push_str(parts[0]);
+        result.push_str(parts[0].as_ref());
     }
-    let os_sep = if parts[0].contains(":") {
+    let os_sep = if parts[0].as_ref().contains(":") {
         '\\'
+    } else if parts[0].as_ref() == "/" {
+        '/'
     } else {
         *os_sep()
     };
     for index in start..end {
         result.push(os_sep);
-        result.push_str(parts[index]);
+        result.push_str(parts[index].as_ref());
     }
     result
 }
 
 #[test]
 fn path_parts_join_test() {
-    let parts = path_parts("/home/pointel/test");
-    assert_eq!(path_parts_join(parts.as_slice()), "/home/pointel/test");
-    let parts = path_parts("pointel/test");
-    assert_eq!(path_parts_join(parts.as_slice()), "pointel/test");
-    let parts = path_parts("./pointel/test");
-    assert_eq!(path_parts_join(parts.as_slice()), "./pointel/test");
-    let parts = path_parts("../../pointel/test");
-    assert_eq!(path_parts_join(parts.as_slice()), "../../pointel/test");
-    let parts = path_parts("C:\\pointel\\test");
-    assert_eq!(path_parts_join(parts.as_slice()), "C:\\pointel\\test");
+    let tester = path_parts("/home/pointel/test");
+    let expect = "/home/pointel/test";
+    let result = path_parts_join(tester.as_slice());
+    assert_eq!(result, expect);
+    let tester = path_parts("C:\\pointel\\test");
+    let expect = "C:\\pointel\\test";
+    let result = path_parts_join(tester.as_slice());
+    assert_eq!(result, expect);
+    let tester = path_parts("pointel/test");
+    let expect = format!("pointel{}test", os_sep());
+    let result = path_parts_join(tester.as_slice());
+    assert_eq!(result, expect);
+    let tester = path_parts("./pointel/test");
+    let expect = format!(".{}pointel{}test", os_sep(), os_sep());
+    let result = path_parts_join(tester.as_slice());
+    assert_eq!(result, expect);
+    let tester = path_parts("../../pointel/test");
+    let expect = format!("..{}..{}pointel{}test", os_sep(), os_sep(), os_sep());
+    let result = path_parts_join(tester.as_slice());
+    assert_eq!(result, expect);
 }
 
 pub fn path_name(path: &str) -> &str {
@@ -285,8 +297,14 @@ pub fn path_absolute(path: &str) -> Result<String, LizError> {
 #[test]
 fn path_absolute_test() {
     let wd = pwd().unwrap();
-    assert_eq!(path_absolute("test").unwrap(), format!("{}/test", wd));
-    assert_eq!(path_absolute("./test").unwrap(), format!("{}/test", wd));
+    let tester = "test";
+    let expect = format!("{}{}test", wd, os_sep());
+    let result = path_absolute(tester).unwrap();
+    assert_eq!(result, expect);
+    let tester = "./test";
+    let expect = format!("{}{}test", wd, os_sep());
+    let result = path_absolute(tester).unwrap();
+    assert_eq!(result, expect);
 }
 
 pub fn path_relative(path: &str, base: &str) -> Result<String, LizError> {

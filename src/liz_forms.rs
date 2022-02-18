@@ -1,34 +1,38 @@
-use crate::liz_parse::Parser;
-
-#[derive(Debug, Clone)]
+#[derive(Debug, Clone, PartialEq)]
 pub struct Forms {
     pub list: Vec<Form>,
 }
 
-#[derive(Debug, Clone)]
+#[derive(Debug, Clone, PartialEq)]
 pub struct Form {
     pub part: String,
 }
 
 impl Forms {
-    pub fn parse(text: &str, parser: &impl Parser) -> Forms {
-        Forms {
-            list: parser.parse(text),
-        }
+    pub fn new(list: Vec<Form>) -> Forms {
+        Forms { list }
     }
 
-    pub fn put(&mut self, part: &str) {
-        if !part.is_empty() {
-            self.list.push(Form::new(part));
+    pub fn from(slice: &[impl AsRef<str>]) -> Forms {
+        let mut list: Vec<Form> = Vec::with_capacity(slice.len());
+        for item in slice {
+            list.push(Form::new(item.as_ref()));
         }
+        Forms { list }
     }
 
     pub fn len(&self) -> usize {
         self.list.len()
     }
 
-    pub fn get(&self, index: usize) -> &str {
-        self.list[index].part.as_ref()
+    pub fn get(&self, index: usize) -> &Form {
+        &self.list[index]
+    }
+
+    pub fn put(&mut self, part: &str) {
+        if !part.is_empty() {
+            self.list.push(Form::new(part));
+        }
     }
 
     pub fn build(&self) -> String {
@@ -57,17 +61,23 @@ impl Form {
         !self
             .part
             .chars()
-            .any(|ch| LINE_SPACE_CHARS.iter().any(|lsc| ch != *lsc))
+            .any(|ch| LINE_SPACE_CHARS.iter().any(|item| ch != *item))
     }
 
     pub fn is_linebreak(&self) -> bool {
         !self
             .part
             .chars()
-            .any(|ch| LINE_BREAK_CHARS.iter().any(|lbc| ch != *lbc))
+            .any(|ch| LINE_BREAK_CHARS.iter().any(|item| ch != *item))
     }
 }
 
 pub static LINE_SPACE_CHARS: &[char] = &[' ', '\t'];
 
 pub static LINE_BREAK_CHARS: &[char] = &['\n', '\r'];
+
+pub static CODE_BRACKETS_CHARS: &[char] = &['(', ')', '[', ']', '{', '}'];
+
+pub static TEXT_BRACKETS_CHARS: &[char] = &['(', ')', '[', ']', '{', '}', '<', '>'];
+
+pub static TEXT_QUOTATION_CHARS: &[char] = &['\'', '"'];

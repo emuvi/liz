@@ -6,8 +6,7 @@ use std::sync::{Arc, Mutex};
 use std::thread::JoinHandle;
 
 use crate::liz_codes::Forming;
-use crate::liz_forms::Forms;
-use crate::liz_parse;
+use crate::liz_parse::{Parser, TEXT_PARSER};
 use crate::liz_paths;
 use crate::utils::dbg_err;
 use crate::LizError;
@@ -19,7 +18,7 @@ pub fn text(path: &str) -> Result<Forming, LizError> {
     } else {
         String::new()
     };
-    let forms = Forms::parse(&text, &liz_parse::TEXT_PARSER);
+    let forms = TEXT_PARSER.parse(&text);
     Ok(Forming { path, forms })
 }
 

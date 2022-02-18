@@ -8,7 +8,6 @@
             "cargo": {
                 "args": [
                     "test",
-                    "test_code_parser",
                     "--no-run",
                     "--lib",
                     "--package=liz"
