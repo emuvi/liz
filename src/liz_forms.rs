@@ -29,16 +29,38 @@ impl Forms {
         &self.list[index]
     }
 
-    pub fn put(&mut self, part: &str) {
-        if !part.is_empty() {
-            self.list.push(Form::new(part));
+    pub fn set(&mut self, index: usize, form: Form) {
+        self.list[index] = form;
+    }
+
+    pub fn add(&mut self, index: usize, form: Form) {
+        self.list.insert(index, form)
+    }
+
+    pub fn put(&mut self, form: Form) {
+        self.list.push(form)
+    }
+
+    pub fn del(&mut self, index: usize) -> Form {
+        self.list.remove(index)
+    }
+
+    pub fn pop(&mut self) -> Option<Form> {
+        self.list.pop()
+    }
+
+    pub fn change_all(&mut self, of: &str, to: &str) {
+        for form in &mut self.list {
+            if form.part == of {
+                form.part = to.into();
+            }
         }
     }
 
     pub fn build(&self) -> String {
         let mut result = String::new();
-        for slab in &self.list {
-            result.push_str(&slab.part);
+        for form in &self.list {
+            result.push_str(&form.part);
         }
         result
     }
@@ -69,6 +91,27 @@ impl Form {
             .part
             .chars()
             .any(|ch| LINE_BREAK_CHARS.iter().any(|item| ch != *item))
+    }
+
+    pub fn is_code_brackets(&self) -> bool {
+        !self
+            .part
+            .chars()
+            .any(|ch| CODE_BRACKETS_CHARS.iter().any(|item| ch != *item))
+    }
+
+    pub fn is_text_brackets(&self) -> bool {
+        !self
+            .part
+            .chars()
+            .any(|ch| TEXT_BRACKETS_CHARS.iter().any(|item| ch != *item))
+    }
+
+    pub fn is_text_quotation(&self) -> bool {
+        !self
+            .part
+            .chars()
+            .any(|ch| TEXT_QUOTATION_CHARS.iter().any(|item| ch != *item))
     }
 }
 

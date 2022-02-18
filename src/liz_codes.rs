@@ -31,7 +31,18 @@ impl UserData for Forming {
         methods.add_method("get", |_, var, index: usize| {
             Ok(var.forms.get(index).clone())
         });
-        methods.add_method_mut("put", |_, var, part: String| Ok(var.forms.put(&part)));
+        methods.add_method_mut("set", |_, var, (index, form): (usize, Form)| {
+            Ok(var.forms.set(index, form))
+        });
+        methods.add_method_mut("add", |_, var, (index, form): (usize, Form)| {
+            Ok(var.forms.add(index, form))
+        });
+        methods.add_method_mut("put", |_, var, form: Form| Ok(var.forms.put(form)));
+        methods.add_method_mut("del", |_, var, index: usize| Ok(var.forms.del(index)));
+        methods.add_method_mut("pop", |_, var, ()| Ok(var.forms.pop()));
+        methods.add_method_mut("change_all", |_, var, (of, to): (String, String)| {
+            Ok(var.forms.change_all(&of, &to))
+        });
         methods.add_method("build", |_, var, ()| Ok(var.forms.build()));
         methods.add_method("write", |lane, var, ()| {
             let text = var.forms.build();
@@ -46,6 +57,10 @@ impl UserData for Form {
         methods.add_method("is_linespace", |_, var, ()| Ok(var.is_linespace()));
         methods.add_method("is_linebreak", |_, var, ()| Ok(var.is_linebreak()));
     }
+}
+
+pub fn form(part: &str) -> Form {
+    Form::new(part)
 }
 
 pub fn git_root_find(path: &str) -> Result<Option<String>, LizError> {

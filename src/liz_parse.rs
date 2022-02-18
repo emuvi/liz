@@ -183,7 +183,22 @@ pub static BLOCK_ANGLE_BRACKET: BlockKind<'static> = BlockKind::BlockAmid(KindAm
     escape: KindChar::InList(&[]),
 });
 
-pub static BLOCK_REGULAR: BlockKind<'static> = BlockKind::BlockTick(KindTick {
+pub static BLOCK_CODE_REGULAR: BlockKind<'static> = BlockKind::BlockTick(KindTick {
+    opener: &[
+        Do::Ask(If::Step, Is::Of, KindChar::Alphabetic),
+        Do::Ask(If::Step, Is::Of, KindChar::InList(&['$', '%'])),
+        Do::Ask(If::Next, Is::Of, KindChar::AlphaNumeric),
+        Do::Tie(Join::And),
+        Do::Tie(Join::Or),
+    ],
+    closer: &[
+        Do::Ask(If::Step, Is::Not, KindChar::AlphaNumeric),
+        Do::Ask(If::Step, Is::Not, KindChar::InList(&['-', '_'])),
+        Do::Tie(Join::And),
+    ],
+});
+
+pub static BLOCK_TEXT_REGULAR: BlockKind<'static> = BlockKind::BlockTick(KindTick {
     opener: &[Do::Ask(If::Step, Is::Of, KindChar::Alphabetic)],
     closer: &[Do::Ask(If::Step, Is::Not, KindChar::AlphaNumeric)],
 });
@@ -228,7 +243,7 @@ pub static CODE_PARSER: BlockParser<'static> = BlockParser {
         &BLOCK_SINGLE_QUOTES,
         &BLOCK_DOUBLE_QUOTES,
         &BLOCK_ANGLE_BRACKET,
-        &BLOCK_REGULAR,
+        &BLOCK_CODE_REGULAR,
         &BLOCK_NUMBERS,
         &BLOCK_LINE_SPACE,
         &BLOCK_LINE_BREAK,
@@ -239,7 +254,7 @@ pub static CODE_PARSER: BlockParser<'static> = BlockParser {
 
 pub static TEXT_PARSER: BlockParser<'static> = BlockParser {
     blocks: &[
-        &BLOCK_REGULAR,
+        &BLOCK_TEXT_REGULAR,
         &BLOCK_NUMBERS,
         &BLOCK_LINE_SPACE,
         &BLOCK_LINE_BREAK,
@@ -411,6 +426,10 @@ fn code_parser_test() {
     assert_eq!(result, expect);
     let tester = "tkn -321.4 12,3tkn2 .34!?";
     let expect = Forms::from(&["tkn", " ", "-321.4", " ", "12,3", "tkn2", " ", ".", "34", "!", "?"]);
+    let result = CODE_PARSER.parse(tester);
+    assert_eq!(result, expect);
+    let tester = "   tkn1$ $1$2$teTs_3\nnew";
+    let expect = Forms::from(&["   ", "tkn1", "$", " ", "$1", "$2", "$teTs_3", "\n", "new"]);
     let result = CODE_PARSER.parse(tester);
     assert_eq!(result, expect);
 }
