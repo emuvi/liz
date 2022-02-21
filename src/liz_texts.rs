@@ -94,6 +94,17 @@ pub fn toupper(text: &str) -> String {
     String::from(text.to_uppercase())
 }
 
+pub fn tocapital(text: &str) -> String {
+    if text.is_empty() {
+        return String::default();
+    }
+    let mut result = text[0..1].to_uppercase();
+    if text.len() > 1 {
+        result.push_str(text[1..].to_lowercase().as_ref());
+    }
+    result
+}
+
 pub fn contains(text: &str, part: &str) -> bool {
     text.contains(part)
 }

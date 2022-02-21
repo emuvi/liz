@@ -41,6 +41,8 @@ pub fn inject_texts<'a>(lane: Context<'a>, liz: &Table<'a>) -> Result<(), LizErr
 
     let toupper = lane.create_function(|_, text: String| Ok(liz_texts::toupper(&text)))?;
 
+    let tocapital = lane.create_function(|_, text: String| Ok(liz_texts::tocapital(&text)))?;
+
     let contains = lane.create_function(|_, (text, part): (String, String)| {
         Ok(liz_texts::contains(&text, &part))
     })?;
@@ -121,6 +123,7 @@ pub fn inject_texts<'a>(lane: Context<'a>, liz: &Table<'a>) -> Result<(), LizErr
     liz.set("is_ascii", is_ascii)?;
     liz.set("tolower", tolower)?;
     liz.set("toupper", toupper)?;
+    liz.set("tocapital", tocapital)?;
     liz.set("contains", contains)?;
     liz.set("find", find)?;
     liz.set("rfind", rfind)?;
