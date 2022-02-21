@@ -1,3 +1,6 @@
+use crate::LizError;
+use crate::liz_texts;
+
 #[derive(Debug, Clone, PartialEq)]
 pub struct Forms {
     pub desk: Vec<Form>,
@@ -67,6 +70,11 @@ impl Forms {
             result.push_str(&form.term);
         }
         result
+    }
+
+    pub fn write(&self, path: &str) -> Result<(), LizError> {
+        let contents = self.build();
+        liz_texts::write(path, &contents)
     }
 }
 

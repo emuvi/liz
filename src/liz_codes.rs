@@ -26,8 +26,7 @@ impl UserData for Forms {
         });
         methods.add_method("build", |_, var, ()| Ok(var.build()));
         methods.add_method("write", |lane, var, path: String| {
-            let text = var.build();
-            utils::treat_error(lane, liz_texts::write(&path, &text))
+            utils::treat_error(lane, var.write(&path))
         });
     }
 }
