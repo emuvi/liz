@@ -32,6 +32,7 @@ jobs:
         with:
           tag_name: v${{ steps.split.outputs._1 }}
           name: Release version ${{ steps.split.outputs._1 }}
+          body_path: CHANGELOG.md
           draft: true
           files: ./release/*.tar.gz
         env:
@@ -68,6 +69,7 @@ jobs:
         with:
           tag_name: v${{ steps.split.outputs._1 }}
           name: Release version ${{ steps.split.outputs._1 }}
+          body_path: CHANGELOG.md
           draft: true
           files: ./release/*.tar.gz
         env:
@@ -103,6 +105,7 @@ jobs:
         with:
           tag_name: v${{ steps.split.outputs._1 }}
           name: Release version ${{ steps.split.outputs._1 }}
+          body_path: CHANGELOG.md
           draft: true
           files: ./release/*.tar.gz
         env:
