@@ -23,6 +23,7 @@ impl UserData for Forms {
         methods.add_method_mut("change_all", |_, var, (of, to): (String, String)| {
             Ok(var.change_all(&of, &to))
         });
+        methods.add_method("print_all", |_, var, ()| Ok(var.print_all()));
         methods.add_method("build", |_, var, ()| Ok(var.build()));
         methods.add_method("write", |lane, var, path: String| {
             utils::treat_error(lane, var.write(&path))
@@ -32,6 +33,7 @@ impl UserData for Forms {
 
 impl UserData for Form {
     fn add_methods<'lua, M: UserDataMethods<'lua, Self>>(methods: &mut M) {
+        methods.add_method("print", |_, var, ()| Ok(var.print()));
         methods.add_method("is_whitespace", |_, var, ()| Ok(var.is_whitespace()));
         methods.add_method("is_linespace", |_, var, ()| Ok(var.is_linespace()));
         methods.add_method("is_linebreak", |_, var, ()| Ok(var.is_linebreak()));

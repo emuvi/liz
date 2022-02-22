@@ -64,6 +64,20 @@ impl Forms {
         }
     }
 
+    pub fn print_all(&self) {
+        print!("[");
+        let mut first = true;
+        for form in &self.desk {
+            if first {
+                first = false;
+            } else {
+                print!(",")        
+            }
+            form.print();
+        }
+        println!("]");
+    }
+
     pub fn build(&self) -> String {
         let mut result = String::new();
         for form in &self.desk {
@@ -85,6 +99,10 @@ impl Form {
 
     pub fn from(term: String) -> Form {
         Form { term }
+    }
+
+    pub fn print(&self) {
+        print!("'{}'", self.term);
     }
 
     pub fn is_whitespace(&self) -> bool {
