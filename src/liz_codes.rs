@@ -1,6 +1,6 @@
 use rlua::{UserData, UserDataMethods};
 
-use crate::liz_execs;
+use crate::liz_fires;
 use crate::liz_forms::{Form, Forms};
 use crate::liz_parse::{Parser, CODE_PARSER};
 use crate::liz_paths;
@@ -44,12 +44,20 @@ impl UserData for Form {
     }
 }
 
+pub fn code(source: &str) -> Forms {
+    CODE_PARSER.parse(source)
+}
+
 pub fn edit() -> Forms {
     Forms::edit()
 }
 
-pub fn code(source: &str) -> Forms {
-    CODE_PARSER.parse(source)
+pub fn desk(terms: Vec<String>) -> Forms {
+    let mut desk: Vec<Form> = Vec::new();
+    for term in terms {
+        desk.push(Form::from(term));
+    }
+    Forms::new(desk)
 }
 
 pub fn form(part: &str) -> Form {
@@ -74,7 +82,7 @@ pub fn git_root_find(path: &str) -> Result<Option<String>, LizError> {
 pub fn git_is_ignored(path: &str) -> Result<bool, LizError> {
     if let Some(root) = git_root_find(path)? {
         let relative = liz_paths::path_relative(path, &root)?;
-        let (code, output) = liz_execs::cmd(
+        let (code, output) = liz_fires::cmd(
             "git",
             &["check-ignore", &relative],
             Some(&root),
@@ -87,7 +95,7 @@ pub fn git_is_ignored(path: &str) -> Result<bool, LizError> {
 }
 
 pub fn git_has_changes(root: &str) -> Result<bool, LizError> {
-    let (_, output) = liz_execs::cmd("git", &["status"], Some(root), Some(false), Some(true))?;
+    let (_, output) = liz_fires::cmd("git", &["status"], Some(root), Some(false), Some(true))?;
     let output = output.trim();
     Ok(!output.ends_with("nothing to commit, working tree clean"))
 }

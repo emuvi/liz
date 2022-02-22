@@ -4,10 +4,10 @@ fn main() -> Result<(), LizError> {
     let mut to_race: Vec<String> = Vec::new();
     let mut to_rise_args: Option<Vec<String>> = None;
     let mut first_arg = true;
-    let mut getting_args = false;
+    let mut script_args = false;
     let mut verbose = false;
     for arg in std::env::args() {
-        if !getting_args {
+        if !script_args {
             if arg == "-h" || arg == "--help" {
                 print_help();
                 return Ok(());
@@ -17,7 +17,7 @@ fn main() -> Result<(), LizError> {
             } else if arg == "-v" || arg == "--verbose" {
                 verbose = true;
             } else if arg == "--" {
-                getting_args = true;
+                script_args = true;
             } else if arg.ends_with(".liz") || arg.ends_with(".lua") {
                 to_race.push(arg);
             } else {
@@ -37,7 +37,7 @@ fn main() -> Result<(), LizError> {
         }
     }
     if to_race.is_empty() {
-        to_race.push(format!("default"));
+        to_race.push(format!("start"));
     }
     let first_path = &to_race[0];
     if verbose {
@@ -73,7 +73,7 @@ FLAGS:
     -h, --help      Prints the usage information;
 
 PATH:
-    Address of the script to be loaded and executed. It is not necessary to put the extension .liz but if no path was specified, Liz will try to execute the ./default.liz path.
+    Address of the script to be loaded and executed. It is not necessary to put the extension .liz but if no path was specified, Liz will try to execute the ./start.liz path.
 
 ARGS:
     Arguments that can be passed for the scripts on the liz.args global variable.",

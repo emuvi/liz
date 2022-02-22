@@ -1,9 +1,7 @@
 use rlua::{Context, Table};
 
-use crate::liz_execs;
 use crate::utils;
-
-use crate::liz_execs::Spawned;
+use crate::liz_fires::{self, Spawned};
 use crate::LizError;
 
 pub fn inject_execs<'a>(lane: Context<'a>, liz: &Table<'a>) -> Result<(), LizError> {
@@ -20,11 +18,11 @@ pub fn inject_execs<'a>(lane: Context<'a>, liz: &Table<'a>) -> Result<(), LizErr
     })?;
 
     let spawn = lane.create_function(|lane, (path, args): (String, Option<Vec<String>>)| {
-        utils::treat_error(lane, liz_execs::spawn(lane, &path, &args))
+        utils::treat_error(lane, liz_fires::spawn(lane, &path, &args))
     })?;
 
     let join = lane.create_function(|lane, spawned: Spawned| {
-        utils::treat_error(lane, liz_execs::join(spawned))
+        utils::treat_error(lane, liz_fires::join(spawned))
     })?;
 
     let cmd = lane.create_function(
@@ -38,22 +36,22 @@ pub fn inject_execs<'a>(lane: Context<'a>, liz: &Table<'a>) -> Result<(), LizErr
         )| {
             utils::treat_error(
                 lane,
-                liz_execs::cmd(&name, args.as_slice(), dir, print, throw),
+                liz_fires::cmd(&name, args.as_slice(), dir, print, throw),
             )
         },
     )?;
 
-    let pause = lane.create_function(|_, ()| Ok(liz_execs::pause()))?;
+    let pause = lane.create_function(|_, ()| Ok(liz_fires::pause()))?;
 
-    let exe_ext = lane.create_function(|_, ()| Ok(liz_execs::exe_ext()))?;
+    let exe_ext = lane.create_function(|_, ()| Ok(liz_fires::exe_ext()))?;
 
-    let get_os = lane.create_function(|_, ()| Ok(liz_execs::get_os()))?;
+    let get_os = lane.create_function(|_, ()| Ok(liz_fires::get_os()))?;
 
-    let is_lin = lane.create_function(|_, ()| Ok(liz_execs::is_lin()))?;
+    let is_lin = lane.create_function(|_, ()| Ok(liz_fires::is_lin()))?;
 
-    let is_mac = lane.create_function(|_, ()| Ok(liz_execs::is_mac()))?;
+    let is_mac = lane.create_function(|_, ()| Ok(liz_fires::is_mac()))?;
 
-    let is_win = lane.create_function(|_, ()| Ok(liz_execs::is_win()))?;
+    let is_win = lane.create_function(|_, ()| Ok(liz_fires::is_win()))?;
 
     liz.set("run", run)?;
     liz.set("race", race)?;

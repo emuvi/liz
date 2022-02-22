@@ -11,6 +11,8 @@ pub fn inject_codes<'a>(lane: Context<'a>, liz: &Table<'a>) -> Result<(), LizErr
 
     let edit = lane.create_function(|_, ()| Ok(liz_codes::edit()))?;
 
+    let desk = lane.create_function(|_, terms: Vec<String>| Ok(liz_codes::desk(terms)))?;
+
     let form = lane.create_function(|_, part: String| Ok(liz_codes::form(&part)))?;
 
     let git_root_find = lane.create_function(|lane, path: String| {
@@ -27,6 +29,7 @@ pub fn inject_codes<'a>(lane: Context<'a>, liz: &Table<'a>) -> Result<(), LizErr
 
     liz.set("code", code)?;
     liz.set("edit", edit)?;
+    liz.set("desk", desk)?;
     liz.set("form", form)?;
     liz.set("git_root_find", git_root_find)?;
     liz.set("git_is_ignored", git_is_ignored)?;

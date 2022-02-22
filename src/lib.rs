@@ -1,19 +1,19 @@
 pub mod liz_codes;
-pub mod liz_execs;
+pub mod liz_fires;
 pub mod liz_forms;
 pub mod liz_parse;
 pub mod liz_paths;
 pub mod liz_texts;
-pub mod liz_trans;
+pub mod liz_winds;
 
 pub mod utils;
 
 mod wiz_all;
 mod wiz_codes;
-mod wiz_execs;
+mod wiz_fires;
 mod wiz_paths;
 mod wiz_texts;
-mod wiz_trans;
+mod wiz_winds;
 
 use rlua::{Context, Lua, MultiValue, Table};
 
@@ -73,7 +73,7 @@ pub fn race_in(lane: Context, path: &str) -> Result<Vec<String>, LizError> {
     let race_path = liz_paths::path_absolute(&path)?;
     liz.set("race_path", race_path.clone())?;
 
-    let source = std::fs::read_to_string(race_path)?;
+    let source = get_source(&race_path)?;
     let values = eval_in(lane, &source)?;
     utils::pop_stack_dir(&liz)?;
     Ok(values)
@@ -88,4 +88,21 @@ pub fn eval_in(lane: Context, source: &str) -> Result<Vec<String>, LizError> {
     }
     let values = lane.load(source).eval::<MultiValue>()?;
     utils::to_json_multi(values)
+}
+
+fn get_source(path: &str) -> Result<String, LizError> {
+    let sep = liz_paths::os_sep();
+    let lizs_dir = format!("{}lizs{}", sep, sep);
+    let lizs_pos = path.find(&lizs_dir);
+    if let Some(lizs_pos) = lizs_pos {
+        if !liz_paths::has(path) {
+            let path_dir = liz_paths::path_parent(path)?;
+            std::fs::create_dir_all(path_dir)?;
+            let lizs_path = &path[lizs_pos+lizs_dir.len()..];
+            let lizs_path = lizs_path.replace("\\", "/");
+            let origin = format!("https://raw.githubusercontent.com/emuvi/lizs/main/{}", &lizs_path);
+            liz_winds::download(&origin, path, None)?;
+        }
+    }
+    Ok(std::fs::read_to_string(path)?)
 }
