@@ -1,3 +1,4 @@
+use liz::liz_dbg_inf;
 use liz::LizError;
 
 fn main() -> Result<(), LizError> {
@@ -5,7 +6,6 @@ fn main() -> Result<(), LizError> {
     let mut to_rise_args: Option<Vec<String>> = None;
     let mut first_arg = true;
     let mut script_args = false;
-    let mut verbose = false;
     
     for arg in std::env::args() {
         if !script_args {
@@ -16,7 +16,7 @@ fn main() -> Result<(), LizError> {
                 println!("Liz (LuaWizard) {}", env!("CARGO_PKG_VERSION"));
                 return Ok(());
             } else if arg == "-v" || arg == "--verbose" {
-                verbose = true;
+                liz::liz_debug::set_verbose(true);
             } else if arg == "--" {
                 script_args = true;
             } else if arg.ends_with(".liz") || arg.ends_with(".lua") {
@@ -41,19 +41,10 @@ fn main() -> Result<(), LizError> {
         to_race.push(format!("start"));
     }
     let first_path = &to_race[0];
-    if verbose {
-        if let Some(ref to_rise_args) = to_rise_args {
-            println!("Rising with args: {:?}", to_rise_args);
-        } else {
-            println!("Rising with no args");
-        }
-    }
     let handler = liz::rise(first_path, &to_rise_args)?;
     for race_path in to_race {
         let results = liz::race(&race_path, &handler)?;
-        if verbose {
-            println!("Raced the {} got: {:?}", race_path, results);
-        }
+        liz_dbg_inf!("Race finished", race_path, results);
     }
     Ok(())
 }

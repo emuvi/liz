@@ -1,1 +1,8 @@
 print("Hello World from Liz")
+spawned = liz.spawn("thread")
+result = liz.join(spawned)
+print(result[1])
+tst = liz.from_json(result[1])
+print(tst)
+print("Finished execution")
+return 12, "test\nline"

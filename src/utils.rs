@@ -1,9 +1,7 @@
 use rlua::{Context, MultiValue, Table, Value as LuaValue};
 use serde_json::Value as JsonValue;
 
-use std::fmt::Display;
 use std::path::Path;
-use std::path::PathBuf;
 
 use crate::LizError;
 
@@ -19,19 +17,6 @@ pub fn add_liz_extension(path: &str) -> String {
     } else {
         format!("{}.liz", path)
     }
-}
-
-pub fn get_parent(path: impl AsRef<Path>) -> Result<PathBuf, LizError> {
-    let path = path.as_ref();
-    let path = if path.is_relative() {
-        std::fs::canonicalize(path)?
-    } else {
-        path.to_path_buf()
-    };
-    let parent = path
-        .parent()
-        .ok_or("Could not get the parent from the path.")?;
-    Ok(PathBuf::from(parent))
 }
 
 pub fn get_liz<'a>(lane: &Context<'a>) -> Result<Table<'a>, LizError> {
@@ -85,7 +70,7 @@ pub fn pop_stack_dir(liz: &Table) -> Result<(), LizError> {
 pub fn treat_error<T>(result: Result<T, LizError>) -> Result<T, rlua::Error> {
     match result {
         Ok(returned) => Ok(returned),
-        Err(error) => Err(rlua::Error::external(dbg_er!(error))),
+        Err(error) => Err(rlua::Error::external(error)),
     }
 }
 
@@ -183,127 +168,4 @@ fn from_json_value<'a>(lane: Context<'a>, value: JsonValue) -> Result<LuaValue<'
         }
     };
     Ok(result)
-}
-
-fn throw(message: String) -> LizError {
-    Box::new(simple_error::SimpleError::new(message))
-}
-
-pub fn debug_err(
-    file: &str,
-    line: u32,
-    func: &str,
-    vals: String,
-    err: impl std::fmt::Display,
-) -> LizError {
-    throw(debug_msg(file, line, func, vals, err))
-}
-
-pub fn debug_msg(file: &str, line: u32, func: &str, vals: String, msg: impl Display) -> String {
-    if vals.is_empty() {
-        format!("On {}[{}]({}) : {}", file, line, func, msg)
-    } else {
-        format!("On {}[{}]({}) with {} : {}", file, line, func, vals, msg)
-    }
-}
-
-macro_rules! dbg_fnc {
-    () => {{
-        fn f() {}
-        fn type_name_of<T>(_: T) -> &'static str {
-            std::any::type_name::<T>()
-        }
-        let name = type_name_of(f);
-        &name[..name.len() - 3].trim_end_matches("::{{closure}}")
-    }};
-}
-
-macro_rules! dbg_fmt {
-    () => (String::default());
-    ($v:expr) => (format!("{} = {:?}", stringify!($v), $v));
-    ($v:expr, $($n:expr),+) => (format!("{} = {:?}, {}", stringify!($v), $v, crate::utils::dbg_fmt!($($n),+)));
-}
-
-macro_rules! dbg_er {
-    ($err:expr) => (
-        crate::utils::debug_err(file!(), line!(), crate::utils::dbg_fnc!(), crate::utils::dbg_fmt!(), $err)
-    );
-    ($err:expr, $($v:expr),+) => (
-        crate::utils::debug_err(
-            file!(),
-            line!(),
-            crate::utils::dbg_fnc!(),
-            crate::utils::dbg_fmt!($($v),+),
-            $err,
-        )
-    );
-}
-
-macro_rules! dbg_if {
-    ($msg:expr) => (
-        #[cfg(debug_assertions)]
-        println!("[DEBUG] {}",
-            crate::utils::debug_msg(file!(), line!(), crate::utils::dbg_fnc!(), crate::utils::dbg_fmt!(), $msg)));
-    ($msg:expr, $($v:expr),+) => (
-        #[cfg(debug_assertions)]
-        println!("[DEBUG] {}",
-        crate::utils::debug_msg(
-            file!(),
-            line!(),
-            crate::utils::dbg_fnc!(),
-            crate::utils::dbg_fmt!($($v),+),
-            $msg,
-        )));
-}
-
-pub(crate) use dbg_er;
-pub(crate) use dbg_fmt;
-pub(crate) use dbg_fnc;
-pub(crate) use dbg_if;
-
-#[macro_export]
-macro_rules! liz_dbg_fnc {
-    () => {{
-        fn f() {}
-        fn type_name_of<T>(_: T) -> &'static str {
-            std::any::type_name::<T>()
-        }
-        let name = type_name_of(f);
-        &name[..name.len() - 3].trim_end_matches("::{{closure}}")
-    }};
-}
-
-#[macro_export]
-macro_rules! liz_dbg_vls {
-    () => (String::default());
-    ($v:expr) => (format!("{} = {:?}", stringify!($v), $v));
-    ($v:expr, $($n:expr),+) => (format!("{} = {:?}, {}", stringify!($v), $v, liz::liz_debug_vals!($($n),+)));
-}
-
-#[macro_export]
-macro_rules! liz_dbg_er {
-    ($err:expr) => (
-        liz::utils::debug_msg(file!(), line!(), liz::liz_dbg_fnc!(), liz::liz_dbg_vls!(), $err)
-    );
-    ($err:expr, $($v:expr),+) => (
-        liz::utils::debug_msg(
-            file!(),
-            line!(),
-            liz::liz_dbg_fnc!(),
-            liz::liz_dbg_vls!($($v),+),
-            $err,
-        )
-    );
-}
-
-#[macro_export]
-macro_rules! liz_dbg_if {
-    ($msg:expr) => (
-        #[cfg(debug_assertions)]
-        println!("[DEBUG] {}",
-            liz::utils::debug_msg(file!(), line!(), liz::liz_dbg_fnc!(), liz::liz_dbg_vls!(), $msg)));
-    ($msg:expr, $($v:expr),+) => (
-        #[cfg(debug_assertions)]
-        println!("[DEBUG] {}",
-            liz::utils::debug_msg(file!(), line!(), liz::liz_dbg_fnc!(), liz::liz_dbg_vls!($($v),+), $msg)));
 }

@@ -54,7 +54,7 @@
                     "kind": "bin"
                 }
             },
-            "args": ["lizs/test/hello"],
+            "args": ["-v"],
             "cwd": "${workspaceFolder}"
         },
     ]

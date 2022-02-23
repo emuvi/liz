@@ -1,5 +1,4 @@
 use rlua::{Context, Table, UserData};
-use simple_error::SimpleError;
 
 use std::io::{Read, Write};
 use std::process::{Command, Stdio};
@@ -8,8 +7,9 @@ use std::sync::RwLock;
 use std::thread;
 use std::time::Duration;
 
+use crate::liz_debug::dbg_err;
 use crate::liz_paths;
-use crate::utils::{self, dbg_er};
+use crate::utils;
 use crate::LizError;
 
 #[derive(Clone)]
@@ -29,6 +29,7 @@ impl Spawned {
     }
 
     fn join(&self) -> Result<Vec<String>, LizError> {
+        let waiter = Duration::from_millis(10);
         loop {
             {
                 let lock = self.results.read().unwrap();
@@ -36,21 +37,16 @@ impl Spawned {
                     break;
                 }
             }
-            thread::sleep(Duration::from_millis(10));
+            thread::sleep(waiter);
         }
         let lock = self.results.read().unwrap();
         if let Some(results) = &*lock {
             match results {
                 Ok(results) => Ok(results.clone()),
-                Err(err) => Err(Box::new(SimpleError::new(format!(
-                    "Spawned process returned error. - {}.",
-                    err
-                )))),
+                Err(err) => Err(dbg_err!(err)),
             }
         } else {
-            Err(Box::new(SimpleError::new(
-                "Could not get the results of none.",
-            )))
+            Err(dbg_err!("Could not get the results from the join"))
         }
     }
 
@@ -75,20 +71,20 @@ pub fn spawn(lane: Context, path: &str, args: &Option<Vec<String>>) -> Result<Sp
 
     let path = utils::add_liz_extension(path);
     let path = if liz_paths::is_relative(&path) {
-        let stack_dir = utils::get_stack_dir(&liz).map_err(|err| dbg_er!(err, path))?;
-        liz_paths::path_join(&stack_dir, &path).map_err(|err| dbg_er!(err, stack_dir, path))?
+        let stack_dir = utils::get_stack_dir(&liz).map_err(|err| dbg_err!(err, path))?;
+        liz_paths::path_join(&stack_dir, &path).map_err(|err| dbg_err!(err, stack_dir, path))?
     } else {
         path
     };
 
-    let spawn_pwd = liz_paths::pwd().map_err(|err| dbg_er!(err))?;
+    let spawn_pwd = liz_paths::pwd().map_err(|err| dbg_err!(err))?;
     liz.set("spawn_pwd", spawn_pwd)?;
 
-    let spawn_dir = liz_paths::path_parent(&path).map_err(|err| dbg_er!(err, path))?;
-    utils::put_stack_dir(&lane, &liz, spawn_dir.clone()).map_err(|err| dbg_er!(err, spawn_dir))?;
+    let spawn_dir = liz_paths::path_parent(&path).map_err(|err| dbg_err!(err, path))?;
+    utils::put_stack_dir(&lane, &liz, spawn_dir.clone()).map_err(|err| dbg_err!(err, spawn_dir))?;
     liz.set("spawn_dir", spawn_dir)?;
 
-    let spawn_path = liz_paths::path_absolute(&path).map_err(|err| dbg_er!(err, path))?;
+    let spawn_path = liz_paths::path_absolute(&path).map_err(|err| dbg_err!(err, path))?;
     liz.set("spawn_path", spawn_path.clone())?;
 
     let spawned = Spawned::new(spawn_path, args.clone());
@@ -112,13 +108,13 @@ pub fn wait(spawned: Spawned) {
 }
 
 pub fn cmd(
-    name: &str,
+    command: &str,
     args: &[impl AsRef<str>],
     dir: Option<impl AsRef<str>>,
     print: Option<bool>,
     throw: Option<bool>,
 ) -> Result<(i32, String), LizError> {
-    let mut cmd = Command::new(name);
+    let mut cmd = Command::new(command);
     let args = args
         .iter()
         .map(|arg| {
@@ -138,25 +134,30 @@ pub fn cmd(
         .stderr(Stdio::piped())
         .stdout(Stdio::piped())
         .spawn()
-        .map_err(|err| dbg_er!(err, name, args, dir))?;
+        .map_err(|err| dbg_err!(err, command, args, dir))?;
     let mut out = String::new();
     child.stderr.take().unwrap().read_to_string(&mut out)?;
     child.stdout.take().unwrap().read_to_string(&mut out)?;
     let out = out.trim();
     let out = String::from(out);
-    let res = child.wait()?.code().unwrap_or(0);
+    let result = child.wait()?.code().unwrap_or(0);
     let print = if let Some(print) = print { print } else { true };
     if print && !out.is_empty() {
         println!("{}", out);
     }
     let throw = if let Some(throw) = throw { throw } else { true };
-    if throw && res != 0 {
-        return Err(Box::new(SimpleError::new(format!(
-            "Exit code from {} command is different than zero: {}.",
-            name, res
-        ))));
+    if throw && result != 0 {
+        return Err(dbg_err!(
+            "Result code from command is different than zero",
+            command,
+            result
+        ));
     }
-    Ok((res, out))
+    Ok((result, out))
+}
+
+pub fn sleep(millis: u64) {
+    thread::sleep(Duration::from_millis(millis))
 }
 
 pub fn pause() {

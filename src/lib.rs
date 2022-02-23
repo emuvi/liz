@@ -2,9 +2,10 @@ use rlua::{Context, Lua, MultiValue, Table};
 
 use std::error::Error;
 
-use utils::{dbg_if, dbg_er};
+use liz_debug::dbg_err;
 
 pub mod liz_codes;
+pub mod liz_debug;
 pub mod liz_fires;
 pub mod liz_forms;
 pub mod liz_parse;
@@ -12,7 +13,7 @@ pub mod liz_paths;
 pub mod liz_texts;
 pub mod liz_winds;
 
-pub mod utils;
+mod utils;
 
 mod wiz_all;
 mod wiz_codes;
@@ -24,12 +25,11 @@ mod wiz_winds;
 pub type LizError = Box<dyn Error + Send + Sync>;
 
 pub fn run(path: &str, args: &Option<Vec<String>>) -> Result<Vec<String>, LizError> {
-    let handler = rise(path, args).map_err(|err| dbg_er!(err, path, args))?;
-    race(path, &handler).map_err(|err| dbg_er!(err, path, args))
+    let handler = rise(path, args).map_err(|err| dbg_err!(err, path, args))?;
+    race(path, &handler).map_err(|err| dbg_err!(err, path, args))
 }
 
 pub fn rise(path: &str, args: &Option<Vec<String>>) -> Result<Lua, LizError> {
-    dbg_if!("this is a test", path);
     let handler = Lua::new();
     let mut error: Option<LizError> = None;
     handler.context(|lane| {
@@ -38,7 +38,7 @@ pub fn rise(path: &str, args: &Option<Vec<String>>) -> Result<Lua, LizError> {
         }
     });
     if let Some(err) = error {
-        return Err(dbg_er!(err, path, args));
+        return Err(dbg_err!(err, path, args));
     }
     Ok(handler)
 }
@@ -47,10 +47,10 @@ pub fn race(path: &str, handler: &Lua) -> Result<Vec<String>, LizError> {
     let mut result: Option<Result<Vec<String>, LizError>> = None;
     handler.context(|lane| result = Some(race_in(lane, path)));
     if result.is_none() {
-        return Err(dbg_er!("Could not reach a result", path));
+        return Err(dbg_err!("Could not reach a result", path));
     }
     let result = result.unwrap();
-    result.map_err(|err| dbg_er!(err, path))
+    result.map_err(|err| dbg_err!(err, path))
 }
 
 pub fn race_in(lane: Context, path: &str) -> Result<Vec<String>, LizError> {
