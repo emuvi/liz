@@ -4,10 +4,9 @@ use std::collections::HashMap;
 
 use crate::liz_winds;
 use crate::utils;
-
 use crate::LizError;
 
-pub fn inject_trans<'a>(lane: Context<'a>, liz: &Table<'a>) -> Result<(), LizError> {
+pub fn inject_winds<'a>(lane: Context<'a>, liz: &Table<'a>) -> Result<(), LizError> {
     let get = lane.create_function(
         |_, (url, headers): (String, Option<HashMap<String, String>>)| {
             utils::treat_error(liz_winds::get(&url, headers))

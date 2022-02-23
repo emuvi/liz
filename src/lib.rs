@@ -11,6 +11,7 @@ pub mod liz_forms;
 pub mod liz_parse;
 pub mod liz_paths;
 pub mod liz_texts;
+pub mod liz_times;
 pub mod liz_winds;
 
 mod utils;
@@ -20,6 +21,7 @@ mod wiz_codes;
 mod wiz_fires;
 mod wiz_paths;
 mod wiz_texts;
+mod wiz_times;
 mod wiz_winds;
 
 pub type LizError = Box<dyn Error + Send + Sync>;

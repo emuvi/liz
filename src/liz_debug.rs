@@ -1,19 +1,66 @@
+use once_cell::sync::Lazy;
+
 use std::error::Error;
 use std::fmt::Display;
 use std::fmt::Formatter;
 use std::fmt::Result;
-use std::sync::atomic::{AtomicBool, Ordering};
+use std::fs::File;
+use std::io::Write;
+use std::sync::{
+    atomic::{AtomicBool, Ordering},
+    Mutex,
+};
 
+use crate::liz_times;
 use crate::LizError;
 
 static VERBOSE: AtomicBool = AtomicBool::new(false);
+static ARCHIVE: AtomicBool = AtomicBool::new(false);
+static ARCFILE: Lazy<Mutex<File>> = Lazy::new(|| Mutex::new(File::create("archive.log").unwrap()));
 
 pub fn is_verbose() -> bool {
     VERBOSE.load(Ordering::Acquire)
 }
 
-pub fn set_verbose(to: bool) {
-    VERBOSE.store(to, Ordering::Release)
+pub fn set_verbose(verbose: bool) {
+    VERBOSE.store(verbose, Ordering::Release);
+    if is_verbose() {
+        debug("INFO", "Verbose started");
+    }
+}
+
+pub fn is_archive() -> bool {
+    ARCHIVE.load(Ordering::Acquire)
+}
+
+pub fn set_archive(archive: bool) {
+    ARCHIVE.store(archive, Ordering::Release);
+    if is_archive() {
+        debug("INFO", "Archive started");
+    }
+}
+
+pub fn debug(kind: impl AsRef<str>, message: impl AsRef<str>) {
+    if is_verbose() {
+        println!(
+            "[{}] ({}) {}",
+            kind.as_ref(),
+            std::thread::current().name().unwrap_or(""),
+            message.as_ref()
+        );
+    }
+    if is_archive() {
+        let mut file = ARCFILE.lock().unwrap();
+        writeln!(
+            file,
+            "{} [{}] ({}) {}",
+            liz_times::pnow(),
+            kind.as_ref(),
+            std::thread::current().name().unwrap_or(""),
+            message.as_ref()
+        )
+        .unwrap();
+    }
 }
 
 #[derive(Clone, Debug, PartialEq, Eq)]
@@ -67,9 +114,7 @@ impl Error for MessageErr {
 }
 
 pub fn throw(message: String) -> Box<MessageErr> {
-    if is_verbose() {
-        println!("[ERR] {}", &message);
-    }
+    debug("ERRO", &message);
     Box::new(MessageErr::of(message))
 }
 
@@ -81,7 +126,7 @@ pub fn debug_msg(file: &str, line: u32, func: &str, vals: String, msg: impl Disp
     if vals.is_empty() {
         format!("{} on ({}) in {}[{}]", msg, func, file, line)
     } else {
-        format!("{} at {} on ({}) in {}[{}]", msg, vals, func, file, line)
+        format!("{} as {} on ({}) in {}[{}]", msg, vals, func, file, line)
     }
 }
 
@@ -113,38 +158,30 @@ macro_rules! dbg_err {
 
 macro_rules! dbg_knd {
     ($kind:expr, $msg:expr) => (
-        if crate::liz_debug::is_verbose() {
-            println!("[{}] {}", $kind, crate::liz_debug::debug_msg(file!(), line!(), crate::liz_debug::dbg_fnc!(), crate::liz_debug::dbg_fmt!(), $msg))
-        }
+        crate::liz_debug::debug($kind, crate::liz_debug::debug_msg(file!(), line!(), crate::liz_debug::dbg_fnc!(), crate::liz_debug::dbg_fmt!(), $msg))
     );
     ($kind:expr, $msg:expr, $($v:expr),+) => (
-        if crate::liz_debug::is_verbose() {
-            println!("[{}] {}", $kind, crate::liz_debug::debug_msg(file!(), line!(), crate::liz_debug::dbg_fnc!(), crate::liz_debug::dbg_fmt!($($v),+), $msg))
-        }
+        crate::liz_debug::debug($kind, crate::liz_debug::debug_msg(file!(), line!(), crate::liz_debug::dbg_fnc!(), crate::liz_debug::dbg_fmt!($($v),+), $msg))
     );
 }
 
 macro_rules! dbg_inf {
     ($msg:expr) => (
-        if crate::liz_debug::is_verbose() {
-            println!("[INF] {}", crate::liz_debug::debug_msg(file!(), line!(), crate::liz_debug::dbg_fnc!(), crate::liz_debug::dbg_fmt!(), $msg))
-        }
+        crate::liz_debug::debug("INFO", crate::liz_debug::debug_msg(file!(), line!(), crate::liz_debug::dbg_fnc!(), crate::liz_debug::dbg_fmt!(), $msg))
     );
     ($msg:expr, $($v:expr),+) => (
-        if crate::liz_debug::is_verbose() {
-            println!("[INF] {}", crate::liz_debug::debug_msg(file!(), line!(), crate::liz_debug::dbg_fnc!(), crate::liz_debug::dbg_fmt!($($v),+), $msg))
-        }
+        crate::liz_debug::debug("INFO", crate::liz_debug::debug_msg(file!(), line!(), crate::liz_debug::dbg_fnc!(), crate::liz_debug::dbg_fmt!($($v),+), $msg))
     );
 }
 
 macro_rules! dbg_cfg {
     ($msg:expr) => (
         #[cfg(debug_assertions)]
-        println!("[DBG] {}", crate::liz_debug::debug_msg(file!(), line!(), crate::liz_debug::dbg_fnc!(), crate::liz_debug::dbg_fmt!(), $msg))
+        crate::liz_debug::debug("DBUG", crate::liz_debug::debug_msg(file!(), line!(), crate::liz_debug::dbg_fnc!(), crate::liz_debug::dbg_fmt!(), $msg))
     );
     ($msg:expr, $($v:expr),+) => (
         #[cfg(debug_assertions)]
-        println!("[DBG] {}", crate::liz_debug::debug_msg(file!(), line!(), crate::liz_debug::dbg_fnc!(), crate::liz_debug::dbg_fmt!($($v),+), $msg))
+        crate::liz_debug::debug("DBUG", crate::liz_debug::debug_msg(file!(), line!(), crate::liz_debug::dbg_fnc!(), crate::liz_debug::dbg_fmt!($($v),+), $msg))
     );
 }
 
@@ -187,38 +224,30 @@ macro_rules! liz_dbg_trw {
 #[macro_export]
 macro_rules! liz_dbg_err {
     ($err:expr) => (
-        liz::liz_debug::debug_msg(file!(), line!(), liz::liz_dbg_fnc!(), liz::liz_dbg_vls!(), $err)
+        liz::liz_debug::debug_err(file!(), line!(), liz::liz_dbg_fnc!(), liz::liz_dbg_vls!(), $err)
     );
     ($err:expr, $($v:expr),+) => (
-        liz::liz_debug::debug_msg(file!(), line!(), liz::liz_dbg_fnc!(), liz::liz_dbg_vls!($($v),+), $err)
+        liz::liz_debug::debug_err(file!(), line!(), liz::liz_dbg_fnc!(), liz::liz_dbg_vls!($($v),+), $err)
     );
 }
 
 #[macro_export]
 macro_rules! liz_dbg_knd {
     ($kind:expr, $msg:expr) => (
-        if liz::liz_debug::is_verbose() {
-            println!("[{}] {}", $kind, liz::liz_debug::debug_msg(file!(), line!(), liz::liz_dbg_fnc!(), liz::liz_dbg_vls!(), $msg))
-        }
+        liz::liz_debug::debug($kind, liz::liz_debug::debug_msg(file!(), line!(), liz::liz_dbg_fnc!(), liz::liz_dbg_vls!(), $msg))
     );
     ($kind:expr, $msg:expr, $($v:expr),+) => (
-        if liz::liz_debug::is_verbose() {
-            println!("[{}] {}", $kind, liz::liz_debug::debug_msg(file!(), line!(), liz::liz_dbg_fnc!(), liz::liz_dbg_vls!($($v),+), $msg))
-        }
+        liz::liz_debug::debug($kind, liz::liz_debug::debug_msg(file!(), line!(), liz::liz_dbg_fnc!(), liz::liz_dbg_vls!($($v),+), $msg))
     );
 }
 
 #[macro_export]
 macro_rules! liz_dbg_inf {
     ($msg:expr) => (
-        if liz::liz_debug::is_verbose() {
-            println!("[INF] {}", liz::liz_debug::debug_msg(file!(), line!(), liz::liz_dbg_fnc!(), liz::liz_dbg_vls!(), $msg))
-        }
+        liz::liz_debug::debug("INFO", liz::liz_debug::debug_msg(file!(), line!(), liz::liz_dbg_fnc!(), liz::liz_dbg_vls!(), $msg))
     );
     ($msg:expr, $($v:expr),+) => (
-        if liz::liz_debug::is_verbose() {
-            println!("[INF] {}", liz::liz_debug::debug_msg(file!(), line!(), liz::liz_dbg_fnc!(), liz::liz_dbg_vls!($($v),+), $msg))
-        }
+        liz::liz_debug::debug("INFO", liz::liz_debug::debug_msg(file!(), line!(), liz::liz_dbg_fnc!(), liz::liz_dbg_vls!($($v),+), $msg))
     );
 }
 
@@ -226,10 +255,10 @@ macro_rules! liz_dbg_inf {
 macro_rules! liz_dbg_cfg {
     ($msg:expr) => (
         #[cfg(debug_assertions)]
-        println!("[DBG] {}", liz::liz_debug::debug_msg(file!(), line!(), liz::liz_dbg_fnc!(), liz::liz_dbg_vls!(), $msg))
+        liz::liz_debug::debug("DBUG", liz::liz_debug::debug_msg(file!(), line!(), liz::liz_dbg_fnc!(), liz::liz_dbg_vls!(), $msg))
     );
     ($msg:expr, $($v:expr),+) => (
         #[cfg(debug_assertions)]
-        println!("[DBG] {}", liz::liz_debug::debug_msg(file!(), line!(), liz::liz_dbg_fnc!(), liz::liz_dbg_vls!($($v),+), $msg))
+        liz::liz_debug::debug("DBUG", liz::liz_debug::debug_msg(file!(), line!(), liz::liz_dbg_fnc!(), liz::liz_dbg_vls!($($v),+), $msg))
     );
 }

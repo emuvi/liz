@@ -1,3 +1,0 @@
-print("Hello from thread.")
-liz.sleep(1000)
-return "test\nline"

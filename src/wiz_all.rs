@@ -5,23 +5,26 @@ use crate::wiz_codes;
 use crate::wiz_fires;
 use crate::wiz_paths;
 use crate::wiz_texts;
+use crate::wiz_times;
 use crate::wiz_winds;
 
-use crate::liz_debug::{dbg_err, dbg_cfg};
+use crate::liz_debug::{dbg_err, dbg_inf, dbg_cfg};
 use crate::utils;
 use crate::LizError;
 
 pub fn inject_all(lane: Context, path: &str, args: &Option<Vec<String>>) -> Result<(), LizError> {
+    dbg_inf!("Injecting all", path, args);
     let liz = lane.create_table()?;
     liz.set("args", args.clone())?;
 
     let path = utils::add_liz_extension(path);
-    dbg_cfg!("After add liz extension", path);
+    dbg_cfg!("The path after add liz extension", path);
     let path = if liz_paths::is_symlink(&path) {
         liz_paths::path_walk(&path).map_err(|err| dbg_err!(err, path))?
     } else {
         path
     };
+    dbg_cfg!("The path after checked the symlink", &path);
 
     let rise_pwd = liz_paths::pwd().map_err(|err| dbg_err!(err))?;
     let rise_dir = if liz_paths::is_absolute(&path) {
@@ -65,7 +68,8 @@ pub fn inject_all(lane: Context, path: &str, args: &Option<Vec<String>>) -> Resu
     wiz_fires::inject_execs(lane, &liz)?;
     wiz_paths::inject_paths(lane, &liz)?;
     wiz_texts::inject_texts(lane, &liz)?;
-    wiz_winds::inject_trans(lane, &liz)?;
+    wiz_times::inject_times(lane, &liz)?;
+    wiz_winds::inject_winds(lane, &liz)?;
 
     let globals = lane.globals();
     globals.set("liz", liz)?;

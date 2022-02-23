@@ -17,6 +17,8 @@ fn main() -> Result<(), LizError> {
                 return Ok(());
             } else if arg == "-v" || arg == "--verbose" {
                 liz::liz_debug::set_verbose(true);
+            } else if arg == "-a" || arg == "--archive" {
+                liz::liz_debug::set_archive(true);
             } else if arg == "--" {
                 script_args = true;
             } else if arg.ends_with(".liz") || arg.ends_with(".lua") {
