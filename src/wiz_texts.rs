@@ -6,24 +6,19 @@ use crate::utils;
 use crate::LizError;
 
 pub fn inject_texts<'a>(lane: Context<'a>, liz: &Table<'a>) -> Result<(), LizError> {
-    let text = lane
-        .create_function(|_, source: String| Ok(liz_texts::text(&source)))?;
+    let text = lane.create_function(|_, source: String| Ok(liz_texts::text(&source)))?;
 
-    let ask = lane.create_function(|lane, message: String| {
-        utils::treat_error(lane, liz_texts::ask(&message))
-    })?;
+    let ask =
+        lane.create_function(|_, message: String| utils::treat_error(liz_texts::ask(&message)))?;
 
-    let ask_int = lane.create_function(|lane, message: String| {
-        utils::treat_error(lane, liz_texts::ask_int(&message))
-    })?;
+    let ask_int = lane
+        .create_function(|_, message: String| utils::treat_error(liz_texts::ask_int(&message)))?;
 
-    let ask_float = lane.create_function(|lane, message: String| {
-        utils::treat_error(lane, liz_texts::ask_float(&message))
-    })?;
+    let ask_float = lane
+        .create_function(|_, message: String| utils::treat_error(liz_texts::ask_float(&message)))?;
 
-    let ask_bool = lane.create_function(|lane, message: String| {
-        utils::treat_error(lane, liz_texts::ask_bool(&message))
-    })?;
+    let ask_bool = lane
+        .create_function(|_, message: String| utils::treat_error(liz_texts::ask_bool(&message)))?;
 
     let len = lane.create_function(|_, text: String| Ok(liz_texts::len(&text)))?;
 
@@ -47,8 +42,8 @@ pub fn inject_texts<'a>(lane: Context<'a>, liz: &Table<'a>) -> Result<(), LizErr
         Ok(liz_texts::contains(&text, &part))
     })?;
 
-    let find =
-        lane.create_function(|_, (text, part): (String, String)| Ok(liz_texts::find(&text, &part)))?;
+    let find = lane
+        .create_function(|_, (text, part): (String, String)| Ok(liz_texts::find(&text, &part)))?;
 
     let rfind = lane
         .create_function(|_, (text, part): (String, String)| Ok(liz_texts::rfind(&text, &part)))?;
@@ -65,50 +60,47 @@ pub fn inject_texts<'a>(lane: Context<'a>, liz: &Table<'a>) -> Result<(), LizErr
         Ok(liz_texts::split(&text, &pattern))
     })?;
 
-    let split_spaces = lane.create_function(|_, text: String| Ok(liz_texts::split_spaces(&text)))?;
+    let split_spaces =
+        lane.create_function(|_, text: String| Ok(liz_texts::split_spaces(&text)))?;
 
-    let text_file_find = lane.create_function(|lane, (path, contents): (String, String)| {
-        utils::treat_error(lane, liz_texts::text_file_find(&path, &contents))
+    let text_file_find = lane.create_function(|_, (path, contents): (String, String)| {
+        utils::treat_error(liz_texts::text_file_find(&path, &contents))
     })?;
 
     let text_file_find_any =
-        lane.create_function(|lane, (path, contents): (String, Vec<String>)| {
-            utils::treat_error(
-                lane,
-                liz_texts::text_file_find_any(&path, contents.as_slice()),
-            )
+        lane.create_function(|_, (path, contents): (String, Vec<String>)| {
+            utils::treat_error(liz_texts::text_file_find_any(&path, contents.as_slice()))
         })?;
 
-    let text_files_find =
-        lane.create_function(|lane, (paths, contents): (Vec<String>, String)| {
-            utils::treat_error(lane, liz_texts::text_files_find(paths, contents))
-        })?;
+    let text_files_find = lane.create_function(|_, (paths, contents): (Vec<String>, String)| {
+        utils::treat_error(liz_texts::text_files_find(paths, contents))
+    })?;
 
     let text_files_find_any =
-        lane.create_function(|lane, (paths, contents): (Vec<String>, Vec<String>)| {
-            utils::treat_error(lane, liz_texts::text_files_find_any(paths, contents))
+        lane.create_function(|_, (paths, contents): (Vec<String>, Vec<String>)| {
+            utils::treat_error(liz_texts::text_files_find_any(paths, contents))
         })?;
 
     let text_file_founds =
         lane.create_function(|_, found: String| Ok(liz_texts::text_file_founds(&found)))?;
 
     let read =
-        lane.create_function(|lane, path: String| utils::treat_error(lane, liz_texts::read(&path)))?;
+        lane.create_function(|_, path: String| utils::treat_error(liz_texts::read(&path)))?;
 
-    let write = lane.create_function(|lane, (path, contents): (String, String)| {
-        utils::treat_error(lane, liz_texts::write(&path, &contents))
+    let write = lane.create_function(|_, (path, contents): (String, String)| {
+        utils::treat_error(liz_texts::write(&path, &contents))
     })?;
 
-    let append = lane.create_function(|lane, (path, contents): (String, String)| {
-        utils::treat_error(lane, liz_texts::append(&path, &contents))
+    let append = lane.create_function(|_, (path, contents): (String, String)| {
+        utils::treat_error(liz_texts::append(&path, &contents))
     })?;
 
-    let write_lines = lane.create_function(|lane, (path, lines): (String, Vec<String>)| {
-        utils::treat_error(lane, liz_texts::write_lines(&path, lines.as_slice()))
+    let write_lines = lane.create_function(|_, (path, lines): (String, Vec<String>)| {
+        utils::treat_error(liz_texts::write_lines(&path, lines.as_slice()))
     })?;
 
-    let append_lines = lane.create_function(|lane, (path, lines): (String, Vec<String>)| {
-        utils::treat_error(lane, liz_texts::append_lines(&path, lines.as_slice()))
+    let append_lines = lane.create_function(|_, (path, lines): (String, Vec<String>)| {
+        utils::treat_error(liz_texts::append_lines(&path, lines.as_slice()))
     })?;
 
     liz.set("text", text)?;

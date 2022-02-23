@@ -1,32 +1,32 @@
 use rlua::{Context, Table};
 
-use crate::utils;
 use crate::liz_fires::{self, Spawned};
+use crate::utils;
 use crate::LizError;
 
 pub fn inject_execs<'a>(lane: Context<'a>, liz: &Table<'a>) -> Result<(), LizError> {
-    let run = lane.create_function(|lane, (path, args): (String, Option<Vec<String>>)| {
-        utils::treat_error(lane, crate::run(&path, &args))
+    let run = lane.create_function(|_, (path, args): (String, Option<Vec<String>>)| {
+        utils::treat_error(crate::run(&path, &args))
     })?;
 
-    let race = lane.create_function(|lane, path: String| {
-        utils::treat_error(lane, crate::race_in(lane, &path))
-    })?;
+    let race =
+        lane.create_function(|lane, path: String| utils::treat_error(crate::race_in(lane, &path)))?;
 
     let eval = lane.create_function(|lane, source: String| {
-        utils::treat_error(lane, crate::eval_in(lane, &source))
+        utils::treat_error(crate::eval_in(lane, &source))
     })?;
 
     let spawn = lane.create_function(|lane, (path, args): (String, Option<Vec<String>>)| {
-        utils::treat_error(lane, liz_fires::spawn(lane, &path, &args))
+        utils::treat_error(liz_fires::spawn(lane, &path, &args))
     })?;
 
-    let join = lane.create_function(|lane, spawned: Spawned| {
-        utils::treat_error(lane, liz_fires::join(spawned))
-    })?;
+    let join =
+        lane.create_function(|_, spawned: Spawned| utils::treat_error(liz_fires::join(spawned)))?;
+
+    let wait = lane.create_function(|_, spawned: Spawned| Ok(liz_fires::wait(spawned)))?;
 
     let cmd = lane.create_function(
-        |lane,
+        |_,
          (name, args, dir, print, throw): (
             String,
             Vec<String>,
@@ -34,10 +34,7 @@ pub fn inject_execs<'a>(lane: Context<'a>, liz: &Table<'a>) -> Result<(), LizErr
             Option<bool>,
             Option<bool>,
         )| {
-            utils::treat_error(
-                lane,
-                liz_fires::cmd(&name, args.as_slice(), dir, print, throw),
-            )
+            utils::treat_error(liz_fires::cmd(&name, args.as_slice(), dir, print, throw))
         },
     )?;
 
@@ -58,6 +55,7 @@ pub fn inject_execs<'a>(lane: Context<'a>, liz: &Table<'a>) -> Result<(), LizErr
     liz.set("eval", eval)?;
     liz.set("spawn", spawn)?;
     liz.set("join", join)?;
+    liz.set("wait", wait)?;
     liz.set("cmd", cmd)?;
     liz.set("pause", pause)?;
     liz.set("exe_ext", exe_ext)?;

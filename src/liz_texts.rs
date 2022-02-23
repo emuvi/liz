@@ -7,7 +7,7 @@ use std::thread::JoinHandle;
 
 use crate::liz_forms::Forms;
 use crate::liz_parse::{Parser, TEXT_PARSER};
-use crate::utils::dbg_err;
+use crate::utils::dbg_er;
 use crate::LizError;
 
 pub fn text(source: &str) -> Forms {
@@ -20,7 +20,7 @@ pub fn ask(message: &str) -> Result<String, LizError> {
     let mut buffer = String::new();
     std::io::stdin()
         .read_line(&mut buffer)
-        .map_err(|err| dbg_err!(err, "read_line"))?;
+        .map_err(|err| dbg_er!(err))?;
     Ok(buffer)
 }
 
@@ -30,10 +30,8 @@ pub fn ask_int(message: &str) -> Result<i32, LizError> {
     let mut buffer = String::new();
     std::io::stdin()
         .read_line(&mut buffer)
-        .map_err(|err| dbg_err!(err, "read_line"))?;
-    let result = buffer
-        .parse::<i32>()
-        .map_err(|err| dbg_err!(err, "parse"))?;
+        .map_err(|err| dbg_er!(err))?;
+    let result = buffer.parse::<i32>().map_err(|err| dbg_er!(err))?;
     Ok(result)
 }
 
@@ -279,10 +277,10 @@ pub fn read(path: &str) -> Result<String, LizError> {
         .write(false)
         .read(true)
         .open(path)
-        .map_err(|err| dbg_err!(err, "open", path))?;
+        .map_err(|err| dbg_er!(err, path))?;
     let mut result = String::new();
     file.read_to_string(&mut result)
-        .map_err(|err| dbg_err!(err, "read_to_string", path))?;
+        .map_err(|err| dbg_er!(err, path))?;
     Ok(result)
 }
 
@@ -293,8 +291,8 @@ pub fn write(path: &str, contents: &str) -> Result<(), LizError> {
         .truncate(true)
         .append(false)
         .open(path)
-        .map_err(|err| dbg_err!(err, "open", path))?;
-    Ok(write!(file, "{}", contents).map_err(|err| dbg_err!(err, "write", path))?)
+        .map_err(|err| dbg_er!(err, path))?;
+    Ok(write!(file, "{}", contents).map_err(|err| dbg_er!(err, path))?)
 }
 
 pub fn append(path: &str, contents: &str) -> Result<(), LizError> {
@@ -304,8 +302,8 @@ pub fn append(path: &str, contents: &str) -> Result<(), LizError> {
         .truncate(false)
         .append(true)
         .open(path)
-        .map_err(|err| dbg_err!(err, "open", path))?;
-    Ok(writeln!(file, "{}", contents).map_err(|err| dbg_err!(err, "writeln", path))?)
+        .map_err(|err| dbg_er!(err, path))?;
+    Ok(writeln!(file, "{}", contents).map_err(|err| dbg_er!(err, path))?)
 }
 
 pub fn write_lines(path: &str, lines: &[impl AsRef<str>]) -> Result<(), LizError> {
@@ -315,7 +313,7 @@ pub fn write_lines(path: &str, lines: &[impl AsRef<str>]) -> Result<(), LizError
         .truncate(true)
         .append(false)
         .open(path)
-        .map_err(|err| dbg_err!(err, "open", path))?;
+        .map_err(|err| dbg_er!(err, path))?;
     for line in lines {
         writeln!(file, "{}", line.as_ref())?;
     }
@@ -329,9 +327,9 @@ pub fn append_lines(path: &str, lines: &[impl AsRef<str>]) -> Result<(), LizErro
         .truncate(false)
         .append(true)
         .open(path)
-        .map_err(|err| dbg_err!(err, "open", path))?;
+        .map_err(|err| dbg_er!(err, path))?;
     for line in lines {
-        writeln!(file, "{}", line.as_ref()).map_err(|err| dbg_err!(err, "write", path))?;
+        writeln!(file, "{}", line.as_ref()).map_err(|err| dbg_er!(err, path))?;
     }
     Ok(())
 }

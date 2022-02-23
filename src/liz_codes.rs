@@ -25,8 +25,8 @@ impl UserData for Forms {
         });
         methods.add_method("print_all", |_, var, ()| Ok(var.print_all()));
         methods.add_method("build", |_, var, ()| Ok(var.build()));
-        methods.add_method("write", |lane, var, path: String| {
-            utils::treat_error(lane, var.write(&path))
+        methods.add_method("write", |_, var, path: String| {
+            utils::treat_error(var.write(&path))
         });
     }
 }

@@ -9,20 +9,20 @@ use crate::LizError;
 
 pub fn inject_trans<'a>(lane: Context<'a>, liz: &Table<'a>) -> Result<(), LizError> {
     let get = lane.create_function(
-        |lane, (url, headers): (String, Option<HashMap<String, String>>)| {
-            utils::treat_error(lane, liz_winds::get(&url, headers))
+        |_, (url, headers): (String, Option<HashMap<String, String>>)| {
+            utils::treat_error(liz_winds::get(&url, headers))
         },
     )?;
 
     let post = lane.create_function(
-        |lane, (url, text, headers): (String, String, Option<HashMap<String, String>>)| {
-            utils::treat_error(lane, liz_winds::post(&url, text, headers))
+        |_, (url, text, headers): (String, String, Option<HashMap<String, String>>)| {
+            utils::treat_error(liz_winds::post(&url, text, headers))
         },
     )?;
 
     let download = lane.create_function(
-        |lane, (origin, destiny, headers): (String, String, Option<HashMap<String, String>>)| {
-            utils::treat_error(lane, liz_winds::download(&origin, &destiny, headers))
+        |_, (origin, destiny, headers): (String, String, Option<HashMap<String, String>>)| {
+            utils::treat_error(liz_winds::download(&origin, &destiny, headers))
         },
     )?;
 

@@ -7,7 +7,7 @@ use crate::wiz_paths;
 use crate::wiz_texts;
 use crate::wiz_winds;
 
-use crate::utils::{self, dbg_err};
+use crate::utils::{self, dbg_er};
 use crate::LizError;
 
 pub fn inject_all(lane: Context, path: &str, args: &Option<Vec<String>>) -> Result<(), LizError> {
@@ -16,43 +16,43 @@ pub fn inject_all(lane: Context, path: &str, args: &Option<Vec<String>>) -> Resu
 
     let path = utils::add_liz_extension(path);
     let path = if liz_paths::is_symlink(&path) {
-        liz_paths::path_walk(&path).map_err(|err| dbg_err!(err, "path_walk", path))?
+        liz_paths::path_walk(&path).map_err(|err| dbg_er!(err, path))?
     } else {
         path
     };
 
-    let rise_pwd = liz_paths::pwd().map_err(|err| dbg_err!(err, "pwd"))?;
+    let rise_pwd = liz_paths::pwd().map_err(|err| dbg_er!(err))?;
     let rise_dir = if liz_paths::is_absolute(&path) {
-        liz_paths::path_parent(&path).map_err(|err| dbg_err!(err, "path_parent", path))?
+        liz_paths::path_parent(&path).map_err(|err| dbg_er!(err, path))?
     } else {
         rise_pwd.clone()
     };
         
     utils::put_stack_dir(&lane, &liz, rise_dir.clone())
-        .map_err(|err| dbg_err!(err, "put_stack_dir", rise_dir))?;
+        .map_err(|err| dbg_er!(err, rise_dir))?;
 
     liz.set("rise_pwd", rise_pwd)?;
     liz.set("rise_dir", rise_dir)?;
 
     let rise_path =
-        liz_paths::path_absolute(&path).map_err(|err| dbg_err!(err, "path_absolute", path))?;
+        liz_paths::path_absolute(&path).map_err(|err| dbg_er!(err, path))?;
     liz.set("rise_path", rise_path)?;
 
     let print_stack_dir =
-        lane.create_function(|lane, ()| utils::treat_error(lane, utils::print_stack_dir(lane)))?;
+        lane.create_function(|lane, ()| utils::treat_error(utils::print_stack_dir(lane)))?;
 
     let last_stack_dir =
-        lane.create_function(|lane, ()| utils::treat_error(lane, utils::last_stack_dir(lane)))?;
+        lane.create_function(|lane, ()| utils::treat_error(utils::last_stack_dir(lane)))?;
 
-    let to_json_multi = lane.create_function(|lane, values: MultiValue| {
-        utils::treat_error(lane, utils::to_json_multi(values))
+    let to_json_multi = lane.create_function(|_, values: MultiValue| {
+        utils::treat_error(utils::to_json_multi(values))
     })?;
 
     let to_json =
-        lane.create_function(|lane, value: Value| utils::treat_error(lane, utils::to_json(value)))?;
+        lane.create_function(|_, value: Value| utils::treat_error(utils::to_json(value)))?;
 
     let from_json = lane.create_function(|lane, source: String| {
-        utils::treat_error(lane, utils::from_json(lane, source))
+        utils::treat_error(utils::from_json(lane, source))
     })?;
 
     liz.set("print_stack_dir", print_stack_dir)?;

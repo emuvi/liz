@@ -9,7 +9,7 @@ use std::thread;
 use std::time::Duration;
 
 use crate::liz_paths;
-use crate::utils::{self, dbg_err};
+use crate::utils::{self, dbg_er};
 use crate::LizError;
 
 #[derive(Clone)]
@@ -53,6 +53,18 @@ impl Spawned {
             )))
         }
     }
+
+    fn wait(&self) {
+        loop {
+            {
+                let lock = self.results.read().unwrap();
+                if lock.is_some() {
+                    break;
+                }
+            }
+            thread::sleep(Duration::from_millis(10));
+        }
+    }
 }
 
 impl UserData for Spawned {}
@@ -63,24 +75,20 @@ pub fn spawn(lane: Context, path: &str, args: &Option<Vec<String>>) -> Result<Sp
 
     let path = utils::add_liz_extension(path);
     let path = if liz_paths::is_relative(&path) {
-        let stack_dir = utils::get_stack_dir(&liz).map_err(|err| dbg_err!(err, "get_stack_dir"))?;
-        liz_paths::path_join(&stack_dir, &path)
-            .map_err(|err| dbg_err!(err, "path_join", stack_dir, path))?
+        let stack_dir = utils::get_stack_dir(&liz).map_err(|err| dbg_er!(err, path))?;
+        liz_paths::path_join(&stack_dir, &path).map_err(|err| dbg_er!(err, stack_dir, path))?
     } else {
         path
     };
 
-    let spawn_pwd = liz_paths::pwd().map_err(|err| dbg_err!(err, "pwd"))?;
+    let spawn_pwd = liz_paths::pwd().map_err(|err| dbg_er!(err))?;
     liz.set("spawn_pwd", spawn_pwd)?;
 
-    let spawn_dir =
-        liz_paths::path_parent(&path).map_err(|err| dbg_err!(err, "path_parent", path))?;
-    utils::put_stack_dir(&lane, &liz, spawn_dir.clone())
-        .map_err(|err| dbg_err!(err, "put_stack_dir", spawn_dir))?;
+    let spawn_dir = liz_paths::path_parent(&path).map_err(|err| dbg_er!(err, path))?;
+    utils::put_stack_dir(&lane, &liz, spawn_dir.clone()).map_err(|err| dbg_er!(err, spawn_dir))?;
     liz.set("spawn_dir", spawn_dir)?;
 
-    let spawn_path =
-        liz_paths::path_absolute(&path).map_err(|err| dbg_err!(err, "path_absolute", path))?;
+    let spawn_path = liz_paths::path_absolute(&path).map_err(|err| dbg_er!(err, path))?;
     liz.set("spawn_path", spawn_path.clone())?;
 
     let spawned = Spawned::new(spawn_path, args.clone());
@@ -97,6 +105,10 @@ pub fn spawn(lane: Context, path: &str, args: &Option<Vec<String>>) -> Result<Sp
 
 pub fn join(spawned: Spawned) -> Result<Vec<String>, LizError> {
     spawned.join()
+}
+
+pub fn wait(spawned: Spawned) {
+    spawned.wait()
 }
 
 pub fn cmd(
@@ -126,7 +138,7 @@ pub fn cmd(
         .stderr(Stdio::piped())
         .stdout(Stdio::piped())
         .spawn()
-        .map_err(|err| dbg_err!(err, "spawn", name, args, dir))?;
+        .map_err(|err| dbg_er!(err, name, args, dir))?;
     let mut out = String::new();
     child.stderr.take().unwrap().read_to_string(&mut out)?;
     child.stdout.take().unwrap().read_to_string(&mut out)?;

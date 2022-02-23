@@ -6,6 +6,7 @@ fn main() -> Result<(), LizError> {
     let mut first_arg = true;
     let mut script_args = false;
     let mut verbose = false;
+    
     for arg in std::env::args() {
         if !script_args {
             if arg == "-h" || arg == "--help" {
