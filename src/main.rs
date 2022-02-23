@@ -1,4 +1,4 @@
-use liz::liz_dbg_inf;
+use liz::{liz_dbg_inf};
 use liz::LizError;
 
 fn main() -> Result<(), LizError> {

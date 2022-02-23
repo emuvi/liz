@@ -81,7 +81,7 @@ pub fn debug_msg(file: &str, line: u32, func: &str, vals: String, msg: impl Disp
     if vals.is_empty() {
         format!("{} on ({}) in {}[{}]", msg, func, file, line)
     } else {
-        format!("{} of {} on ({}) in {}[{}]", msg, vals, func, file, line)
+        format!("{} at {} on ({}) in {}[{}]", msg, vals, func, file, line)
     }
 }
 
@@ -140,11 +140,11 @@ macro_rules! dbg_inf {
 macro_rules! dbg_cfg {
     ($msg:expr) => (
         #[cfg(debug_assertions)]
-        println!("[CFG] {}", crate::liz_debug::debug_msg(file!(), line!(), crate::liz_debug::dbg_fnc!(), crate::liz_debug::dbg_fmt!(), $msg))
+        println!("[DBG] {}", crate::liz_debug::debug_msg(file!(), line!(), crate::liz_debug::dbg_fnc!(), crate::liz_debug::dbg_fmt!(), $msg))
     );
     ($msg:expr, $($v:expr),+) => (
         #[cfg(debug_assertions)]
-        println!("[CFG] {}", crate::liz_debug::debug_msg(file!(), line!(), crate::liz_debug::dbg_fnc!(), crate::liz_debug::dbg_fmt!($($v),+), $msg))
+        println!("[DBG] {}", crate::liz_debug::debug_msg(file!(), line!(), crate::liz_debug::dbg_fnc!(), crate::liz_debug::dbg_fmt!($($v),+), $msg))
     );
 }
 
@@ -226,10 +226,10 @@ macro_rules! liz_dbg_inf {
 macro_rules! liz_dbg_cfg {
     ($msg:expr) => (
         #[cfg(debug_assertions)]
-        println!("[CFG] {}", liz::liz_debug::debug_msg(file!(), line!(), liz::liz_dbg_fnc!(), liz::liz_dbg_vls!(), $msg))
+        println!("[DBG] {}", liz::liz_debug::debug_msg(file!(), line!(), liz::liz_dbg_fnc!(), liz::liz_dbg_vls!(), $msg))
     );
     ($msg:expr, $($v:expr),+) => (
         #[cfg(debug_assertions)]
-        println!("[CFG] {}", liz::liz_debug::debug_msg(file!(), line!(), liz::liz_dbg_fnc!(), liz::liz_dbg_vls!($($v),+), $msg))
+        println!("[DBG] {}", liz::liz_debug::debug_msg(file!(), line!(), liz::liz_dbg_fnc!(), liz::liz_dbg_vls!($($v),+), $msg))
     );
 }

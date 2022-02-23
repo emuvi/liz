@@ -23,7 +23,14 @@ pub fn inject_execs<'a>(lane: Context<'a>, liz: &Table<'a>) -> Result<(), LizErr
     let join =
         lane.create_function(|_, spawned: Spawned| utils::treat_error(liz_fires::join(spawned)))?;
 
+    let join_all = lane.create_function(|_, spawneds: Vec<Spawned>| {
+        utils::treat_error(liz_fires::join_all(spawneds))
+    })?;
+
     let wait = lane.create_function(|_, spawned: Spawned| Ok(liz_fires::wait(spawned)))?;
+
+    let wait_all =
+        lane.create_function(|_, spawneds: Vec<Spawned>| Ok(liz_fires::wait_all(spawneds)))?;
 
     let cmd = lane.create_function(
         |_,
@@ -57,7 +64,9 @@ pub fn inject_execs<'a>(lane: Context<'a>, liz: &Table<'a>) -> Result<(), LizErr
     liz.set("eval", eval)?;
     liz.set("spawn", spawn)?;
     liz.set("join", join)?;
+    liz.set("join_all", join_all)?;
     liz.set("wait", wait)?;
+    liz.set("wait_all", wait_all)?;
     liz.set("cmd", cmd)?;
     liz.set("sleep", sleep)?;
     liz.set("pause", pause)?;

@@ -2,7 +2,7 @@ use rlua::{Context, Lua, MultiValue, Table};
 
 use std::error::Error;
 
-use liz_debug::dbg_err;
+use liz_debug::{dbg_err, dbg_inf};
 
 pub mod liz_codes;
 pub mod liz_debug;
@@ -30,6 +30,7 @@ pub fn run(path: &str, args: &Option<Vec<String>>) -> Result<Vec<String>, LizErr
 }
 
 pub fn rise(path: &str, args: &Option<Vec<String>>) -> Result<Lua, LizError> {
+    dbg_inf!("Rising", path, args);
     let handler = Lua::new();
     let mut error: Option<LizError> = None;
     handler.context(|lane| {
@@ -44,6 +45,7 @@ pub fn rise(path: &str, args: &Option<Vec<String>>) -> Result<Lua, LizError> {
 }
 
 pub fn race(path: &str, handler: &Lua) -> Result<Vec<String>, LizError> {
+    dbg_inf!("Racing", path);
     let mut result: Option<Result<Vec<String>, LizError>> = None;
     handler.context(|lane| result = Some(race_in(lane, path)));
     if result.is_none() {

@@ -2,5 +2,5 @@
 All desired features for this project will be documented in this file.
 
 ## Debug and Verbose
-
-[EVAL] Where and How should we do Debug Verbose messages on Liz?
+I shall place the debug macros on the code as the need arises.
+I shall put at most one dbg_inf per function and as many dbg_cfg as need.

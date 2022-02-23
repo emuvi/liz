@@ -103,8 +103,22 @@ pub fn join(spawned: Spawned) -> Result<Vec<String>, LizError> {
     spawned.join()
 }
 
+pub fn join_all(spawneds: Vec<Spawned>) -> Result<Vec<Vec<String>>, LizError> {
+    let mut result: Vec<Vec<String>> = Vec::new();
+    for spawned in spawneds {
+        result.push(spawned.join()?);
+    }
+    Ok(result)
+}
+
 pub fn wait(spawned: Spawned) {
     spawned.wait()
+}
+
+pub fn wait_all(spawneds: Vec<Spawned>) {
+    for spawned in spawneds {
+        spawned.wait()
+    }
 }
 
 pub fn cmd(

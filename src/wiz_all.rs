@@ -7,7 +7,7 @@ use crate::wiz_paths;
 use crate::wiz_texts;
 use crate::wiz_winds;
 
-use crate::liz_debug::dbg_err;
+use crate::liz_debug::{dbg_err, dbg_cfg};
 use crate::utils;
 use crate::LizError;
 
@@ -16,6 +16,7 @@ pub fn inject_all(lane: Context, path: &str, args: &Option<Vec<String>>) -> Resu
     liz.set("args", args.clone())?;
 
     let path = utils::add_liz_extension(path);
+    dbg_cfg!("After add liz extension", path);
     let path = if liz_paths::is_symlink(&path) {
         liz_paths::path_walk(&path).map_err(|err| dbg_err!(err, path))?
     } else {
