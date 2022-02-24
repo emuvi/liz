@@ -1,6 +1,6 @@
 use rlua::{UserData, UserDataMethods};
 
-use crate::liz_debug::dbg_stp;
+use crate::liz_debug::{dbg_err, dbg_stp};
 use crate::liz_fires;
 use crate::liz_forms::{Form, Forms};
 use crate::liz_parse::{Parser, CODE_PARSER};
@@ -73,13 +73,13 @@ pub fn form(part: &str) -> Form {
 
 pub fn git_root_find(path: &str) -> Result<Option<String>, LizError> {
     dbg_stp!(path);
-    let mut actual = liz_paths::path_absolute(path)?;
+    let mut actual = liz_paths::path_absolute(path).map_err(|err| dbg_err!(err))?;
     loop {
-        let check = liz_paths::path_join(&actual, ".git")?;
+        let check = liz_paths::path_join(&actual, ".git").map_err(|err| dbg_err!(err))?;
         if liz_paths::is_dir(&check) {
             return Ok(Some(actual));
         }
-        actual = liz_paths::path_parent(&actual)?;
+        actual = liz_paths::path_parent(&actual).map_err(|err| dbg_err!(err))?;
         if actual.is_empty() {
             break;
         }
@@ -89,15 +89,16 @@ pub fn git_root_find(path: &str) -> Result<Option<String>, LizError> {
 
 pub fn git_is_ignored(path: &str) -> Result<bool, LizError> {
     dbg_stp!(path);
-    if let Some(root) = git_root_find(path)? {
-        let relative = liz_paths::path_relative(path, &root)?;
+    if let Some(root) = git_root_find(path).map_err(|err| dbg_err!(err))? {
+        let relative = liz_paths::path_relative(path, &root).map_err(|err| dbg_err!(err))?;
         let (code, output) = liz_fires::cmd(
             "git",
             &["check-ignore", &relative],
             Some(&root),
             Some(false),
             Some(false),
-        )?;
+        )
+        .map_err(|err| dbg_err!(err))?;
         return Ok(code == 0 && !output.is_empty());
     }
     Ok(false)
@@ -105,7 +106,8 @@ pub fn git_is_ignored(path: &str) -> Result<bool, LizError> {
 
 pub fn git_has_changes(root: &str) -> Result<bool, LizError> {
     dbg_stp!(root);
-    let (_, output) = liz_fires::cmd("git", &["status"], Some(root), Some(false), Some(true))?;
+    let (_, output) = liz_fires::cmd("git", &["status"], Some(root), Some(false), Some(true))
+        .map_err(|err| dbg_err!(err))?;
     let output = output.trim();
     Ok(!output.ends_with("nothing to commit, working tree clean"))
 }

@@ -16,7 +16,7 @@ pub fn text(source: &str) -> Forms {
 pub fn ask(message: &str) -> Result<String, LizError> {
     dbg_stp!(message);
     print!("{}", message);
-    std::io::stdout().flush().unwrap();
+    std::io::stdout().flush().map_err(|err| dbg_err!(err))?;
     let mut buffer = String::new();
     std::io::stdin()
         .read_line(&mut buffer)
@@ -27,7 +27,7 @@ pub fn ask(message: &str) -> Result<String, LizError> {
 pub fn ask_int(message: &str) -> Result<i32, LizError> {
     dbg_stp!(message);
     print!("{}", message);
-    std::io::stdout().flush().unwrap();
+    std::io::stdout().flush().map_err(|err| dbg_err!(err))?;
     let mut buffer = String::new();
     std::io::stdin()
         .read_line(&mut buffer)
@@ -39,16 +39,18 @@ pub fn ask_int(message: &str) -> Result<i32, LizError> {
 pub fn ask_float(message: &str) -> Result<f64, LizError> {
     dbg_stp!(message);
     print!("{}", message);
-    std::io::stdout().flush().unwrap();
+    std::io::stdout().flush().map_err(|err| dbg_err!(err))?;
     let mut buffer = String::new();
-    std::io::stdin().read_line(&mut buffer)?;
-    let result = buffer.parse::<f64>()?;
+    std::io::stdin()
+        .read_line(&mut buffer)
+        .map_err(|err| dbg_err!(err))?;
+    let result = buffer.parse::<f64>().map_err(|err| dbg_err!(err))?;
     Ok(result)
 }
 
 pub fn ask_bool(message: &str) -> Result<bool, LizError> {
     dbg_stp!(message);
-    let result = ask(message)?;
+    let result = ask(message).map_err(|err| dbg_err!(err))?;
     let result = result.to_lowercase();
     Ok(result == "t" || result == "true" || result == "y" || result == "yes")
 }
@@ -162,14 +164,14 @@ pub fn text_file_find_any(
 ) -> Result<Option<Vec<String>>, LizError> {
     dbg_stp!(path, contents);
     let mut results: Option<Vec<String>> = None;
-    let file = File::open(path)?;
+    let file = File::open(path).map_err(|err| dbg_err!(err))?;
     let mut reader = BufReader::new(file);
     let mut line = String::new();
     let mut row = 1;
     let mut done = 0;
     loop {
         line.clear();
-        if reader.read_line(&mut line)? == 0 {
+        if reader.read_line(&mut line).map_err(|err| dbg_err!(err))? == 0 {
             break;
         }
         for content in &contents {
@@ -179,15 +181,19 @@ pub fn text_file_find_any(
                 }
                 let pos = done + col;
                 let len = content.len();
-                results.as_mut().unwrap().push(format!(
-                    "({})[{},{},{},{}]{}",
-                    path,
-                    row,
-                    col,
-                    pos,
-                    len,
-                    line.trim()
-                ));
+                results
+                    .as_mut()
+                    .ok_or("Could not get the results as mutable")
+                    .map_err(|err| dbg_err!(err))?
+                    .push(format!(
+                        "({})[{},{},{},{}]{}",
+                        path,
+                        row,
+                        col,
+                        pos,
+                        len,
+                        line.trim()
+                    ));
             }
         }
         done = done + line.len();
@@ -219,19 +225,25 @@ pub fn text_files_find_any(
             let mut partial: Option<Vec<String>> = None;
             loop {
                 let path = {
-                    let mut lock_pool = link_pool.lock().unwrap();
+                    let mut lock_pool = link_pool.lock().map_err(|err| dbg_err!(err)).unwrap();
                     lock_pool.pop()
                 };
                 if path.is_none() {
                     break;
                 }
                 let path = path.unwrap();
-                let file_founds = text_file_find_any(&path, link_contents.clone()).unwrap();
+                let file_founds = text_file_find_any(&path, link_contents.clone())
+                    .map_err(|err| dbg_err!(err))
+                    .unwrap();
                 if let Some(file_founds) = file_founds {
                     if partial.is_none() {
                         partial = Some(Vec::new());
                     }
-                    let edit_partial = partial.as_mut().unwrap();
+                    let edit_partial = partial
+                        .as_mut()
+                        .ok_or("Could not get partial results as mutable")
+                        .map_err(|err| dbg_err!(err))
+                        .unwrap();
                     for found in file_founds {
                         edit_partial.push(found);
                     }
@@ -251,7 +263,11 @@ pub fn text_files_find_any(
             if results.is_none() {
                 results = Some(Vec::new());
             }
-            let editor = results.as_mut().unwrap();
+            let editor = results
+                .as_mut()
+                .ok_or("Could not get results as mutable")
+                .map_err(|err| dbg_err!(err))
+                .unwrap();
             for found in partial {
                 editor.push(found);
             }

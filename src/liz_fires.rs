@@ -13,7 +13,7 @@ use crate::liz_paths;
 use crate::utils;
 use crate::LizError;
 
-#[derive(Clone)]
+#[derive(Debug, Clone)]
 pub struct Spawned {
     path: String,
     args: Option<Vec<String>>,
@@ -33,14 +33,14 @@ impl Spawned {
         let waiter = Duration::from_millis(10);
         loop {
             {
-                let lock = self.results.read().unwrap();
+                let lock = self.results.read().map_err(|err| dbg_err!(err))?;
                 if lock.is_some() {
                     break;
                 }
             }
             thread::sleep(waiter);
         }
-        let lock = self.results.read().unwrap();
+        let lock = self.results.read().map_err(|err| dbg_err!(err))?;
         if let Some(results) = &*lock {
             match results {
                 Ok(results) => Ok(results.clone()),
@@ -52,16 +52,17 @@ impl Spawned {
         }
     }
 
-    fn wait(&self) {
+    fn wait(&self) -> Result<(), LizError> {
         loop {
             {
-                let lock = self.results.read().unwrap();
+                let lock = self.results.read().map_err(|err| dbg_err!(err))?;
                 if lock.is_some() {
                     break;
                 }
             }
             thread::sleep(Duration::from_millis(10));
         }
+        Ok(())
     }
 }
 
@@ -72,9 +73,9 @@ static SPAWN_COUNT: AtomicUsize = AtomicUsize::new(1);
 pub fn spawn(lane: Context, path: &str, args: &Option<Vec<String>>) -> Result<Spawned, LizError> {
     dbg_stp!(path, args);
     let globals = lane.globals();
-    let liz: Table = globals.get("liz")?;
+    let liz: Table = globals.get("liz").map_err(|err| dbg_err!(err))?;
 
-    let path = utils::liz_suit_path(path)?;
+    let path = utils::liz_suit_path(path).map_err(|err| dbg_err!(err))?;
     dbg_stp!(path);
     let path = if liz_paths::is_relative(&path) {
         let stack_dir = utils::get_stack_dir(&liz).map_err(|err| dbg_err!(err, path))?;
@@ -86,16 +87,19 @@ pub fn spawn(lane: Context, path: &str, args: &Option<Vec<String>>) -> Result<Sp
 
     let spawn_pwd = liz_paths::pwd().map_err(|err| dbg_err!(err))?;
     dbg_stp!(spawn_pwd);
-    liz.set("spawn_pwd", spawn_pwd)?;
+    liz.set("spawn_pwd", spawn_pwd)
+        .map_err(|err| dbg_err!(err))?;
 
     let spawn_dir = liz_paths::path_parent(&path).map_err(|err| dbg_err!(err, path))?;
     dbg_stp!(spawn_dir);
     utils::put_stack_dir(&lane, &liz, spawn_dir.clone()).map_err(|err| dbg_err!(err, spawn_dir))?;
-    liz.set("spawn_dir", spawn_dir)?;
+    liz.set("spawn_dir", spawn_dir)
+        .map_err(|err| dbg_err!(err))?;
 
     let spawn_path = liz_paths::path_absolute(&path).map_err(|err| dbg_err!(err, path))?;
     dbg_stp!(spawn_path);
-    liz.set("spawn_path", spawn_path.clone())?;
+    liz.set("spawn_path", spawn_path.clone())
+        .map_err(|err| dbg_err!(err))?;
 
     let spawn_index = SPAWN_COUNT.fetch_add(1, Ordering::SeqCst);
     let spawn_name = format!("spawn{}", spawn_index);
@@ -109,38 +113,43 @@ pub fn spawn(lane: Context, path: &str, args: &Option<Vec<String>>) -> Result<Sp
         .spawn(move || {
             let returned = crate::run(&spawned_clone.path, &spawned_clone.args);
             {
-                let mut lock = spawned_clone.results.write().unwrap();
+                let mut lock = spawned_clone
+                    .results
+                    .write()
+                    .map_err(|err| dbg_err!(err))
+                    .unwrap();
                 *lock = Some(returned);
             }
         })
-        .unwrap();
+        .map_err(|err| dbg_err!(err))?;
     Ok(spawned)
 }
 
 pub fn join(spawned: Spawned) -> Result<Vec<String>, LizError> {
-    dbg_stp!();
+    dbg_stp!(spawned);
     spawned.join()
 }
 
 pub fn join_all(spawneds: Vec<Spawned>) -> Result<Vec<Vec<String>>, LizError> {
-    dbg_stp!();
+    dbg_stp!(spawneds);
     let mut result: Vec<Vec<String>> = Vec::new();
     for spawned in spawneds {
-        result.push(spawned.join()?);
+        result.push(spawned.join().map_err(|err| dbg_err!(err))?);
     }
     Ok(result)
 }
 
-pub fn wait(spawned: Spawned) {
-    dbg_stp!();
+pub fn wait(spawned: Spawned) -> Result<(), LizError> {
+    dbg_stp!(spawned);
     spawned.wait()
 }
 
-pub fn wait_all(spawneds: Vec<Spawned>) {
-    dbg_stp!();
+pub fn wait_all(spawneds: Vec<Spawned>) -> Result<(), LizError> {
+    dbg_stp!(spawneds);
     for spawned in spawneds {
-        spawned.wait()
+        spawned.wait().map_err(|err| dbg_err!(err))?
     }
+    Ok(())
 }
 
 pub fn cmd(
@@ -173,11 +182,28 @@ pub fn cmd(
         .spawn()
         .map_err(|err| dbg_err!(err, command, args, dir))?;
     let mut out = String::new();
-    child.stderr.take().unwrap().read_to_string(&mut out)?;
-    child.stdout.take().unwrap().read_to_string(&mut out)?;
+    child
+        .stderr
+        .take()
+        .ok_or("Could not take on the child stderr")
+        .map_err(|err| dbg_err!(err))?
+        .read_to_string(&mut out)
+        .map_err(|err| dbg_err!(err))?;
+    child
+        .stdout
+        .take()
+        .ok_or("Could not take on the child stdout")
+        .map_err(|err| dbg_err!(err))?
+        .read_to_string(&mut out)
+        .map_err(|err| dbg_err!(err))?;
     let out = out.trim();
     let out = String::from(out);
-    let result = child.wait()?.code().unwrap_or(0);
+    let result = child
+        .wait()
+        .map_err(|err| dbg_err!(err))?
+        .code()
+        .ok_or("Could not found the exit code")
+        .map_err(|err| dbg_err!(err))?;
     let print = if let Some(print) = print { print } else { true };
     if print && !out.is_empty() {
         println!("{}", out);
@@ -198,28 +224,34 @@ pub fn sleep(millis: u64) {
     thread::sleep(Duration::from_millis(millis))
 }
 
-pub fn pause() {
+pub fn pause() -> Result<(), LizError> {
     dbg_stp!();
     let mut stdin = std::io::stdin();
     let mut stdout = std::io::stdout();
-    write!(stdout, "Press any key to continue...").unwrap();
-    stdout.flush().unwrap();
+    write!(stdout, "Press any key to continue...").map_err(|err| dbg_err!(err))?;
+    stdout.flush()?;
     let mut buffer = [0u8];
-    stdin.read(&mut buffer).unwrap();
+    stdin.read(&mut buffer).map_err(|err| dbg_err!(err))?;
     if !(buffer[0] == b'\r' || buffer[0] == b'\n') {
-        write!(stdout, "\n").unwrap();
-        stdout.flush().unwrap();
+        write!(stdout, "\n").map_err(|err| dbg_err!(err))?;
+        stdout.flush().map_err(|err| dbg_err!(err))?;
     }
+    Ok(())
 }
 
 pub fn liz_dir() -> Result<String, LizError> {
     dbg_stp!();
-    Ok(liz_paths::path_parent(liz_exe()?.as_ref())?)
+    Ok(
+        liz_paths::path_parent(liz_exe().map_err(|err| dbg_err!(err))?.as_ref())
+            .map_err(|err| dbg_err!(err))?,
+    )
 }
 
 pub fn liz_exe() -> Result<String, LizError> {
     dbg_stp!();
-    Ok(utils::display(std::env::current_exe()?))
+    Ok(utils::display(
+        std::env::current_exe().map_err(|err| dbg_err!(err))?,
+    ))
 }
 
 pub fn exe_ext() -> &'static str {
