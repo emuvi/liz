@@ -63,7 +63,7 @@ pub fn race(path: &str, handler: &Lua) -> Result<Vec<String>, LizError> {
 pub fn race_in(lane: Context, path: &str) -> Result<Vec<String>, LizError> {
     dbg_stp!(path);
     let globals = lane.globals();
-    let liz: Table = globals.get("liz")?;
+    let liz: Table = globals.get("liz").map_err(|err| dbg_err!(err))?;
 
     let path = utils::liz_suit_path(path)?;
     dbg_stp!(path);
