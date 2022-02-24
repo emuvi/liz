@@ -118,10 +118,12 @@ pub fn spawn(lane: Context, path: &str, args: &Option<Vec<String>>) -> Result<Sp
 }
 
 pub fn join(spawned: Spawned) -> Result<Vec<String>, LizError> {
+    dbg_stp!();
     spawned.join()
 }
 
 pub fn join_all(spawneds: Vec<Spawned>) -> Result<Vec<Vec<String>>, LizError> {
+    dbg_stp!();
     let mut result: Vec<Vec<String>> = Vec::new();
     for spawned in spawneds {
         result.push(spawned.join()?);
@@ -130,10 +132,12 @@ pub fn join_all(spawneds: Vec<Spawned>) -> Result<Vec<Vec<String>>, LizError> {
 }
 
 pub fn wait(spawned: Spawned) {
+    dbg_stp!();
     spawned.wait()
 }
 
 pub fn wait_all(spawneds: Vec<Spawned>) {
+    dbg_stp!();
     for spawned in spawneds {
         spawned.wait()
     }
@@ -146,6 +150,7 @@ pub fn cmd(
     print: Option<bool>,
     throw: Option<bool>,
 ) -> Result<(i32, String), LizError> {
+    dbg_stp!();
     let mut cmd = Command::new(command);
     let args = args
         .iter()
@@ -189,10 +194,12 @@ pub fn cmd(
 }
 
 pub fn sleep(millis: u64) {
+    dbg_stp!(millis);
     thread::sleep(Duration::from_millis(millis))
 }
 
 pub fn pause() {
+    dbg_stp!();
     let mut stdin = std::io::stdin();
     let mut stdout = std::io::stdout();
     write!(stdout, "Press any key to continue...").unwrap();
@@ -206,29 +213,36 @@ pub fn pause() {
 }
 
 pub fn liz_dir() -> Result<String, LizError> {
+    dbg_stp!();
     Ok(liz_paths::path_parent(liz_exe()?.as_ref())?)
 }
 
 pub fn liz_exe() -> Result<String, LizError> {
+    dbg_stp!();
     Ok(utils::display(std::env::current_exe()?))
 }
 
 pub fn exe_ext() -> &'static str {
+    dbg_stp!();
     std::env::consts::EXE_EXTENSION
 }
 
 pub fn get_os() -> &'static str {
+    dbg_stp!();
     std::env::consts::OS
 }
 
 pub fn is_lin() -> bool {
+    dbg_stp!();
     std::env::consts::OS == "linux"
 }
 
 pub fn is_mac() -> bool {
+    dbg_stp!();
     std::env::consts::OS == "macos"
 }
 
 pub fn is_win() -> bool {
+    dbg_stp!();
     std::env::consts::OS == "windows"
 }

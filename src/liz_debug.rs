@@ -126,12 +126,19 @@ pub fn debug_msg(file: &str, line: u32, func: &str, vals: String, msg: impl Disp
     if vals.is_empty() {
         format!("{} on ({}) in {}[{}]", msg, func, file, line)
     } else {
-        format!("{} as {{{}}} on ({}) in {}[{}]", msg, vals, func, file, line)
+        format!(
+            "{} as {{{}}} on ({}) in {}[{}]",
+            msg, vals, func, file, line
+        )
     }
 }
 
 pub fn debug_stp(file: &str, line: u32, func: &str, vals: String) -> String {
-    format!("[STEP] on ({}) in {}[{}] as {{{}}}", func, file, line, vals)
+    if vals.is_empty() {
+        format!("[STEP] on ({}) in {}[{}]", func, file, line)
+    } else {
+        format!("[STEP] on ({}) in {}[{}] as {{{}}}", func, file, line, vals)
+    }
 }
 
 macro_rules! dbg_fnc {
@@ -145,10 +152,24 @@ macro_rules! dbg_fnc {
     }};
 }
 
+macro_rules! dbg_fvl {
+    ($v:expr) => {{
+        let mut value = format!("{:?}", $v);
+        if value.len() > 300 {
+            let mut end = 300;
+            while !value.is_char_boundary(end) {
+                end += 1;
+            }
+            value.truncate(end);
+        }
+        value
+    }};
+}
+
 macro_rules! dbg_fmt {
     () => (String::default());
-    ($v:expr) => (format!("{} = {:?}", stringify!($v), &$v));
-    ($v:expr, $($n:expr),+) => (format!("{} = {:?}, {}", stringify!($v), &$v, crate::liz_debug::dbg_fmt!($($n),+)));
+    ($v:expr) => (format!("{} = {}", stringify!($v), crate::liz_debug::dbg_fvl!(&$v)));
+    ($v:expr, $($n:expr),+) => (format!("{} = {} , {}", stringify!($v), crate::liz_debug::dbg_fvl!(&$v), crate::liz_debug::dbg_fmt!($($n),+)));
 }
 
 macro_rules! dbg_err {
@@ -179,6 +200,10 @@ macro_rules! dbg_inf {
 }
 
 macro_rules! dbg_stp {
+    () => (
+        #[cfg(debug_assertions)]
+        crate::liz_debug::debug("DBUG", crate::liz_debug::debug_stp(file!(), line!(), crate::liz_debug::dbg_fnc!(), String::default()))
+    );
     ($($v:expr),+) => (
         #[cfg(debug_assertions)]
         crate::liz_debug::debug("DBUG", crate::liz_debug::debug_stp(file!(), line!(), crate::liz_debug::dbg_fnc!(), crate::liz_debug::dbg_fmt!($($v),+)))
@@ -188,6 +213,7 @@ macro_rules! dbg_stp {
 pub(crate) use dbg_err;
 pub(crate) use dbg_fmt;
 pub(crate) use dbg_fnc;
+pub(crate) use dbg_fvl;
 pub(crate) use dbg_inf;
 pub(crate) use dbg_knd;
 pub(crate) use dbg_stp;
@@ -205,10 +231,26 @@ macro_rules! liz_dbg_fnc {
 }
 
 #[macro_export]
+macro_rules! liz_dbg_fvl {
+    ($v:expr) => {{
+        let mut value = format!("{:?}", $v);
+        if value.len() > 300 {
+            let mut end = 300;
+            while !value.is_char_boundary(end) {
+                end += 1;
+            }
+            value.truncate(end);
+            value.push_str("...");
+        }
+        value
+    }};
+}
+
+#[macro_export]
 macro_rules! liz_dbg_fmt {
     () => (String::default());
-    ($v:expr) => (format!("{} = {:?}", stringify!($v), &$v));
-    ($v:expr, $($n:expr),+) => (format!("{} = {:?}, {}", stringify!($v), &$v, liz::liz_dbg_fmt!($($n),+)));
+    ($v:expr) => (format!("{} = {}", stringify!($v), liz::liz_dbg_fvl!(&$v)));
+    ($v:expr, $($n:expr),+) => (format!("{} = {} , {}", stringify!($v), liz::liz_dbg_fvl!(&$v), liz::liz_dbg_fmt!($($n),+)));
 }
 
 #[macro_export]
@@ -253,6 +295,10 @@ macro_rules! liz_dbg_inf {
 
 #[macro_export]
 macro_rules! liz_dbg_stp {
+    () => (
+        #[cfg(debug_assertions)]
+        liz::liz_debug::debug("DBUG", liz::liz_debug::debug_stp(file!(), line!(), liz::liz_dbg_fnc!(), String::default()))
+    );
     ($($v:expr),+) => (
         #[cfg(debug_assertions)]
         liz::liz_debug::debug("DBUG", liz::liz_debug::debug_stp(file!(), line!(), liz::liz_dbg_fnc!(), liz::liz_dbg_fmt!($($v),+)))

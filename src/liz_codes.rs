@@ -1,5 +1,6 @@
 use rlua::{UserData, UserDataMethods};
 
+use crate::liz_debug::dbg_stp;
 use crate::liz_fires;
 use crate::liz_forms::{Form, Forms};
 use crate::liz_parse::{Parser, CODE_PARSER};
@@ -47,14 +48,17 @@ impl UserData for Form {
 }
 
 pub fn code(source: &str) -> Forms {
+    dbg_stp!(source);
     CODE_PARSER.parse(source)
 }
 
 pub fn edit() -> Forms {
+    dbg_stp!();
     Forms::edit()
 }
 
 pub fn desk(terms: Vec<String>) -> Forms {
+    dbg_stp!(terms);
     let mut desk: Vec<Form> = Vec::new();
     for term in terms {
         desk.push(Form::from(term));
@@ -63,10 +67,12 @@ pub fn desk(terms: Vec<String>) -> Forms {
 }
 
 pub fn form(part: &str) -> Form {
+    dbg_stp!(part);
     Form::new(part)
 }
 
 pub fn git_root_find(path: &str) -> Result<Option<String>, LizError> {
+    dbg_stp!(path);
     let mut actual = liz_paths::path_absolute(path)?;
     loop {
         let check = liz_paths::path_join(&actual, ".git")?;
@@ -82,6 +88,7 @@ pub fn git_root_find(path: &str) -> Result<Option<String>, LizError> {
 }
 
 pub fn git_is_ignored(path: &str) -> Result<bool, LizError> {
+    dbg_stp!(path);
     if let Some(root) = git_root_find(path)? {
         let relative = liz_paths::path_relative(path, &root)?;
         let (code, output) = liz_fires::cmd(
@@ -97,6 +104,7 @@ pub fn git_is_ignored(path: &str) -> Result<bool, LizError> {
 }
 
 pub fn git_has_changes(root: &str) -> Result<bool, LizError> {
+    dbg_stp!(root);
     let (_, output) = liz_fires::cmd("git", &["status"], Some(root), Some(false), Some(true))?;
     let output = output.trim();
     Ok(!output.ends_with("nothing to commit, working tree clean"))

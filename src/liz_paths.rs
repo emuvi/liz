@@ -1,49 +1,59 @@
 use std::path::Path;
 
-use crate::liz_debug::dbg_err;
+use crate::liz_debug::{dbg_err, dbg_stp};
 use crate::utils;
 use crate::LizError;
 
 pub fn has(path: &str) -> bool {
+    dbg_stp!(path);
     Path::new(path).exists()
 }
 
 pub fn is_dir(path: &str) -> bool {
+    dbg_stp!(path);
     Path::new(path).is_dir()
 }
 
 pub fn is_file(path: &str) -> bool {
+    dbg_stp!(path);
     Path::new(path).is_file()
 }
 
 pub fn is_absolute(path: &str) -> bool {
+    dbg_stp!(path);
     Path::new(path).is_absolute()
 }
 
 pub fn is_relative(path: &str) -> bool {
+    dbg_stp!(path);
     Path::new(path).is_relative()
 }
 
 pub fn is_symlink(path: &str) -> bool {
+    dbg_stp!(path);
     Path::new(path).is_symlink()
 }
 
 pub fn cd(path: &str) -> Result<(), LizError> {
+    dbg_stp!(path);
     std::env::set_current_dir(path).map_err(|err| dbg_err!(err, path))?;
     Ok(())
 }
 
 pub fn pwd() -> Result<String, LizError> {
+    dbg_stp!();
     let result = std::env::current_dir().map_err(|err| dbg_err!(err))?;
     Ok(utils::display(result))
 }
 
 pub fn rn(origin: &str, destiny: &str) -> Result<(), LizError> {
+    dbg_stp!(origin, destiny);
     std::fs::rename(origin, destiny).map_err(|err| dbg_err!(err, origin, destiny))?;
     Ok(())
 }
 
 pub fn cp(origin: &str, destiny: &str) -> Result<(), LizError> {
+    dbg_stp!(origin, destiny);
     if is_dir(origin) {
         copy_directory(origin, destiny).map_err(|err| dbg_err!(err, origin, destiny))?;
     } else {
@@ -53,6 +63,7 @@ pub fn cp(origin: &str, destiny: &str) -> Result<(), LizError> {
 }
 
 fn copy_directory(origin: &str, destiny: &str) -> Result<(), LizError> {
+    dbg_stp!(origin, destiny);
     std::fs::create_dir_all(destiny).map_err(|err| dbg_err!(err, destiny))?;
     for entry in std::fs::read_dir(origin).map_err(|err| dbg_err!(err, origin))? {
         let entry = entry.map_err(|err| dbg_err!(err))?;
@@ -73,6 +84,7 @@ fn copy_directory(origin: &str, destiny: &str) -> Result<(), LizError> {
 }
 
 fn copy_file(origin: &str, destiny: &str) -> Result<(), LizError> {
+    dbg_stp!(origin, destiny);
     let parent = path_parent(destiny).map_err(|err| dbg_err!(err, destiny))?;
     std::fs::create_dir_all(&parent).map_err(|err| dbg_err!(err, parent))?;
     std::fs::copy(origin, destiny).map_err(|err| dbg_err!(err, origin, destiny))?;
@@ -80,6 +92,7 @@ fn copy_file(origin: &str, destiny: &str) -> Result<(), LizError> {
 }
 
 pub fn cp_tmp(origin: &str, destiny: &str) -> Result<(), LizError> {
+    dbg_stp!(origin, destiny);
     if has(destiny) {
         let file_name = path_name(destiny);
         let mut file_name = String::from(file_name);
@@ -97,12 +110,14 @@ pub fn cp_tmp(origin: &str, destiny: &str) -> Result<(), LizError> {
 }
 
 pub fn mv(origin: &str, destiny: &str) -> Result<(), LizError> {
+    dbg_stp!(origin, destiny);
     cp(origin, destiny).map_err(|err| dbg_err!(err, origin, destiny))?;
     rm(origin).map_err(|err| dbg_err!(err, origin))?;
     Ok(())
 }
 
 pub fn rm(path: &str) -> Result<(), LizError> {
+    dbg_stp!(path);
     if !has(path) {
         return Ok(());
     }
@@ -115,11 +130,13 @@ pub fn rm(path: &str) -> Result<(), LizError> {
 }
 
 pub fn mkdir(path: &str) -> Result<(), LizError> {
+    dbg_stp!(path);
     std::fs::create_dir_all(path)?;
     Ok(())
 }
 
 pub fn touch(path: &str) -> Result<(), LizError> {
+    dbg_stp!(path);
     std::fs::OpenOptions::new()
         .create(true)
         .write(true)
@@ -128,10 +145,12 @@ pub fn touch(path: &str) -> Result<(), LizError> {
 }
 
 pub fn os_sep() -> &'static char {
+    dbg_stp!();
     &std::path::MAIN_SEPARATOR
 }
 
 pub fn path_sep(path: &str) -> &'static str {
+    dbg_stp!(path);
     if path.contains("\\") {
         "\\"
     } else {
@@ -140,6 +159,7 @@ pub fn path_sep(path: &str) -> &'static str {
 }
 
 pub fn path_parts(path: &str) -> Vec<&str> {
+    dbg_stp!(path);
     let sep = path_sep(path);
     let mut result: Vec<&str> = path.split(sep).collect();
     if !result.is_empty() {
@@ -150,38 +170,15 @@ pub fn path_parts(path: &str) -> Vec<&str> {
     result
 }
 
-#[test]
-fn path_parts_test() {
-    let tester = path_parts("/home/pointel/test");
-    assert_eq!(tester.len(), 4);
-    assert_eq!(tester[0], "/");
-    assert_eq!(tester[1], "home");
-    assert_eq!(tester[2], "pointel");
-    assert_eq!(tester[3], "test");
-    let tester = path_parts("pointel/test");
-    assert_eq!(tester.len(), 2);
-    assert_eq!(tester[0], "pointel");
-    assert_eq!(tester[1], "test");
-    let tester = path_parts("./pointel/test");
-    assert_eq!(tester.len(), 3);
-    assert_eq!(tester[0], ".");
-    assert_eq!(tester[1], "pointel");
-    assert_eq!(tester[2], "test");
-    let tester = path_parts("C:\\pointel\\test");
-    assert_eq!(tester.len(), 3);
-    assert_eq!(tester[0], "C:");
-    assert_eq!(tester[1], "pointel");
-    assert_eq!(tester[2], "test");
-}
-
-pub fn path_parts_join(parts: &[impl AsRef<str>]) -> String {
+pub fn path_parts_join(parts: &[&str]) -> String {
+    dbg_stp!(parts);
     if parts.is_empty() {
         return String::default();
     }
     let mut result = String::new();
     let mut start = 1;
     let end = parts.len();
-    if parts[0].as_ref() == "/" {
+    if parts[0] == "/" {
         result.push('/');
         if end > 1 {
             result.push_str(parts[1].as_ref());
@@ -190,9 +187,9 @@ pub fn path_parts_join(parts: &[impl AsRef<str>]) -> String {
     } else {
         result.push_str(parts[0].as_ref());
     }
-    let os_sep = if parts[0].as_ref().contains(":") {
+    let os_sep = if parts[0].contains(":") {
         '\\'
-    } else if parts[0].as_ref() == "/" {
+    } else if parts[0] == "/" {
         '/'
     } else {
         *os_sep()
@@ -204,31 +201,8 @@ pub fn path_parts_join(parts: &[impl AsRef<str>]) -> String {
     result
 }
 
-#[test]
-fn path_parts_join_test() {
-    let tester = path_parts("/home/pointel/test");
-    let expect = "/home/pointel/test";
-    let result = path_parts_join(tester.as_slice());
-    assert_eq!(result, expect);
-    let tester = path_parts("C:\\pointel\\test");
-    let expect = "C:\\pointel\\test";
-    let result = path_parts_join(tester.as_slice());
-    assert_eq!(result, expect);
-    let tester = path_parts("pointel/test");
-    let expect = format!("pointel{}test", os_sep());
-    let result = path_parts_join(tester.as_slice());
-    assert_eq!(result, expect);
-    let tester = path_parts("./pointel/test");
-    let expect = format!(".{}pointel{}test", os_sep(), os_sep());
-    let result = path_parts_join(tester.as_slice());
-    assert_eq!(result, expect);
-    let tester = path_parts("../../pointel/test");
-    let expect = format!("..{}..{}pointel{}test", os_sep(), os_sep(), os_sep());
-    let result = path_parts_join(tester.as_slice());
-    assert_eq!(result, expect);
-}
-
 pub fn path_name(path: &str) -> &str {
+    dbg_stp!(path);
     let parts = path_parts(path);
     if parts.len() > 0 {
         let last_part = parts[parts.len() - 1];
@@ -238,6 +212,7 @@ pub fn path_name(path: &str) -> &str {
 }
 
 pub fn path_stem(path: &str) -> &str {
+    dbg_stp!(path);
     let parts = path_parts(path);
     if parts.len() > 0 {
         let last_part = parts[parts.len() - 1];
@@ -249,6 +224,7 @@ pub fn path_stem(path: &str) -> &str {
 }
 
 pub fn path_ext(path: &str) -> &str {
+    dbg_stp!(path);
     let parts = path_parts(path);
     if parts.len() > 0 {
         let last_part = parts[parts.len() - 1];
@@ -260,13 +236,15 @@ pub fn path_ext(path: &str) -> &str {
 }
 
 pub fn path_ext_is(path: &str, ext: &str) -> bool {
+    dbg_stp!(path, ext);
     path_ext(path).to_lowercase() == ext.to_lowercase()
 }
 
-pub fn path_ext_is_on(path: &str, exts: &[impl AsRef<str>]) -> bool {
+pub fn path_ext_is_on(path: &str, exts: Vec<String>) -> bool {
+    dbg_stp!(path, exts);
     let ext = path_ext(path).to_lowercase();
     for case in exts {
-        if ext == case.as_ref().to_lowercase() {
+        if ext == case.to_lowercase() {
             return true;
         }
     }
@@ -274,6 +252,7 @@ pub fn path_ext_is_on(path: &str, exts: &[impl AsRef<str>]) -> bool {
 }
 
 pub fn path_absolute(path: &str) -> Result<String, LizError> {
+    dbg_stp!(path);
     if is_absolute(path) {
         return Ok(String::from(path));
     }
@@ -294,20 +273,8 @@ pub fn path_absolute(path: &str) -> Result<String, LizError> {
     Ok(path_parts_join(base_parts.as_slice()))
 }
 
-#[test]
-fn path_absolute_test() {
-    let wd = pwd().unwrap();
-    let tester = "test";
-    let expect = format!("{}{}test", wd, os_sep());
-    let result = path_absolute(tester).unwrap();
-    assert_eq!(result, expect);
-    let tester = "./test";
-    let expect = format!("{}{}test", wd, os_sep());
-    let result = path_absolute(tester).unwrap();
-    assert_eq!(result, expect);
-}
-
 pub fn path_relative(path: &str, base: &str) -> Result<String, LizError> {
+    dbg_stp!(path, base);
     if !is_absolute(path) {
         return Ok(String::from(path));
     }
@@ -329,12 +296,14 @@ pub fn path_relative(path: &str, base: &str) -> Result<String, LizError> {
 }
 
 pub fn path_walk(path: &str) -> Result<String, LizError> {
+    dbg_stp!(path);
     Ok(utils::display(
         std::fs::read_link(path).map_err(|err| dbg_err!(err, path))?,
     ))
 }
 
 pub fn path_parent(path: &str) -> Result<String, LizError> {
+    dbg_stp!(path);
     let path = path_absolute(path)?;
     let mut parts = path_parts(&path);
     if parts.pop().is_none() {
@@ -344,6 +313,7 @@ pub fn path_parent(path: &str) -> Result<String, LizError> {
 }
 
 pub fn path_parent_find(path: &str, with_name: &str) -> Result<String, LizError> {
+    dbg_stp!(path, with_name);
     let path = path_absolute(path)?;
     let mut parts = path_parts(&path);
     loop {
@@ -359,6 +329,7 @@ pub fn path_parent_find(path: &str, with_name: &str) -> Result<String, LizError>
 }
 
 pub fn path_join(path: &str, child: &str) -> Result<String, LizError> {
+    dbg_stp!(path, child);
     if is_absolute(child) {
         return Err(dbg_err!("The child must be relative", child));
     }
@@ -408,6 +379,7 @@ pub fn path_join(path: &str, child: &str) -> Result<String, LizError> {
 }
 
 pub fn path_join_if_relative(base: &str, path: &str) -> Result<String, LizError> {
+    dbg_stp!(base, path);
     if is_relative(path) {
         path_join(base, path)
     } else {
@@ -416,6 +388,7 @@ pub fn path_join_if_relative(base: &str, path: &str) -> Result<String, LizError>
 }
 
 pub fn path_list(path: &str) -> Result<Vec<String>, LizError> {
+    dbg_stp!(path);
     let mut results = Vec::new();
     let entries = std::fs::read_dir(path)?;
     for entry in entries {
@@ -426,6 +399,7 @@ pub fn path_list(path: &str) -> Result<Vec<String>, LizError> {
 }
 
 pub fn path_list_in(path: &str) -> Result<Vec<String>, LizError> {
+    dbg_stp!(path);
     let mut results = Vec::new();
     path_list_in_make(path, &mut results)?;
     Ok(results)
@@ -445,6 +419,7 @@ fn path_list_in_make(path: &str, results: &mut Vec<String>) -> Result<(), LizErr
 }
 
 pub fn path_list_dirs(path: &str) -> Result<Vec<String>, LizError> {
+    dbg_stp!(path);
     let mut results = Vec::new();
     let entries = std::fs::read_dir(path)?;
     for entry in entries {
@@ -458,6 +433,7 @@ pub fn path_list_dirs(path: &str) -> Result<Vec<String>, LizError> {
 }
 
 pub fn path_list_dirs_in(path: &str) -> Result<Vec<String>, LizError> {
+    dbg_stp!(path);
     let mut results = Vec::new();
     path_list_dirs_in_make(path, &mut results)?;
     return Ok(results);
@@ -477,6 +453,7 @@ fn path_list_dirs_in_make(path: &str, results: &mut Vec<String>) -> Result<(), L
 }
 
 pub fn path_list_files(path: &str) -> Result<Vec<String>, LizError> {
+    dbg_stp!(path);
     let mut results = Vec::new();
     let entries = std::fs::read_dir(path)?;
     for entry in entries {
@@ -490,6 +467,7 @@ pub fn path_list_files(path: &str) -> Result<Vec<String>, LizError> {
 }
 
 pub fn path_list_files_in(path: &str) -> Result<Vec<String>, LizError> {
+    dbg_stp!(path);
     let mut results = Vec::new();
     path_list_files_in_make(path, &mut results)?;
     Ok(results)
@@ -511,6 +489,7 @@ fn path_list_files_in_make(path: &str, results: &mut Vec<String>) -> Result<(), 
 }
 
 pub fn path_list_files_ext(path: &str, ext: &str) -> Result<Vec<String>, LizError> {
+    dbg_stp!(path, ext);
     let mut results = Vec::new();
     let entries = std::fs::read_dir(path)?;
     for entry in entries {
@@ -527,6 +506,7 @@ pub fn path_list_files_ext(path: &str, ext: &str) -> Result<Vec<String>, LizErro
 }
 
 pub fn path_list_files_ext_in(path: &str, ext: &str) -> Result<Vec<String>, LizError> {
+    dbg_stp!(path, ext);
     let mut results = Vec::new();
     path_list_files_ext_in_make(path, ext, &mut results)?;
     Ok(results)
@@ -554,6 +534,7 @@ fn path_list_files_ext_in_make(
 }
 
 pub fn path_list_files_exts(path: &str, exts: &[&str]) -> Result<Vec<String>, LizError> {
+    dbg_stp!(path, exts);
     let mut results = Vec::new();
     let entries = std::fs::read_dir(path)?;
     for entry in entries {
@@ -573,6 +554,7 @@ pub fn path_list_files_exts(path: &str, exts: &[&str]) -> Result<Vec<String>, Li
 }
 
 pub fn path_list_files_exts_in(path: &str, exts: &[&str]) -> Result<Vec<String>, LizError> {
+    dbg_stp!(path, exts);
     let mut results = Vec::new();
     path_list_files_exts_in_make(path, exts, &mut results)?;
     Ok(results)

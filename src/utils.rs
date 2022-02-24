@@ -4,6 +4,7 @@ use serde_json::Value as JsonValue;
 use std::path::Path;
 
 use crate::liz_fires;
+use crate::liz_paths;
 use crate::LizError;
 
 pub fn display(path: impl AsRef<Path>) -> String {
@@ -20,6 +21,11 @@ pub fn liz_suit_path(path: &str) -> Result<String, LizError> {
     };
     let result = if result.contains("$liz") {
         result.replace("$liz", liz_fires::liz_dir()?.as_ref())
+    } else {
+        result
+    };
+    let result = if result.contains("$pwd") {
+        result.replace("$pwd", liz_paths::pwd()?.as_ref())
     } else {
         result
     };

@@ -88,7 +88,7 @@ impl Forms {
 
     pub fn write(&self, path: &str) -> Result<(), LizError> {
         let contents = self.build();
-        liz_texts::write(path, &contents)
+        liz_texts::write(path, contents)
     }
 }
 

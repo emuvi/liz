@@ -6,7 +6,6 @@ fn main() -> Result<(), LizError> {
     let mut to_rise_args: Option<Vec<String>> = None;
     let mut first_arg = true;
     let mut script_args = false;
-    
     for arg in std::env::args() {
         if !script_args {
             if arg == "-h" || arg == "--help" {
@@ -23,10 +22,8 @@ fn main() -> Result<(), LizError> {
                 script_args = true;
             } else if arg.ends_with(".liz") || arg.ends_with(".lua") {
                 to_race.push(arg);
-            } else {
-                if !first_arg {
-                    to_race.push(arg);
-                }
+            } else if !first_arg && !arg.starts_with("-") {
+                to_race.push(arg);
             }
         } else {
             if let Some(ref mut to_rise_args) = to_rise_args {

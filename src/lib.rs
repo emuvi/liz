@@ -14,6 +14,8 @@ pub mod liz_texts;
 pub mod liz_times;
 pub mod liz_winds;
 
+mod tst_paths;
+
 mod utils;
 
 mod wiz_all;
