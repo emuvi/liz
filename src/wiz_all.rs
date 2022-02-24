@@ -17,7 +17,7 @@ pub fn inject_all(lane: Context, path: &str, args: &Option<Vec<String>>) -> Resu
     let liz = lane.create_table()?;
     liz.set("args", args.clone())?;
 
-    let path = utils::add_liz_extension(path);
+    let path = utils::liz_suit_path(path)?;
     dbg_stp!(path);
     let path = if liz_paths::is_symlink(&path) {
         liz_paths::path_walk(&path).map_err(|err| dbg_err!(err, path))?

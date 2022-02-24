@@ -3,6 +3,7 @@ use serde_json::Value as JsonValue;
 
 use std::path::Path;
 
+use crate::liz_fires;
 use crate::LizError;
 
 pub fn display(path: impl AsRef<Path>) -> String {
@@ -10,13 +11,19 @@ pub fn display(path: impl AsRef<Path>) -> String {
     format!("{}", path.display())
 }
 
-pub fn add_liz_extension(path: &str) -> String {
-    let check = path.to_lowercase();
-    if check.ends_with(".liz") || check.ends_with(".lua") {
+pub fn liz_suit_path(path: &str) -> Result<String, LizError> {
+    let check_ext = path.to_lowercase();
+    let result = if check_ext.ends_with(".liz") || check_ext.ends_with(".lua") {
         String::from(path)
     } else {
         format!("{}.liz", path)
-    }
+    };
+    let result = if result.contains("$liz") {
+        result.replace("$liz", liz_fires::liz_exe()?.as_ref())
+    } else {
+        result
+    };
+    Ok(result)
 }
 
 pub fn get_liz<'a>(lane: &Context<'a>) -> Result<Table<'a>, LizError> {

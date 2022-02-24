@@ -74,7 +74,7 @@ pub fn spawn(lane: Context, path: &str, args: &Option<Vec<String>>) -> Result<Sp
     let globals = lane.globals();
     let liz: Table = globals.get("liz")?;
 
-    let path = utils::add_liz_extension(path);
+    let path = utils::liz_suit_path(path)?;
     dbg_stp!(path);
     let path = if liz_paths::is_relative(&path) {
         let stack_dir = utils::get_stack_dir(&liz).map_err(|err| dbg_err!(err, path))?;
@@ -203,6 +203,10 @@ pub fn pause() {
         write!(stdout, "\n").unwrap();
         stdout.flush().unwrap();
     }
+}
+
+pub fn liz_exe() -> Result<String, LizError> {
+    Ok(utils::display(std::env::current_exe()?))
 }
 
 pub fn exe_ext() -> &'static str {

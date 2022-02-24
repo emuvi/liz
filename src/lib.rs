@@ -63,7 +63,7 @@ pub fn race_in(lane: Context, path: &str) -> Result<Vec<String>, LizError> {
     let globals = lane.globals();
     let liz: Table = globals.get("liz")?;
 
-    let path = utils::add_liz_extension(path);
+    let path = utils::liz_suit_path(path)?;
     dbg_stp!(path);
     let path = if liz_paths::is_relative(&path) {
         let stack_dir = utils::get_stack_dir(&liz)?;
