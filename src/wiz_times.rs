@@ -4,36 +4,39 @@ use crate::liz_times;
 use crate::LizError;
 
 pub fn inject_times<'a>(lane: Context<'a>, liz: &Table<'a>) -> Result<(), LizError> {
-    let pnow = lane.create_function(|_, (): ()| Ok(liz_times::pnow()))?;
-    
-    let pnow_ur = lane.create_function(|_, (): ()| Ok(liz_times::pnow_ur()))?;
+    let now = lane.create_function(|_, ()| Ok(liz_times::now()))?;
 
-    let pnow_ul = lane.create_function(|_, (): ()| Ok(liz_times::pnow_ul()))?;
-    
-    let pnow_uw = lane.create_function(|_, (): ()| Ok(liz_times::pnow_uw()))?;
+    let now_ur = lane.create_function(|_, ()| Ok(liz_times::now_ur()))?;
 
-    let pnow_ud = lane.create_function(|_, (): ()| Ok(liz_times::pnow_ud()))?;
+    let now_ul = lane.create_function(|_, ()| Ok(liz_times::now_ul()))?;
 
-    let pnow_ut = lane.create_function(|_, (): ()| Ok(liz_times::pnow_ut()))?;
-    
-    let pnow_us = lane.create_function(|_, (): ()| Ok(liz_times::pnow_us()))?;
+    let now_uw = lane.create_function(|_, ()| Ok(liz_times::now_uw()))?;
 
-    let pnow_ad = lane.create_function(|_, (): ()| Ok(liz_times::pnow_ad()))?;
+    let now_ud = lane.create_function(|_, ()| Ok(liz_times::now_ud()))?;
 
-    let pnow_at = lane.create_function(|_, (): ()| Ok(liz_times::pnow_at()))?;
-    
-    let pnow_as = lane.create_function(|_, (): ()| Ok(liz_times::pnow_as()))?;
+    let now_ut = lane.create_function(|_, ()| Ok(liz_times::now_ut()))?;
 
-    liz.set("pnow", pnow)?;
-    liz.set("pnow_ur", pnow_ur)?;
-    liz.set("pnow_ul", pnow_ul)?;
-    liz.set("pnow_uw", pnow_uw)?;
-    liz.set("pnow_ud", pnow_ud)?;
-    liz.set("pnow_ut", pnow_ut)?;
-    liz.set("pnow_us", pnow_us)?;
-    liz.set("pnow_ad", pnow_ad)?;
-    liz.set("pnow_at", pnow_at)?;
-    liz.set("pnow_as", pnow_as)?;
+    let now_us = lane.create_function(|_, ()| Ok(liz_times::now_us()))?;
+
+    let now_ad = lane.create_function(|_, ()| Ok(liz_times::now_ad()))?;
+
+    let now_at = lane.create_function(|_, ()| Ok(liz_times::now_at()))?;
+
+    let now_as = lane.create_function(|_, ()| Ok(liz_times::now_as()))?;
+
+    let now_ft = lane.create_function(|_, format: String| Ok(liz_times::now_ft(&format)))?;
+
+    liz.set("now", now)?;
+    liz.set("now_ur", now_ur)?;
+    liz.set("now_ul", now_ul)?;
+    liz.set("now_uw", now_uw)?;
+    liz.set("now_ud", now_ud)?;
+    liz.set("now_ut", now_ut)?;
+    liz.set("now_us", now_us)?;
+    liz.set("now_ad", now_ad)?;
+    liz.set("now_at", now_at)?;
+    liz.set("now_as", now_as)?;
+    liz.set("now_ft", now_ft)?;
 
     Ok(())
 }

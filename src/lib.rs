@@ -2,7 +2,7 @@ use rlua::{Context, Lua, MultiValue, Table};
 
 use std::error::Error;
 
-use liz_debug::{dbg_err, dbg_inf};
+use liz_debug::{dbg_err, dbg_inf, dbg_knd, dbg_stp};
 
 pub mod liz_codes;
 pub mod liz_debug;
@@ -51,6 +51,7 @@ pub fn race(path: &str, handler: &Lua) -> Result<Vec<String>, LizError> {
     let mut result: Option<Result<Vec<String>, LizError>> = None;
     handler.context(|lane| result = Some(race_in(lane, path)));
     if result.is_none() {
+        dbg_knd!("WARN", "Could not reach a result", &path);
         return Err(dbg_err!("Could not reach a result", path));
     }
     let result = result.unwrap();
@@ -58,25 +59,31 @@ pub fn race(path: &str, handler: &Lua) -> Result<Vec<String>, LizError> {
 }
 
 pub fn race_in(lane: Context, path: &str) -> Result<Vec<String>, LizError> {
+    dbg_stp!(path);
     let globals = lane.globals();
     let liz: Table = globals.get("liz")?;
 
     let path = utils::add_liz_extension(path);
+    dbg_stp!(path);
     let path = if liz_paths::is_relative(&path) {
         let stack_dir = utils::get_stack_dir(&liz)?;
         liz_paths::path_join(&stack_dir, &path)?
     } else {
         path
     };
+    dbg_stp!(path);
 
     let race_pwd = liz_paths::pwd()?;
+    dbg_stp!(race_pwd);
     liz.set("race_pwd", race_pwd)?;
 
     let race_dir = liz_paths::path_parent(&path)?;
+    dbg_stp!(race_dir);
     utils::put_stack_dir(&lane, &liz, race_dir.clone())?;
     liz.set("race_dir", race_dir)?;
 
     let race_path = liz_paths::path_absolute(&path)?;
+    dbg_stp!(race_path);
     liz.set("race_path", race_path.clone())?;
 
     let source = get_source(&race_path)?;

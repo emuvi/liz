@@ -60,7 +60,7 @@ fn copy_directory(origin: &str, destiny: &str) -> Result<(), LizError> {
         let entry_str = utils::display(entry.path());
         let entry_name = path_name(&entry_str);
         let entry_dest =
-            path_join(&destiny, &entry_name).map_err(|err| dbg_err!(err, &destiny, &entry_name))?;
+            path_join(&destiny, &entry_name).map_err(|err| dbg_err!(err, destiny, entry_name))?;
         if file_type.is_dir() {
             copy_directory(&entry_str, &entry_dest)
                 .map_err(|err| dbg_err!(err, entry_str, entry_dest))?;

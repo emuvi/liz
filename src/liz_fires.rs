@@ -2,29 +2,27 @@ use rlua::{Context, Table, UserData};
 
 use std::io::{Read, Write};
 use std::process::{Command, Stdio};
+use std::sync::atomic::{AtomicUsize, Ordering};
 use std::sync::Arc;
 use std::sync::RwLock;
 use std::thread;
 use std::time::Duration;
-use std::sync::atomic::{AtomicUsize, Ordering};
 
-use crate::liz_debug::dbg_err;
+use crate::liz_debug::{dbg_err, dbg_knd, dbg_stp};
 use crate::liz_paths;
 use crate::utils;
 use crate::LizError;
 
 #[derive(Clone)]
 pub struct Spawned {
-    index: usize,
     path: String,
     args: Option<Vec<String>>,
     results: Arc<RwLock<Option<Result<Vec<String>, LizError>>>>,
 }
 
 impl Spawned {
-    fn new(index: usize, path: String, args: Option<Vec<String>>) -> Spawned {
+    fn new(path: String, args: Option<Vec<String>>) -> Spawned {
         Spawned {
-            index,
             path,
             args,
             results: Arc::new(RwLock::new(None)),
@@ -49,6 +47,7 @@ impl Spawned {
                 Err(err) => Err(dbg_err!(err)),
             }
         } else {
+            dbg_knd!("WARN", "Could not get the results from the join");
             Err(dbg_err!("Could not get the results from the join"))
         }
     }
@@ -71,41 +70,50 @@ impl UserData for Spawned {}
 static SPAWN_COUNT: AtomicUsize = AtomicUsize::new(1);
 
 pub fn spawn(lane: Context, path: &str, args: &Option<Vec<String>>) -> Result<Spawned, LizError> {
+    dbg_stp!(path, args);
     let globals = lane.globals();
     let liz: Table = globals.get("liz")?;
 
     let path = utils::add_liz_extension(path);
+    dbg_stp!(path);
     let path = if liz_paths::is_relative(&path) {
         let stack_dir = utils::get_stack_dir(&liz).map_err(|err| dbg_err!(err, path))?;
         liz_paths::path_join(&stack_dir, &path).map_err(|err| dbg_err!(err, stack_dir, path))?
     } else {
         path
     };
+    dbg_stp!(path);
 
     let spawn_pwd = liz_paths::pwd().map_err(|err| dbg_err!(err))?;
+    dbg_stp!(spawn_pwd);
     liz.set("spawn_pwd", spawn_pwd)?;
 
     let spawn_dir = liz_paths::path_parent(&path).map_err(|err| dbg_err!(err, path))?;
+    dbg_stp!(spawn_dir);
     utils::put_stack_dir(&lane, &liz, spawn_dir.clone()).map_err(|err| dbg_err!(err, spawn_dir))?;
     liz.set("spawn_dir", spawn_dir)?;
 
     let spawn_path = liz_paths::path_absolute(&path).map_err(|err| dbg_err!(err, path))?;
+    dbg_stp!(spawn_path);
     liz.set("spawn_path", spawn_path.clone())?;
 
     let spawn_index = SPAWN_COUNT.fetch_add(1, Ordering::SeqCst);
     let spawn_name = format!("spawn{}", spawn_index);
+    dbg_stp!(spawn_name);
 
-    let spawned = Spawned::new(spawn_index, spawn_path, args.clone());
+    let spawned = Spawned::new(spawn_path, args.clone());
     let spawned_clone = spawned.clone();
 
     let builder = thread::Builder::new().name(spawn_name);
-    builder.spawn(move || {
-        let returned = crate::run(&spawned_clone.path, &spawned_clone.args);
-        {
-            let mut lock = spawned_clone.results.write().unwrap();
-            *lock = Some(returned);
-        }
-    }).unwrap();
+    builder
+        .spawn(move || {
+            let returned = crate::run(&spawned_clone.path, &spawned_clone.args);
+            {
+                let mut lock = spawned_clone.results.write().unwrap();
+                *lock = Some(returned);
+            }
+        })
+        .unwrap();
     Ok(spawned)
 }
 
