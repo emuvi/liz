@@ -11,7 +11,7 @@ pub fn get(url: &str, with_headers: Option<HashMap<String, String>>) -> Result<S
     let client = reqwest::blocking::Client::new();
     let builder = client.get(url);
     let mut headers = HeaderMap::new();
-    add_headers(&mut headers, with_headers);
+    add_headers(&mut headers, with_headers).map_err(|err| dbg_err!(err))?;
     let resp = builder
         .headers(headers)
         .send()
@@ -29,7 +29,7 @@ pub fn post(
     let client = reqwest::blocking::Client::new();
     let builder = client.post(url);
     let mut headers = HeaderMap::new();
-    add_headers(&mut headers, with_headers);
+    add_headers(&mut headers, with_headers).map_err(|err| dbg_err!(err))?;
     let resp = builder
         .headers(headers)
         .body(text)
@@ -48,7 +48,7 @@ pub fn download(
     let client = reqwest::blocking::Client::new();
     let builder = client.get(origin);
     let mut headers = HeaderMap::new();
-    add_headers(&mut headers, with_headers);
+    add_headers(&mut headers, with_headers).map_err(|err| dbg_err!(err))?;
     let resp = builder
         .headers(headers)
         .send()
