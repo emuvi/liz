@@ -51,6 +51,8 @@ pub fn inject_execs<'a>(lane: Context<'a>, liz: &Table<'a>) -> Result<(), LizErr
 
     let exe_ext = lane.create_function(|_, ()| Ok(liz_fires::exe_ext()))?;
 
+    let liz_dir = lane.create_function(|_, ()| utils::treat_error(liz_fires::liz_dir()))?;
+
     let liz_exe = lane.create_function(|_, ()| utils::treat_error(liz_fires::liz_exe()))?;
 
     let get_os = lane.create_function(|_, ()| Ok(liz_fires::get_os()))?;
@@ -72,6 +74,7 @@ pub fn inject_execs<'a>(lane: Context<'a>, liz: &Table<'a>) -> Result<(), LizErr
     liz.set("cmd", cmd)?;
     liz.set("sleep", sleep)?;
     liz.set("pause", pause)?;
+    liz.set("liz_dir", liz_dir)?;
     liz.set("liz_exe", liz_exe)?;
     liz.set("exe_ext", exe_ext)?;
     liz.set("get_os", get_os)?;

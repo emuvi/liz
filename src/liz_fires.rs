@@ -205,6 +205,10 @@ pub fn pause() {
     }
 }
 
+pub fn liz_dir() -> Result<String, LizError> {
+    Ok(liz_paths::path_parent(liz_exe()?.as_ref())?)
+}
+
 pub fn liz_exe() -> Result<String, LizError> {
     Ok(utils::display(std::env::current_exe()?))
 }

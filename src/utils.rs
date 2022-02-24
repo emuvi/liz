@@ -19,7 +19,7 @@ pub fn liz_suit_path(path: &str) -> Result<String, LizError> {
         format!("{}.liz", path)
     };
     let result = if result.contains("$liz") {
-        result.replace("$liz", liz_fires::liz_exe()?.as_ref())
+        result.replace("$liz", liz_fires::liz_dir()?.as_ref())
     } else {
         result
     };
