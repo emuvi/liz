@@ -82,7 +82,10 @@ fn add_headers(to: &mut HeaderMap, from: Option<HashMap<String, String>>) -> Res
 
 fn treat_response(resp: &Response) -> Result<(), LizError> {
     if !resp.status().is_success() {
-        return Err(liz_debug::wrong(format!("Response Error: {}", resp.status())));
+        return Err(liz_debug::wrong(format!(
+            "Response Error: {}",
+            resp.status()
+        )));
     }
     Ok(())
 }

@@ -56,7 +56,7 @@ fn path_parts_join_test() {
 #[test]
 fn path_absolute_test() {
     use crate::liz_paths;
-    let wd = liz_paths::pwd().unwrap();
+    let wd = liz_paths::wd().unwrap();
     let tester = "test";
     let expect = format!("{}{}test", wd, liz_paths::os_sep());
     let result = liz_paths::path_absolute(tester).unwrap();

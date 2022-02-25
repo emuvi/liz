@@ -13,62 +13,22 @@ use crate::liz_paths;
 use crate::utils;
 use crate::LizError;
 
-#[derive(Debug, Clone)]
-pub struct Spawned {
-    path: String,
-    args: Option<Vec<String>>,
-    results: Arc<RwLock<Option<Result<Vec<String>, LizError>>>>,
+pub fn race_wd(lane: Context, relative_path: &str) -> Result<Vec<String>, LizError> {
+    dbg_stp!(relative_path);
+    let working_dir = liz_paths::wd().map_err(|err| dbg_err!(err))?;
+    dbg_stp!(working_dir);
+    let full_path =
+        liz_paths::path_join(&working_dir, relative_path).map_err(|err| dbg_err!(err))?;
+    dbg_stp!(full_path);
+    crate::race_in(lane, &full_path).map_err(|err| dbg_err!(err))
 }
 
-impl Spawned {
-    fn new(path: String, args: Option<Vec<String>>) -> Spawned {
-        Spawned {
-            path,
-            args,
-            results: Arc::new(RwLock::new(None)),
-        }
-    }
-
-    fn join(&self) -> Result<Vec<String>, LizError> {
-        let waiter = Duration::from_millis(10);
-        loop {
-            {
-                let lock = self.results.read().map_err(|err| dbg_err!(err))?;
-                if lock.is_some() {
-                    break;
-                }
-            }
-            thread::sleep(waiter);
-        }
-        let lock = self.results.read().map_err(|err| dbg_err!(err))?;
-        if let Some(results) = &*lock {
-            match results {
-                Ok(results) => Ok(results.clone()),
-                Err(err) => Err(dbg_err!(err)),
-            }
-        } else {
-            dbg_knd!("WARN", "Could not get the results from the join");
-            Err(dbg_err!("Could not get the results from the join"))
-        }
-    }
-
-    fn wait(&self) -> Result<(), LizError> {
-        loop {
-            {
-                let lock = self.results.read().map_err(|err| dbg_err!(err))?;
-                if lock.is_some() {
-                    break;
-                }
-            }
-            thread::sleep(Duration::from_millis(10));
-        }
-        Ok(())
-    }
+pub fn lizs(net_path: &str) -> Result<(), LizError> {
+    dbg_stp!(net_path);
+    let local_path = liz_paths::path_join("(lizs)", net_path).map_err(|err| dbg_err!(err))?;
+    dbg_stp!(local_path);
+    utils::get_lizs_file(&net_path, &local_path).map_err(|err| dbg_err!(err))
 }
-
-impl UserData for Spawned {}
-
-static SPAWN_COUNT: AtomicUsize = AtomicUsize::new(1);
 
 pub fn spawn(lane: Context, path: &str, args: &Option<Vec<String>>) -> Result<Spawned, LizError> {
     dbg_stp!(path, args);
@@ -93,7 +53,7 @@ pub fn spawn(lane: Context, path: &str, args: &Option<Vec<String>>) -> Result<Sp
     };
     dbg_stp!(path);
 
-    let spawn_pwd = liz_paths::pwd().map_err(|err| dbg_err!(err))?;
+    let spawn_pwd = liz_paths::wd().map_err(|err| dbg_err!(err))?;
     dbg_stp!(spawn_pwd);
 
     let spawn_dir = liz_paths::path_parent(&path).map_err(|err| dbg_err!(err, path))?;
@@ -237,14 +197,10 @@ pub fn pause() -> Result<(), LizError> {
     dbg_stp!();
     let mut stdin = std::io::stdin();
     let mut stdout = std::io::stdout();
-    write!(stdout, "Press any key to continue...").map_err(|err| dbg_err!(err))?;
+    write!(stdout, "Press enter to continue...").map_err(|err| dbg_err!(err))?;
     stdout.flush()?;
     let mut buffer = [0u8];
     stdin.read(&mut buffer).map_err(|err| dbg_err!(err))?;
-    if !(buffer[0] == b'\r' || buffer[0] == b'\n') {
-        write!(stdout, "\n").map_err(|err| dbg_err!(err))?;
-        stdout.flush().map_err(|err| dbg_err!(err))?;
-    }
     Ok(())
 }
 
@@ -258,8 +214,11 @@ pub fn liz_dir() -> Result<String, LizError> {
 
 pub fn liz_exe() -> Result<String, LizError> {
     dbg_stp!();
-    Ok(utils::display(
-        std::env::current_exe().map_err(|err| dbg_err!(err))?,
+    Ok(format!(
+        "{}",
+        std::env::current_exe()
+            .map_err(|err| dbg_err!(err))?
+            .display(),
     ))
 }
 
@@ -287,3 +246,60 @@ pub fn is_win() -> bool {
     dbg_stp!();
     std::env::consts::OS == "windows"
 }
+
+static SPAWN_COUNT: AtomicUsize = AtomicUsize::new(1);
+
+#[derive(Debug, Clone)]
+pub struct Spawned {
+    path: String,
+    args: Option<Vec<String>>,
+    results: Arc<RwLock<Option<Result<Vec<String>, LizError>>>>,
+}
+
+impl Spawned {
+    fn new(path: String, args: Option<Vec<String>>) -> Spawned {
+        Spawned {
+            path,
+            args,
+            results: Arc::new(RwLock::new(None)),
+        }
+    }
+
+    fn join(&self) -> Result<Vec<String>, LizError> {
+        let waiter = Duration::from_millis(10);
+        loop {
+            {
+                let lock = self.results.read().map_err(|err| dbg_err!(err))?;
+                if lock.is_some() {
+                    break;
+                }
+            }
+            thread::sleep(waiter);
+        }
+        let lock = self.results.read().map_err(|err| dbg_err!(err))?;
+        if let Some(results) = &*lock {
+            match results {
+                Ok(results) => Ok(results.clone()),
+                Err(err) => Err(dbg_err!(err)),
+            }
+        } else {
+            dbg_knd!("WARN", "Could not get the results from the join");
+            Err(dbg_err!("Could not get the results from the join"))
+        }
+    }
+
+    fn wait(&self) -> Result<(), LizError> {
+        loop {
+            {
+                let lock = self.results.read().map_err(|err| dbg_err!(err))?;
+                if lock.is_some() {
+                    break;
+                }
+            }
+            thread::sleep(Duration::from_millis(10));
+        }
+        Ok(())
+    }
+}
+
+impl UserData for Spawned {}

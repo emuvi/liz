@@ -83,7 +83,7 @@ pub fn race_in(lane: Context, path: &str) -> Result<Vec<String>, LizError> {
     };
     dbg_stp!(path);
 
-    let race_pwd = liz_paths::pwd().map_err(|err| dbg_err!(err))?;
+    let race_pwd = liz_paths::wd().map_err(|err| dbg_err!(err))?;
     dbg_stp!(race_pwd);
 
     let race_dir = liz_paths::path_parent(&path).map_err(|err| dbg_err!(err))?;

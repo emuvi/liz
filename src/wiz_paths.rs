@@ -20,7 +20,7 @@ pub fn inject_paths<'a>(lane: Context<'a>, liz: &Table<'a>) -> Result<(), LizErr
 
     let cd = lane.create_function(|_, path: String| utils::treat_error(liz_paths::cd(&path)))?;
 
-    let pwd = lane.create_function(|_, ()| utils::treat_error(liz_paths::pwd()))?;
+    let wd = lane.create_function(|_, ()| utils::treat_error(liz_paths::wd()))?;
 
     let rn = lane.create_function(|_, (origin, destiny): (String, String)| {
         utils::treat_error(liz_paths::rn(&origin, &destiny))
@@ -165,7 +165,7 @@ pub fn inject_paths<'a>(lane: Context<'a>, liz: &Table<'a>) -> Result<(), LizErr
     liz.set("is_relative", is_relative)?;
     liz.set("is_symlink", is_symlink)?;
     liz.set("cd", cd)?;
-    liz.set("pwd", pwd)?;
+    liz.set("wd", wd)?;
     liz.set("rn", rn)?;
     liz.set("cp", cp)?;
     liz.set("cp_tmp", cp_tmp)?;

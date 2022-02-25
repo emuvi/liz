@@ -27,7 +27,7 @@ pub fn inject_all(lane: Context, path: &str, args: &Option<Vec<String>>) -> Resu
     };
     dbg_stp!(path);
 
-    let rise_pwd = liz_paths::pwd().map_err(|err| dbg_err!(err))?;
+    let rise_pwd = liz_paths::wd().map_err(|err| dbg_err!(err))?;
     dbg_stp!(rise_pwd);
 
     let rise_dir = if liz_paths::is_absolute(&path) {

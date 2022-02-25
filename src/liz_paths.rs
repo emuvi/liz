@@ -1,7 +1,6 @@
 use std::path::Path;
 
 use crate::liz_debug::{dbg_err, dbg_stp};
-use crate::utils;
 use crate::LizError;
 
 pub fn has(path: &str) -> bool {
@@ -40,10 +39,14 @@ pub fn cd(path: &str) -> Result<(), LizError> {
     Ok(())
 }
 
-pub fn pwd() -> Result<String, LizError> {
+pub fn wd() -> Result<String, LizError> {
     dbg_stp!();
-    let result = std::env::current_dir().map_err(|err| dbg_err!(err))?;
-    Ok(utils::display(result))
+    Ok(format!(
+        "{}",
+        std::env::current_dir()
+            .map_err(|err| dbg_err!(err))?
+            .display()
+    ))
 }
 
 pub fn rn(origin: &str, destiny: &str) -> Result<(), LizError> {
@@ -68,7 +71,7 @@ fn copy_directory(origin: &str, destiny: &str) -> Result<(), LizError> {
     for entry in std::fs::read_dir(origin).map_err(|err| dbg_err!(err, origin))? {
         let entry = entry.map_err(|err| dbg_err!(err))?;
         let file_type = entry.file_type().map_err(|err| dbg_err!(err))?;
-        let entry_str = utils::display(entry.path());
+        let entry_str = format!("{}", entry.path().display());
         let entry_name = path_name(&entry_str);
         let entry_dest =
             path_join(&destiny, &entry_name).map_err(|err| dbg_err!(err, destiny, entry_name))?;
@@ -101,7 +104,7 @@ pub fn cp_tmp(origin: &str, destiny: &str) -> Result<(), LizError> {
             file_name.push_str("_");
             destiny_tmp = std::env::temp_dir().join(&file_name);
         }
-        let destiny_tmp = utils::display(destiny_tmp);
+        let destiny_tmp = format!("{}", destiny_tmp.display());
         cp(destiny, &destiny_tmp).map_err(|err| dbg_err!(err, destiny, destiny_tmp))?;
         rm(destiny).map_err(|err| dbg_err!(err, destiny))?;
     }
@@ -257,8 +260,8 @@ pub fn path_absolute(path: &str) -> Result<String, LizError> {
     if is_absolute(path) {
         return Ok(String::from(path));
     }
-    let wd = pwd().map_err(|err| dbg_err!(err))?;
-    let mut base_parts = path_parts(&wd);
+    let working_dir = wd().map_err(|err| dbg_err!(err))?;
+    let mut base_parts = path_parts(&working_dir);
     let path_parts = path_parts(&path);
     for path_part in path_parts {
         if path_part == "." {
@@ -298,8 +301,11 @@ pub fn path_relative(path: &str, base: &str) -> Result<String, LizError> {
 
 pub fn path_walk(path: &str) -> Result<String, LizError> {
     dbg_stp!(path);
-    Ok(utils::display(
-        std::fs::read_link(path).map_err(|err| dbg_err!(err, path))?,
+    Ok(format!(
+        "{}",
+        std::fs::read_link(path)
+            .map_err(|err| dbg_err!(err, path))?
+            .display(),
     ))
 }
 
@@ -394,7 +400,7 @@ pub fn path_list(path: &str) -> Result<Vec<String>, LizError> {
     let entries = std::fs::read_dir(path).map_err(|err| dbg_err!(err))?;
     for entry in entries {
         let entry = entry.map_err(|err| dbg_err!(err))?;
-        results.push(utils::display(entry.path()));
+        results.push(format!("{}", entry.path().display()));
     }
     Ok(results)
 }
@@ -410,7 +416,7 @@ fn path_list_in_make(path: &str, results: &mut Vec<String>) -> Result<(), LizErr
     for entry in std::fs::read_dir(path).map_err(|err| dbg_err!(err))? {
         let entry = entry.map_err(|err| dbg_err!(err))?;
         let file_type = entry.file_type().map_err(|err| dbg_err!(err))?;
-        let inside = utils::display(entry.path());
+        let inside = format!("{}", entry.path().display());
         if file_type.is_dir() {
             path_list_in_make(&inside, results).map_err(|err| dbg_err!(err))?;
         }
@@ -427,7 +433,7 @@ pub fn path_list_dirs(path: &str) -> Result<Vec<String>, LizError> {
         let entry = entry.map_err(|err| dbg_err!(err))?;
         let file_type = entry.file_type().map_err(|err| dbg_err!(err))?;
         if file_type.is_dir() {
-            results.push(utils::display(entry.path()));
+            results.push(format!("{}", entry.path().display()));
         }
     }
     Ok(results)
@@ -445,7 +451,7 @@ fn path_list_dirs_in_make(path: &str, results: &mut Vec<String>) -> Result<(), L
         let entry = entry.map_err(|err| dbg_err!(err))?;
         let file_type = entry.file_type().map_err(|err| dbg_err!(err))?;
         if file_type.is_dir() {
-            let inside = utils::display(entry.path());
+            let inside = format!("{}", entry.path().display());
             path_list_dirs_in_make(&inside, results).map_err(|err| dbg_err!(err))?;
             results.push(inside);
         }
@@ -461,7 +467,7 @@ pub fn path_list_files(path: &str) -> Result<Vec<String>, LizError> {
         let entry = entry.map_err(|err| dbg_err!(err))?;
         let file_type = entry.file_type().map_err(|err| dbg_err!(err))?;
         if file_type.is_file() {
-            results.push(utils::display(entry.path()));
+            results.push(format!("{}", entry.path().display()));
         }
     }
     Ok(results)
@@ -478,7 +484,7 @@ fn path_list_files_in_make(path: &str, results: &mut Vec<String>) -> Result<(), 
     for entry in std::fs::read_dir(path).map_err(|err| dbg_err!(err))? {
         let entry = entry.map_err(|err| dbg_err!(err))?;
         let file_type = entry.file_type().map_err(|err| dbg_err!(err))?;
-        let inside = utils::display(entry.path());
+        let inside = format!("{}", entry.path().display());
         if file_type.is_dir() {
             path_list_files_in_make(&inside, results).map_err(|err| dbg_err!(err))?;
         }
@@ -497,7 +503,7 @@ pub fn path_list_files_ext(path: &str, ext: &str) -> Result<Vec<String>, LizErro
         let entry = entry.map_err(|err| dbg_err!(err))?;
         let file_type = entry.file_type().map_err(|err| dbg_err!(err))?;
         if file_type.is_file() {
-            let name = utils::display(entry.path());
+            let name = format!("{}", entry.path().display());
             if name.to_lowercase().ends_with(&ext.to_lowercase()) {
                 results.push(name);
             }
@@ -521,7 +527,7 @@ fn path_list_files_ext_in_make(
     for entry in std::fs::read_dir(path).map_err(|err| dbg_err!(err))? {
         let entry = entry.map_err(|err| dbg_err!(err))?;
         let file_type = entry.file_type().map_err(|err| dbg_err!(err))?;
-        let inside = utils::display(entry.path());
+        let inside = format!("{}", entry.path().display());
         if file_type.is_dir() {
             path_list_files_ext_in_make(&inside, ext, results).map_err(|err| dbg_err!(err))?;
         }
@@ -542,7 +548,7 @@ pub fn path_list_files_exts(path: &str, exts: &[&str]) -> Result<Vec<String>, Li
         let entry = entry.map_err(|err| dbg_err!(err))?;
         let file_type = entry.file_type().map_err(|err| dbg_err!(err))?;
         if file_type.is_file() {
-            let name = utils::display(entry.path());
+            let name = format!("{}", entry.path().display());
             for ext in exts {
                 if name.to_lowercase().ends_with(&ext.to_lowercase()) {
                     results.push(name);
@@ -569,7 +575,7 @@ fn path_list_files_exts_in_make(
     for entry in std::fs::read_dir(path).map_err(|err| dbg_err!(err))? {
         let entry = entry.map_err(|err| dbg_err!(err))?;
         let file_type = entry.file_type().map_err(|err| dbg_err!(err))?;
-        let inside = utils::display(entry.path());
+        let inside = format!("{}", entry.path().display());
         if file_type.is_dir() {
             path_list_files_exts_in_make(&inside, exts, results).map_err(|err| dbg_err!(err))?;
         }
