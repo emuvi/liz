@@ -13,33 +13,39 @@ pub fn display(path: impl AsRef<Path>) -> String {
 }
 
 pub fn liz_suit_path(path: &str) -> Result<String, LizError> {
-    let check_ext = path.to_lowercase();
-    let result = if check_ext.ends_with(".liz") || check_ext.ends_with(".lua") {
+    let os_sep = liz_paths::os_sep().to_string();
+    let path = if path.contains("\\") && os_sep != "\\" {
+        path.replace("\\", &os_sep)
+    } else {
         String::from(path)
+    };
+    let path = if path.contains("/") && os_sep != "/" {
+        path.replace("/", &os_sep)
     } else {
+        path
+    };
+    let check_ext = path.to_lowercase();
+    let path = if !(check_ext.ends_with(".liz") || check_ext.ends_with(".lua")) {
         format!("{}.liz", path)
-    };
-    let result = if result.contains("$pwd") {
-        result.replace("$pwd", liz_paths::pwd()?.as_ref())
     } else {
-        result
+        path
     };
-    let result = if result.contains("$liz") {
-        result.replace("$liz", liz_fires::liz_dir()?.as_ref())
+    let path = if path.contains("$pwd") {
+        path.replace("$pwd", liz_paths::pwd()?.as_ref())
     } else {
-        result
+        path
     };
-    let result = if result.contains("$lizs") {
-        result.replace("$lizs", "lizs")
+    let path = if path.contains("$liz") {
+        path.replace("$liz", liz_fires::liz_dir()?.as_ref())
     } else {
-        result
+        path
     };
-    Ok(result)
+    Ok(path)
 }
 
 pub fn gotta_lizs(path: &str) -> Result<(), LizError> {
-    let sep = liz_paths::os_sep();
-    let lizs_dir = format!("{}lizs{}", sep, sep);
+    let sep = if path.contains("\\") { "\\" } else { "/" };
+    let lizs_dir = format!("{}(lizs){}", sep, sep);
     let lizs_pos = path.rfind(&lizs_dir);
     if let Some(lizs_pos) = lizs_pos {
         if !liz_paths::has(path) {

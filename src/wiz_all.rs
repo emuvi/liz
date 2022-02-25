@@ -17,13 +17,7 @@ pub fn inject_all(lane: Context, path: &str, args: &Option<Vec<String>>) -> Resu
     let liz = lane.create_table().map_err(|err| dbg_err!(err))?;
     liz.set("args", args.clone()).map_err(|err| dbg_err!(err))?;
 
-    let must_lizs = path.contains("$lizs");
     let path = utils::liz_suit_path(path).map_err(|err| dbg_err!(err))?;
-    dbg_stp!(path);
-
-    if must_lizs {
-        utils::gotta_lizs(&path).map_err(|err| dbg_err!(err))?;
-    }
     dbg_stp!(path);
 
     let path = if liz_paths::is_symlink(&path) {

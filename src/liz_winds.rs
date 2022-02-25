@@ -1,9 +1,10 @@
+use reqwest::blocking::Response;
 use reqwest::header::HeaderMap;
 use reqwest::header::HeaderName;
 
 use std::collections::HashMap;
 
-use crate::liz_debug::{dbg_err, dbg_stp};
+use crate::liz_debug::{self, dbg_err, dbg_stp};
 use crate::LizError;
 
 pub fn get(url: &str, with_headers: Option<HashMap<String, String>>) -> Result<String, LizError> {
@@ -16,6 +17,7 @@ pub fn get(url: &str, with_headers: Option<HashMap<String, String>>) -> Result<S
         .headers(headers)
         .send()
         .map_err(|err| dbg_err!(err))?;
+    treat_response(&resp).map_err(|err| dbg_err!(err))?;
     let body = resp.text().map_err(|err| dbg_err!(err))?;
     Ok(body)
 }
@@ -35,6 +37,7 @@ pub fn post(
         .body(text)
         .send()
         .map_err(|err| dbg_err!(err))?;
+    treat_response(&resp).map_err(|err| dbg_err!(err))?;
     let body = resp.text().map_err(|err| dbg_err!(err))?;
     Ok(body)
 }
@@ -53,6 +56,7 @@ pub fn download(
         .headers(headers)
         .send()
         .map_err(|err| dbg_err!(err))?;
+    treat_response(&resp).map_err(|err| dbg_err!(err))?;
     let mut file = std::fs::File::create(destiny).map_err(|err| dbg_err!(err))?;
     let mut content = std::io::Cursor::new(resp.bytes().map_err(|err| dbg_err!(err))?);
     std::io::copy(&mut content, &mut file).map_err(|err| dbg_err!(err))?;
@@ -72,6 +76,13 @@ fn add_headers(to: &mut HeaderMap, from: Option<HashMap<String, String>>) -> Res
                 to.insert(name, value.parse().map_err(|err| dbg_err!(err))?);
             }
         }
+    }
+    Ok(())
+}
+
+fn treat_response(resp: &Response) -> Result<(), LizError> {
+    if !resp.status().is_success() {
+        return Err(liz_debug::wrong(format!("Response Error: {}", resp.status())));
     }
     Ok(())
 }

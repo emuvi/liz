@@ -113,6 +113,10 @@ impl Error for MessageErr {
     }
 }
 
+pub fn wrong(message: String) -> Box<MessageErr> {
+    Box::new(MessageErr::of(message))
+}
+
 pub fn throw(message: String) -> Box<MessageErr> {
     debug("ERRO", &message);
     Box::new(MessageErr::of(message))

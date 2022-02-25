@@ -30,7 +30,7 @@ pub type LizError = Box<dyn Error + Send + Sync>;
 
 pub fn run(path: &str, args: &Option<Vec<String>>) -> Result<Vec<String>, LizError> {
     let handler = rise(path, args).map_err(|err| dbg_err!(err, path, args))?;
-    race(path, &handler).map_err(|err| dbg_err!(err, path, args))
+    race(path, &handler)
 }
 
 pub fn rise(path: &str, args: &Option<Vec<String>>) -> Result<Lua, LizError> {
@@ -57,7 +57,7 @@ pub fn race(path: &str, handler: &Lua) -> Result<Vec<String>, LizError> {
         return Err(dbg_err!("Could not reach a result", path));
     }
     let result = result.unwrap();
-    result.map_err(|err| dbg_err!(err, path))
+    result
 }
 
 pub fn race_in(lane: Context, path: &str) -> Result<Vec<String>, LizError> {
@@ -65,13 +65,7 @@ pub fn race_in(lane: Context, path: &str) -> Result<Vec<String>, LizError> {
     let globals = lane.globals();
     let liz: Table = globals.get("liz").map_err(|err| dbg_err!(err))?;
 
-    let must_lizs = path.contains("$lizs");
     let path = utils::liz_suit_path(path).map_err(|err| dbg_err!(err))?;
-    dbg_stp!(path);
-
-    if must_lizs {
-        utils::gotta_lizs(&path).map_err(|err| dbg_err!(err))?;
-    }
     dbg_stp!(path);
 
     let path = if liz_paths::is_symlink(&path) {
@@ -80,7 +74,7 @@ pub fn race_in(lane: Context, path: &str) -> Result<Vec<String>, LizError> {
         path
     };
     dbg_stp!(path);
-    
+
     let path = if liz_paths::is_relative(&path) {
         let stack_dir = utils::get_stack_dir(&liz).map_err(|err| dbg_err!(err))?;
         liz_paths::path_join(&stack_dir, &path).map_err(|err| dbg_err!(err))?
@@ -91,17 +85,20 @@ pub fn race_in(lane: Context, path: &str) -> Result<Vec<String>, LizError> {
 
     let race_pwd = liz_paths::pwd().map_err(|err| dbg_err!(err))?;
     dbg_stp!(race_pwd);
-    
+
     let race_dir = liz_paths::path_parent(&path).map_err(|err| dbg_err!(err))?;
     dbg_stp!(race_dir);
     utils::put_stack_dir(&lane, &liz, race_dir.clone()).map_err(|err| dbg_err!(err))?;
-    
+
     let race_path = path;
     dbg_stp!(race_path);
-    
+
     liz.set("race_pwd", race_pwd).map_err(|err| dbg_err!(err))?;
     liz.set("race_dir", race_dir).map_err(|err| dbg_err!(err))?;
-    liz.set("race_path", race_path.clone()).map_err(|err| dbg_err!(err))?;
+    liz.set("race_path", race_path.clone())
+        .map_err(|err| dbg_err!(err))?;
+
+    utils::gotta_lizs(&race_path).map_err(|err| dbg_err!(err))?;
 
     let source = std::fs::read_to_string(race_path).map_err(|err| dbg_err!(err))?;
     let values = eval_in(lane, source).map_err(|err| dbg_err!(err))?;

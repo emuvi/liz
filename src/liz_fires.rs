@@ -75,13 +75,7 @@ pub fn spawn(lane: Context, path: &str, args: &Option<Vec<String>>) -> Result<Sp
     let globals = lane.globals();
     let liz: Table = globals.get("liz").map_err(|err| dbg_err!(err))?;
 
-    let must_lizs = path.contains("$lizs");
     let path = utils::liz_suit_path(path).map_err(|err| dbg_err!(err))?;
-    dbg_stp!(path);
-
-    if must_lizs {
-        utils::gotta_lizs(&path).map_err(|err| dbg_err!(err))?;
-    }
     dbg_stp!(path);
 
     let path = if liz_paths::is_symlink(&path) {
