@@ -1,4 +1,4 @@
-name: Pointel Rust Release CI
+name: Rust Release CI
 on: [push]
 jobs:
   mac-64:
