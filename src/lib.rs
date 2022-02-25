@@ -65,36 +65,51 @@ pub fn race_in(lane: Context, path: &str) -> Result<Vec<String>, LizError> {
     let globals = lane.globals();
     let liz: Table = globals.get("liz").map_err(|err| dbg_err!(err))?;
 
-    let path = utils::liz_suit_path(path)?;
+    let must_lizs = path.contains("$lizs");
+    let path = utils::liz_suit_path(path).map_err(|err| dbg_err!(err))?;
     dbg_stp!(path);
+
+    if must_lizs {
+        utils::gotta_lizs(&path).map_err(|err| dbg_err!(err))?;
+    }
+    dbg_stp!(path);
+
+    let path = if liz_paths::is_symlink(&path) {
+        liz_paths::path_walk(&path).map_err(|err| dbg_err!(err, path))?
+    } else {
+        path
+    };
+    dbg_stp!(path);
+    
     let path = if liz_paths::is_relative(&path) {
-        let stack_dir = utils::get_stack_dir(&liz)?;
-        liz_paths::path_join(&stack_dir, &path)?
+        let stack_dir = utils::get_stack_dir(&liz).map_err(|err| dbg_err!(err))?;
+        liz_paths::path_join(&stack_dir, &path).map_err(|err| dbg_err!(err))?
     } else {
         path
     };
     dbg_stp!(path);
 
-    let race_pwd = liz_paths::pwd()?;
+    let race_pwd = liz_paths::pwd().map_err(|err| dbg_err!(err))?;
     dbg_stp!(race_pwd);
-    liz.set("race_pwd", race_pwd)?;
-
-    let race_dir = liz_paths::path_parent(&path)?;
+    
+    let race_dir = liz_paths::path_parent(&path).map_err(|err| dbg_err!(err))?;
     dbg_stp!(race_dir);
-    utils::put_stack_dir(&lane, &liz, race_dir.clone())?;
-    liz.set("race_dir", race_dir)?;
-
-    let race_path = liz_paths::path_absolute(&path)?;
+    utils::put_stack_dir(&lane, &liz, race_dir.clone()).map_err(|err| dbg_err!(err))?;
+    
+    let race_path = path;
     dbg_stp!(race_path);
-    liz.set("race_path", race_path.clone())?;
+    
+    liz.set("race_pwd", race_pwd).map_err(|err| dbg_err!(err))?;
+    liz.set("race_dir", race_dir).map_err(|err| dbg_err!(err))?;
+    liz.set("race_path", race_path.clone()).map_err(|err| dbg_err!(err))?;
 
-    let source = get_source(&race_path)?;
-    let values = eval_in(lane, &source)?;
-    utils::pop_stack_dir(&liz)?;
+    let source = std::fs::read_to_string(race_path).map_err(|err| dbg_err!(err))?;
+    let values = eval_in(lane, source).map_err(|err| dbg_err!(err))?;
+    utils::pop_stack_dir(&liz).map_err(|err| dbg_err!(err))?;
     Ok(values)
 }
 
-pub fn eval_in(lane: Context, source: &str) -> Result<Vec<String>, LizError> {
+pub fn eval_in(lane: Context, source: String) -> Result<Vec<String>, LizError> {
     let mut source = source.trim();
     if source.starts_with("#!") {
         if let Some(first_line) = source.find("\n") {
@@ -103,21 +118,4 @@ pub fn eval_in(lane: Context, source: &str) -> Result<Vec<String>, LizError> {
     }
     let values = lane.load(source).eval::<MultiValue>()?;
     utils::to_json_multi(values)
-}
-
-fn get_source(path: &str) -> Result<String, LizError> {
-    let sep = liz_paths::os_sep();
-    let lizs_dir = format!("{}lizs{}", sep, sep);
-    let lizs_pos = path.find(&lizs_dir);
-    if let Some(lizs_pos) = lizs_pos {
-        if !liz_paths::has(path) {
-            let path_dir = liz_paths::path_parent(path)?;
-            std::fs::create_dir_all(path_dir)?;
-            let lizs_path = &path[lizs_pos+lizs_dir.len()..];
-            let lizs_path = lizs_path.replace("\\", "/");
-            let origin = format!("https://raw.githubusercontent.com/emuvi/lizs/main/{}", &lizs_path);
-            liz_winds::download(&origin, path, None)?;
-        }
-    }
-    Ok(std::fs::read_to_string(path)?)
 }

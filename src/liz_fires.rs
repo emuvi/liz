@@ -75,8 +75,22 @@ pub fn spawn(lane: Context, path: &str, args: &Option<Vec<String>>) -> Result<Sp
     let globals = lane.globals();
     let liz: Table = globals.get("liz").map_err(|err| dbg_err!(err))?;
 
+    let must_lizs = path.contains("$lizs");
     let path = utils::liz_suit_path(path).map_err(|err| dbg_err!(err))?;
     dbg_stp!(path);
+
+    if must_lizs {
+        utils::gotta_lizs(&path).map_err(|err| dbg_err!(err))?;
+    }
+    dbg_stp!(path);
+
+    let path = if liz_paths::is_symlink(&path) {
+        liz_paths::path_walk(&path).map_err(|err| dbg_err!(err, path))?
+    } else {
+        path
+    };
+    dbg_stp!(path);
+
     let path = if liz_paths::is_relative(&path) {
         let stack_dir = utils::get_stack_dir(&liz).map_err(|err| dbg_err!(err, path))?;
         liz_paths::path_join(&stack_dir, &path).map_err(|err| dbg_err!(err, stack_dir, path))?
@@ -87,17 +101,18 @@ pub fn spawn(lane: Context, path: &str, args: &Option<Vec<String>>) -> Result<Sp
 
     let spawn_pwd = liz_paths::pwd().map_err(|err| dbg_err!(err))?;
     dbg_stp!(spawn_pwd);
-    liz.set("spawn_pwd", spawn_pwd)
-        .map_err(|err| dbg_err!(err))?;
 
     let spawn_dir = liz_paths::path_parent(&path).map_err(|err| dbg_err!(err, path))?;
     dbg_stp!(spawn_dir);
     utils::put_stack_dir(&lane, &liz, spawn_dir.clone()).map_err(|err| dbg_err!(err, spawn_dir))?;
+
+    let spawn_path = path;
+    dbg_stp!(spawn_path);
+
+    liz.set("spawn_pwd", spawn_pwd)
+        .map_err(|err| dbg_err!(err))?;
     liz.set("spawn_dir", spawn_dir)
         .map_err(|err| dbg_err!(err))?;
-
-    let spawn_path = liz_paths::path_absolute(&path).map_err(|err| dbg_err!(err, path))?;
-    dbg_stp!(spawn_path);
     liz.set("spawn_path", spawn_path.clone())
         .map_err(|err| dbg_err!(err))?;
 

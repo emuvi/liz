@@ -13,7 +13,7 @@ pub fn inject_execs<'a>(lane: Context<'a>, liz: &Table<'a>) -> Result<(), LizErr
         lane.create_function(|lane, path: String| utils::treat_error(crate::race_in(lane, &path)))?;
 
     let eval = lane.create_function(|lane, source: String| {
-        utils::treat_error(crate::eval_in(lane, &source))
+        utils::treat_error(crate::eval_in(lane, source))
     })?;
 
     let spawn = lane.create_function(|lane, (path, args): (String, Option<Vec<String>>)| {

@@ -5,11 +5,11 @@ use std::path::Path;
 
 use crate::liz_fires;
 use crate::liz_paths;
+use crate::liz_winds;
 use crate::LizError;
 
 pub fn display(path: impl AsRef<Path>) -> String {
-    let path = path.as_ref();
-    format!("{}", path.display())
+    format!("{}", path.as_ref().display())
 }
 
 pub fn liz_suit_path(path: &str) -> Result<String, LizError> {
@@ -19,23 +19,42 @@ pub fn liz_suit_path(path: &str) -> Result<String, LizError> {
     } else {
         format!("{}.liz", path)
     };
+    let result = if result.contains("$pwd") {
+        result.replace("$pwd", liz_paths::pwd()?.as_ref())
+    } else {
+        result
+    };
     let result = if result.contains("$liz") {
         result.replace("$liz", liz_fires::liz_dir()?.as_ref())
     } else {
         result
     };
-    let result = if result.contains("$pwd") {
-        result.replace("$pwd", liz_paths::pwd()?.as_ref())
+    let result = if result.contains("$lizs") {
+        result.replace("$lizs", "lizs")
     } else {
         result
     };
     Ok(result)
 }
 
-pub fn get_liz<'a>(lane: &Context<'a>) -> Result<Table<'a>, LizError> {
-    let globals = lane.globals();
-    let liz: Table = globals.get("liz")?;
-    Ok(liz)
+pub fn gotta_lizs(path: &str) -> Result<(), LizError> {
+    let sep = liz_paths::os_sep();
+    let lizs_dir = format!("{}lizs{}", sep, sep);
+    let lizs_pos = path.rfind(&lizs_dir);
+    if let Some(lizs_pos) = lizs_pos {
+        if !liz_paths::has(path) {
+            let path_dir = liz_paths::path_parent(path)?;
+            std::fs::create_dir_all(path_dir)?;
+            let lizs_path = &path[lizs_pos + lizs_dir.len()..];
+            let lizs_path = lizs_path.replace("\\", "/");
+            let origin = format!(
+                "https://raw.githubusercontent.com/emuvi/lizs/main/{}",
+                &lizs_path
+            );
+            liz_winds::download(&origin, path, None)?;
+        }
+    }
+    Ok(())
 }
 
 pub fn print_stack_dir(lane: Context) -> Result<(), LizError> {
@@ -78,6 +97,12 @@ pub fn pop_stack_dir(liz: &Table) -> Result<(), LizError> {
     let last = stack.raw_len();
     stack.set(last, rlua::Nil)?;
     Ok(())
+}
+
+fn get_liz<'a>(lane: &Context<'a>) -> Result<Table<'a>, LizError> {
+    let globals = lane.globals();
+    let liz: Table = globals.get("liz")?;
+    Ok(liz)
 }
 
 pub fn treat_error<T>(result: Result<T, LizError>) -> Result<T, rlua::Error> {

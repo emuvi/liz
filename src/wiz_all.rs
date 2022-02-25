@@ -14,11 +14,18 @@ use crate::LizError;
 
 pub fn inject_all(lane: Context, path: &str, args: &Option<Vec<String>>) -> Result<(), LizError> {
     dbg_stp!(path, args);
-    let liz = lane.create_table()?;
-    liz.set("args", args.clone())?;
+    let liz = lane.create_table().map_err(|err| dbg_err!(err))?;
+    liz.set("args", args.clone()).map_err(|err| dbg_err!(err))?;
 
-    let path = utils::liz_suit_path(path)?;
+    let must_lizs = path.contains("$lizs");
+    let path = utils::liz_suit_path(path).map_err(|err| dbg_err!(err))?;
     dbg_stp!(path);
+
+    if must_lizs {
+        utils::gotta_lizs(&path).map_err(|err| dbg_err!(err))?;
+    }
+    dbg_stp!(path);
+
     let path = if liz_paths::is_symlink(&path) {
         liz_paths::path_walk(&path).map_err(|err| dbg_err!(err, path))?
     } else {
@@ -28,16 +35,23 @@ pub fn inject_all(lane: Context, path: &str, args: &Option<Vec<String>>) -> Resu
 
     let rise_pwd = liz_paths::pwd().map_err(|err| dbg_err!(err))?;
     dbg_stp!(rise_pwd);
-    liz.set("rise_pwd", rise_pwd)?;
 
-    let rise_dir = liz_paths::path_parent(&path).map_err(|err| dbg_err!(err, path))?;
+    let rise_dir = if liz_paths::is_absolute(&path) {
+        liz_paths::path_parent(&path).map_err(|err| dbg_err!(err, path))?
+    } else {
+        rise_pwd.clone()
+    };
+    
     dbg_stp!(rise_dir);
     utils::put_stack_dir(&lane, &liz, rise_dir.clone()).map_err(|err| dbg_err!(err, rise_dir))?;
-    liz.set("rise_dir", rise_dir)?;
 
     let rise_path = liz_paths::path_absolute(&path).map_err(|err| dbg_err!(err, path))?;
     dbg_stp!(rise_path);
-    liz.set("rise_path", rise_path)?;
+
+    liz.set("rise_pwd", rise_pwd).map_err(|err| dbg_err!(err))?;
+    liz.set("rise_dir", rise_dir).map_err(|err| dbg_err!(err))?;
+    liz.set("rise_path", rise_path)
+        .map_err(|err| dbg_err!(err))?;
 
     let print_stack_dir =
         lane.create_function(|lane, ()| utils::treat_error(utils::print_stack_dir(lane)))?;
