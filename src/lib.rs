@@ -2,7 +2,7 @@ use rlua::{Context, Lua, MultiValue, Table};
 
 use std::error::Error;
 
-use liz_debug::{dbg_err, dbg_inf, dbg_knd, dbg_stp};
+use liz_debug::{dbg_bub, dbg_err, dbg_inf, dbg_knd, dbg_stp};
 
 pub mod liz_codes;
 pub mod liz_debug;
@@ -65,30 +65,30 @@ pub fn race_in(lane: Context, path: &str) -> Result<Vec<String>, LizError> {
     let globals = lane.globals();
     let liz: Table = globals.get("liz").map_err(|err| dbg_err!(err))?;
 
-    let path = utils::liz_suit_path(path).map_err(|err| dbg_err!(err))?;
+    let path = utils::liz_suit_path(path).map_err(|err| dbg_bub!(err))?;
     dbg_stp!(path);
 
     let path = if liz_paths::is_symlink(&path) {
-        liz_paths::path_walk(&path).map_err(|err| dbg_err!(err, path))?
+        liz_paths::path_walk(&path).map_err(|err| dbg_bub!(err, path))?
     } else {
         path
     };
     dbg_stp!(path);
 
     let path = if liz_paths::is_relative(&path) {
-        let stack_dir = utils::get_stack_dir(&liz).map_err(|err| dbg_err!(err))?;
-        liz_paths::path_join(&stack_dir, &path).map_err(|err| dbg_err!(err))?
+        let stack_dir = utils::get_stack_dir(&liz).map_err(|err| dbg_bub!(err))?;
+        liz_paths::path_join(&stack_dir, &path).map_err(|err| dbg_bub!(err))?
     } else {
         path
     };
     dbg_stp!(path);
 
-    let race_pwd = liz_paths::wd().map_err(|err| dbg_err!(err))?;
+    let race_pwd = liz_paths::wd().map_err(|err| dbg_bub!(err))?;
     dbg_stp!(race_pwd);
 
-    let race_dir = liz_paths::path_parent(&path).map_err(|err| dbg_err!(err))?;
+    let race_dir = liz_paths::path_parent(&path).map_err(|err| dbg_bub!(err))?;
     dbg_stp!(race_dir);
-    utils::put_stack_dir(&lane, &liz, race_dir.clone()).map_err(|err| dbg_err!(err))?;
+    utils::put_stack_dir(&lane, &liz, race_dir.clone()).map_err(|err| dbg_bub!(err))?;
 
     let race_path = path;
     dbg_stp!(race_path);
@@ -98,11 +98,11 @@ pub fn race_in(lane: Context, path: &str) -> Result<Vec<String>, LizError> {
     liz.set("race_path", race_path.clone())
         .map_err(|err| dbg_err!(err))?;
 
-    utils::gotta_lizs(&race_path).map_err(|err| dbg_err!(err))?;
+    utils::gotta_lizs(&race_path).map_err(|err| dbg_bub!(err))?;
 
     let source = std::fs::read_to_string(race_path).map_err(|err| dbg_err!(err))?;
-    let values = eval_in(lane, source).map_err(|err| dbg_err!(err))?;
-    utils::pop_stack_dir(&liz).map_err(|err| dbg_err!(err))?;
+    let values = eval_in(lane, source).map_err(|err| dbg_bub!(err))?;
+    utils::pop_stack_dir(&liz).map_err(|err| dbg_bub!(err))?;
     Ok(values)
 }
 
@@ -113,6 +113,9 @@ pub fn eval_in(lane: Context, source: String) -> Result<Vec<String>, LizError> {
             source = (&source[first_line + 1..]).trim();
         }
     }
-    let values = lane.load(source).eval::<MultiValue>()?;
+    let values = lane
+        .load(source)
+        .eval::<MultiValue>()
+        .map_err(|err| dbg_err!(err))?;
     utils::to_json_multi(values)
 }
