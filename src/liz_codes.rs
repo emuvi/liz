@@ -128,7 +128,7 @@ pub fn gotta_lizs(path: &str) -> Result<(), LizError> {
         if is_update_lizs() || !liz_paths::has(path) {
             let path_dir = liz_paths::path_parent(path).map_err(|err| dbg_bub!(err))?;
             std::fs::create_dir_all(path_dir).map_err(|err| dbg_err!(err))?;
-            let net_path = (&path[lizs_pos + 8..]).replace("\\", "/");
+            let net_path = (&path[lizs_pos + 7..]).replace("\\", "/");
             get_lizs_file(&net_path, path).map_err(|err| dbg_bub!(err))?;
         }
     }
@@ -137,7 +137,7 @@ pub fn gotta_lizs(path: &str) -> Result<(), LizError> {
 
 pub fn get_lizs(net_path: &str) -> Result<(), LizError> {
     dbg_stp!(net_path);
-    let local_path = liz_paths::path_join("(lizs)", net_path).map_err(|err| dbg_bub!(err))?;
+    let local_path = liz_paths::path_join(".lizs", net_path).map_err(|err| dbg_bub!(err))?;
     dbg_stp!(local_path);
     get_lizs_file(&net_path, &local_path).map_err(|err| dbg_bub!(err))
 }
@@ -145,7 +145,7 @@ pub fn get_lizs(net_path: &str) -> Result<(), LizError> {
 pub fn get_lizs_path_pos(path: &str) -> Option<usize> {
     dbg_stp!(path);
     let sep = if path.contains("\\") { "\\" } else { "/" };
-    let lizs_dir = format!("{}(lizs){}", sep, sep);
+    let lizs_dir = format!("{}.lizs{}", sep, sep);
     path.rfind(&lizs_dir)
 }
 

@@ -31,12 +31,7 @@ pub fn inject_all(lane: Context, path: &str, args: &Option<Vec<String>>) -> Resu
     let rise_pwd = liz_paths::wd().map_err(|err| dbg_bub!(err))?;
     dbg_stp!(rise_pwd);
 
-    let rise_dir = if liz_paths::is_absolute(&path) {
-        liz_paths::path_parent(&path).map_err(|err| dbg_bub!(err, path))?
-    } else {
-        rise_pwd.clone()
-    };
-    
+    let rise_dir = liz_paths::path_parent(&path).map_err(|err| dbg_bub!(err, path))?;    
     dbg_stp!(rise_dir);
     utils::put_stack_dir(&lane, &liz, rise_dir.clone()).map_err(|err| dbg_bub!(err, rise_dir))?;
 

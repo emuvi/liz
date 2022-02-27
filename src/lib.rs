@@ -29,8 +29,9 @@ mod wiz_winds;
 pub type LizError = Box<dyn Error + Send + Sync>;
 
 pub fn run(path: &str, args: &Option<Vec<String>>) -> Result<Vec<String>, LizError> {
-    let handler = rise(path, args).map_err(|err| dbg_err!(err, path, args))?;
-    race(path, &handler)
+    dbg_stp!(path, args);
+    let handler = rise(path, args).map_err(|err| dbg_bub!(err))?;
+    race(path, &handler).map_err(|err| dbg_bub!(err))
 }
 
 pub fn rise(path: &str, args: &Option<Vec<String>>) -> Result<Lua, LizError> {
