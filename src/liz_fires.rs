@@ -8,26 +8,20 @@ use std::sync::RwLock;
 use std::thread;
 use std::time::Duration;
 
-use crate::liz_debug::{dbg_err, dbg_knd, dbg_stp};
+use crate::liz_codes;
+use crate::liz_debug::{dbg_bub, dbg_err, dbg_knd, dbg_stp};
 use crate::liz_paths;
 use crate::utils;
 use crate::LizError;
 
 pub fn race_wd(lane: Context, relative_path: &str) -> Result<Vec<String>, LizError> {
     dbg_stp!(relative_path);
-    let working_dir = liz_paths::wd().map_err(|err| dbg_err!(err))?;
+    let working_dir = liz_paths::wd().map_err(|err| dbg_bub!(err))?;
     dbg_stp!(working_dir);
     let full_path =
-        liz_paths::path_join(&working_dir, relative_path).map_err(|err| dbg_err!(err))?;
+        liz_paths::path_join(&working_dir, relative_path).map_err(|err| dbg_bub!(err))?;
     dbg_stp!(full_path);
-    crate::race_in(lane, &full_path).map_err(|err| dbg_err!(err))
-}
-
-pub fn lizs(net_path: &str) -> Result<(), LizError> {
-    dbg_stp!(net_path);
-    let local_path = liz_paths::path_join("(lizs)", net_path).map_err(|err| dbg_err!(err))?;
-    dbg_stp!(local_path);
-    utils::get_lizs_file(&net_path, &local_path).map_err(|err| dbg_err!(err))
+    crate::race_in(lane, &full_path).map_err(|err| dbg_bub!(err))
 }
 
 pub fn spawn(lane: Context, path: &str, args: &Option<Vec<String>>) -> Result<Spawned, LizError> {
@@ -35,7 +29,7 @@ pub fn spawn(lane: Context, path: &str, args: &Option<Vec<String>>) -> Result<Sp
     let globals = lane.globals();
     let liz: Table = globals.get("liz").map_err(|err| dbg_err!(err))?;
 
-    let path = utils::liz_suit_path(path).map_err(|err| dbg_err!(err))?;
+    let path = liz_codes::liz_suit_path(path).map_err(|err| dbg_err!(err))?;
     dbg_stp!(path);
 
     let path = if liz_paths::is_symlink(&path) {

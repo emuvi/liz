@@ -18,6 +18,8 @@ fn main() -> Result<(), LizError> {
                 liz::liz_debug::set_verbose(true);
             } else if arg == "-a" || arg == "--archive" {
                 liz::liz_debug::set_archive(true);
+            } else if arg == "-u" || arg == "--update" {
+                liz::liz_codes::set_update_lizs(true);
             } else if arg == "--" {
                 script_args = true;
             } else if arg.ends_with(".liz") || arg.ends_with(".lua") {

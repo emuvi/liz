@@ -8,7 +8,8 @@ use crate::wiz_texts;
 use crate::wiz_times;
 use crate::wiz_winds;
 
-use crate::liz_debug::{dbg_err, dbg_stp};
+use crate::liz_codes;
+use crate::liz_debug::{dbg_bub, dbg_err, dbg_stp};
 use crate::utils;
 use crate::LizError;
 
@@ -17,29 +18,29 @@ pub fn inject_all(lane: Context, path: &str, args: &Option<Vec<String>>) -> Resu
     let liz = lane.create_table().map_err(|err| dbg_err!(err))?;
     liz.set("args", args.clone()).map_err(|err| dbg_err!(err))?;
 
-    let path = utils::liz_suit_path(path).map_err(|err| dbg_err!(err))?;
+    let path = liz_codes::liz_suit_path(path).map_err(|err| dbg_bub!(err))?;
     dbg_stp!(path);
 
     let path = if liz_paths::is_symlink(&path) {
-        liz_paths::path_walk(&path).map_err(|err| dbg_err!(err, path))?
+        liz_paths::path_walk(&path).map_err(|err| dbg_bub!(err, path))?
     } else {
         path
     };
     dbg_stp!(path);
 
-    let rise_pwd = liz_paths::wd().map_err(|err| dbg_err!(err))?;
+    let rise_pwd = liz_paths::wd().map_err(|err| dbg_bub!(err))?;
     dbg_stp!(rise_pwd);
 
     let rise_dir = if liz_paths::is_absolute(&path) {
-        liz_paths::path_parent(&path).map_err(|err| dbg_err!(err, path))?
+        liz_paths::path_parent(&path).map_err(|err| dbg_bub!(err, path))?
     } else {
         rise_pwd.clone()
     };
     
     dbg_stp!(rise_dir);
-    utils::put_stack_dir(&lane, &liz, rise_dir.clone()).map_err(|err| dbg_err!(err, rise_dir))?;
+    utils::put_stack_dir(&lane, &liz, rise_dir.clone()).map_err(|err| dbg_bub!(err, rise_dir))?;
 
-    let rise_path = liz_paths::path_absolute(&path).map_err(|err| dbg_err!(err, path))?;
+    let rise_path = liz_paths::path_absolute(&path).map_err(|err| dbg_bub!(err, path))?;
     dbg_stp!(rise_path);
 
     liz.set("rise_pwd", rise_pwd).map_err(|err| dbg_err!(err))?;

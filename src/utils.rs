@@ -2,77 +2,7 @@ use rlua::{Context, MultiValue, Table, Value as LuaValue};
 use serde_json::Value as JsonValue;
 
 use crate::liz_debug::{dbg_err, dbg_stp};
-use crate::liz_fires;
-use crate::liz_paths;
-use crate::liz_winds;
 use crate::LizError;
-
-pub fn liz_suit_path(path: &str) -> Result<String, LizError> {
-    dbg_stp!(path);
-    let os_sep = liz_paths::os_sep().to_string();
-    let path = if path.contains("\\") && os_sep != "\\" {
-        path.replace("\\", &os_sep)
-    } else {
-        String::from(path)
-    };
-    let path = if path.contains("/") && os_sep != "/" {
-        path.replace("/", &os_sep)
-    } else {
-        path
-    };
-    let check_ext = path.to_lowercase();
-    let path = if !(check_ext.ends_with(".liz") || check_ext.ends_with(".lua")) {
-        format!("{}.liz", path)
-    } else {
-        path
-    };
-    let path = if path.contains("$pwd") {
-        path.replace(
-            "$pwd",
-            liz_paths::wd().map_err(|err| dbg_err!(err))?.as_ref(),
-        )
-    } else {
-        path
-    };
-    let path = if path.contains("$liz") {
-        path.replace(
-            "$liz",
-            liz_fires::liz_dir().map_err(|err| dbg_err!(err))?.as_ref(),
-        )
-    } else {
-        path
-    };
-    Ok(path)
-}
-
-pub fn gotta_lizs(path: &str) -> Result<(), LizError> {
-    dbg_stp!(path);
-    if let Some(lizs_pos) = get_lizs_pos(path) {
-        if !liz_paths::has(path) {
-            let path_dir = liz_paths::path_parent(path).map_err(|err| dbg_err!(err))?;
-            std::fs::create_dir_all(path_dir).map_err(|err| dbg_err!(err))?;
-            let net_path = (&path[lizs_pos + 8..]).replace("\\", "/");
-            get_lizs_file(&net_path, path).map_err(|err| dbg_err!(err))?;
-        }
-    }
-    Ok(())
-}
-
-pub fn get_lizs_pos(path: &str) -> Option<usize> {
-    dbg_stp!(path);
-    let sep = if path.contains("\\") { "\\" } else { "/" };
-    let lizs_dir = format!("{}(lizs){}", sep, sep);
-    path.rfind(&lizs_dir)
-}
-
-pub fn get_lizs_file(net_path: &str, local_path: &str) -> Result<(), LizError> {
-    dbg_stp!(net_path, local_path);
-    let origin = format!(
-        "https://raw.githubusercontent.com/emuvi/lizs/main/{}",
-        &net_path
-    );
-    liz_winds::download(&origin, local_path, None).map_err(|err| dbg_err!(err))
-}
 
 pub fn print_stack_dir(lane: Context) -> Result<(), LizError> {
     dbg_stp!();

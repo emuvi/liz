@@ -65,7 +65,7 @@ pub fn race_in(lane: Context, path: &str) -> Result<Vec<String>, LizError> {
     let globals = lane.globals();
     let liz: Table = globals.get("liz").map_err(|err| dbg_err!(err))?;
 
-    let path = utils::liz_suit_path(path).map_err(|err| dbg_bub!(err))?;
+    let path = liz_codes::liz_suit_path(path).map_err(|err| dbg_bub!(err))?;
     dbg_stp!(path);
 
     let path = if liz_paths::is_symlink(&path) {
@@ -98,7 +98,7 @@ pub fn race_in(lane: Context, path: &str) -> Result<Vec<String>, LizError> {
     liz.set("race_path", race_path.clone())
         .map_err(|err| dbg_err!(err))?;
 
-    utils::gotta_lizs(&race_path).map_err(|err| dbg_bub!(err))?;
+    liz_codes::gotta_lizs(&race_path).map_err(|err| dbg_bub!(err))?;
 
     let source = std::fs::read_to_string(race_path).map_err(|err| dbg_err!(err))?;
     let values = eval_in(lane, source).map_err(|err| dbg_bub!(err))?;
