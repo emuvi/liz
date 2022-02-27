@@ -18,27 +18,27 @@ pub fn inject_all(lane: Context, path: &str, args: &Option<Vec<String>>) -> Resu
     let liz = lane.create_table().map_err(|err| dbg_err!(err))?;
     liz.set("args", args.clone()).map_err(|err| dbg_err!(err))?;
 
-    let path = liz_codes::liz_suit_path(path).map_err(|err| dbg_bub!(err))?;
-    dbg_stp!(path);
+    let suit_path = liz_codes::liz_suit_path(path).map_err(|err| dbg_bub!(err))?;
+    dbg_stp!(suit_path);
 
-    let path = if liz_paths::is_symlink(&path) {
-        liz_paths::path_walk(&path).map_err(|err| dbg_bub!(err, path))?
+    let suit_path = if liz_paths::is_symlink(&suit_path) {
+        liz_paths::path_walk(&suit_path).map_err(|err| dbg_bub!(err))?
     } else {
-        path
+        suit_path
     };
-    dbg_stp!(path);
+    dbg_stp!(suit_path);
 
-    let rise_pwd = liz_paths::wd().map_err(|err| dbg_bub!(err))?;
-    dbg_stp!(rise_pwd);
+    let rise_wd = liz_paths::wd().map_err(|err| dbg_bub!(err))?;
+    dbg_stp!(rise_wd);
 
-    let rise_dir = liz_paths::path_parent(&path).map_err(|err| dbg_bub!(err, path))?;    
+    let rise_dir = liz_paths::path_parent(&suit_path).map_err(|err| dbg_bub!(err))?;    
     dbg_stp!(rise_dir);
-    utils::put_stack_dir(&lane, &liz, rise_dir.clone()).map_err(|err| dbg_bub!(err, rise_dir))?;
+    utils::put_stack_dir(&lane, &liz, rise_dir.clone()).map_err(|err| dbg_bub!(err))?;
 
-    let rise_path = liz_paths::path_absolute(&path).map_err(|err| dbg_bub!(err, path))?;
+    let rise_path = liz_paths::path_absolute(&suit_path).map_err(|err| dbg_bub!(err))?;
     dbg_stp!(rise_path);
 
-    liz.set("rise_pwd", rise_pwd).map_err(|err| dbg_err!(err))?;
+    liz.set("rise_wd", rise_wd).map_err(|err| dbg_err!(err))?;
     liz.set("rise_dir", rise_dir).map_err(|err| dbg_err!(err))?;
     liz.set("rise_path", rise_path)
         .map_err(|err| dbg_err!(err))?;

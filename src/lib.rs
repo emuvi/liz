@@ -66,35 +66,35 @@ pub fn race_in(lane: Context, path: &str) -> Result<Vec<String>, LizError> {
     let globals = lane.globals();
     let liz: Table = globals.get("liz").map_err(|err| dbg_err!(err))?;
 
-    let path = liz_codes::liz_suit_path(path).map_err(|err| dbg_bub!(err))?;
-    dbg_stp!(path);
+    let suit_path = liz_codes::liz_suit_path(path).map_err(|err| dbg_bub!(err))?;
+    dbg_stp!(suit_path);
 
-    let path = if liz_paths::is_symlink(&path) {
-        liz_paths::path_walk(&path).map_err(|err| dbg_bub!(err, path))?
+    let suit_path = if liz_paths::is_symlink(&suit_path) {
+        liz_paths::path_walk(&suit_path).map_err(|err| dbg_bub!(err))?
     } else {
-        path
+        suit_path
     };
-    dbg_stp!(path);
+    dbg_stp!(suit_path);
 
-    let path = if liz_paths::is_relative(&path) {
+    let suit_path = if liz_paths::is_relative(&suit_path) {
         let stack_dir = utils::get_stack_dir(&liz).map_err(|err| dbg_bub!(err))?;
-        liz_paths::path_join(&stack_dir, &path).map_err(|err| dbg_bub!(err))?
+        liz_paths::path_join(&stack_dir, &suit_path).map_err(|err| dbg_bub!(err))?
     } else {
-        path
+        suit_path
     };
-    dbg_stp!(path);
+    dbg_stp!(suit_path);
 
-    let race_pwd = liz_paths::wd().map_err(|err| dbg_bub!(err))?;
-    dbg_stp!(race_pwd);
+    let race_wd = liz_paths::wd().map_err(|err| dbg_bub!(err))?;
+    dbg_stp!(race_wd);
 
-    let race_dir = liz_paths::path_parent(&path).map_err(|err| dbg_bub!(err))?;
+    let race_dir = liz_paths::path_parent(&suit_path).map_err(|err| dbg_bub!(err))?;
     dbg_stp!(race_dir);
     utils::put_stack_dir(&lane, &liz, race_dir.clone()).map_err(|err| dbg_bub!(err))?;
 
-    let race_path = path;
+    let race_path = liz_paths::path_absolute(&suit_path).map_err(|err| dbg_bub!(err))?;
     dbg_stp!(race_path);
 
-    liz.set("race_pwd", race_pwd).map_err(|err| dbg_err!(err))?;
+    liz.set("race_wd", race_wd).map_err(|err| dbg_err!(err))?;
     liz.set("race_dir", race_dir).map_err(|err| dbg_err!(err))?;
     liz.set("race_path", race_path.clone())
         .map_err(|err| dbg_err!(err))?;

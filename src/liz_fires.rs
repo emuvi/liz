@@ -29,34 +29,34 @@ pub fn spawn(lane: Context, path: &str, args: &Option<Vec<String>>) -> Result<Sp
     let globals = lane.globals();
     let liz: Table = globals.get("liz").map_err(|err| dbg_err!(err))?;
 
-    let path = liz_codes::liz_suit_path(path).map_err(|err| dbg_bub!(err))?;
-    dbg_stp!(path);
+    let suit_path = liz_codes::liz_suit_path(path).map_err(|err| dbg_bub!(err))?;
+    dbg_stp!(suit_path);
 
-    let path = if liz_paths::is_symlink(&path) {
-        liz_paths::path_walk(&path).map_err(|err| dbg_bub!(err, path))?
+    let suit_path = if liz_paths::is_symlink(&suit_path) {
+        liz_paths::path_walk(&suit_path).map_err(|err| dbg_bub!(err))?
     } else {
-        path
+        suit_path
     };
-    dbg_stp!(path);
+    dbg_stp!(suit_path);
 
-    let path = if liz_paths::is_relative(&path) {
-        let stack_dir = utils::get_stack_dir(&liz).map_err(|err| dbg_bub!(err, path))?;
-        liz_paths::path_join(&stack_dir, &path).map_err(|err| dbg_bub!(err, stack_dir, path))?
+    let suit_path = if liz_paths::is_relative(&suit_path) {
+        let stack_dir = utils::get_stack_dir(&liz).map_err(|err| dbg_bub!(err))?;
+        liz_paths::path_join(&stack_dir, &suit_path).map_err(|err| dbg_bub!(err))?
     } else {
-        path
+        suit_path
     };
-    dbg_stp!(path);
+    dbg_stp!(suit_path);
 
-    let spawn_pwd = liz_paths::wd().map_err(|err| dbg_bub!(err))?;
-    dbg_stp!(spawn_pwd);
+    let spawn_wd = liz_paths::wd().map_err(|err| dbg_bub!(err))?;
+    dbg_stp!(spawn_wd);
 
-    let spawn_dir = liz_paths::path_parent(&path).map_err(|err| dbg_bub!(err, path))?;
+    let spawn_dir = liz_paths::path_parent(&suit_path).map_err(|err| dbg_bub!(err))?;
     dbg_stp!(spawn_dir);
 
-    let spawn_path = path;
+    let spawn_path = liz_paths::path_absolute(&suit_path).map_err(|err| dbg_bub!(err))?;
     dbg_stp!(spawn_path);
 
-    liz.set("spawn_pwd", spawn_pwd)
+    liz.set("spawn_wd", spawn_wd)
         .map_err(|err| dbg_err!(err))?;
     liz.set("spawn_dir", spawn_dir)
         .map_err(|err| dbg_err!(err))?;
