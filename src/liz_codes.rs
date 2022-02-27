@@ -124,7 +124,7 @@ pub fn set_update_lizs(to: bool) {
 
 pub fn gotta_lizs(path: &str) -> Result<(), LizError> {
     dbg_stp!(path);
-    if let Some(lizs_pos) = get_lizs_pos(path) {
+    if let Some(lizs_pos) = get_lizs_path_pos(path) {
         if is_update_lizs() || !liz_paths::has(path) {
             let path_dir = liz_paths::path_parent(path).map_err(|err| dbg_bub!(err))?;
             std::fs::create_dir_all(path_dir).map_err(|err| dbg_err!(err))?;
@@ -142,7 +142,7 @@ pub fn get_lizs(net_path: &str) -> Result<(), LizError> {
     get_lizs_file(&net_path, &local_path).map_err(|err| dbg_bub!(err))
 }
 
-pub fn get_lizs_pos(path: &str) -> Option<usize> {
+pub fn get_lizs_path_pos(path: &str) -> Option<usize> {
     dbg_stp!(path);
     let sep = if path.contains("\\") { "\\" } else { "/" };
     let lizs_dir = format!("{}(lizs){}", sep, sep);
