@@ -26,7 +26,7 @@ fn main() -> Result<(), LizError> {
                 race_paths.push(arg);
             } else if !first_arg && !arg.starts_with("-") {
                 race_paths.push(arg);
-            } else {
+            } else if !first_arg {
                 return Err(liz_dbg_err!("Could not understand an argument", arg));
             }
         } else {
