@@ -1,9 +1,9 @@
-use liz::{liz_dbg_inf};
 use liz::LizError;
+use liz::{liz_dbg_ebb, liz_dbg_err, liz_dbg_inf};
 
 fn main() -> Result<(), LizError> {
-    let mut to_race: Vec<String> = Vec::new();
-    let mut to_rise_args: Option<Vec<String>> = None;
+    let mut race_paths: Vec<String> = Vec::new();
+    let mut rise_args: Option<Vec<String>> = None;
     let mut first_arg = true;
     let mut script_args = false;
     for arg in std::env::args() {
@@ -23,28 +23,32 @@ fn main() -> Result<(), LizError> {
             } else if arg == "--" {
                 script_args = true;
             } else if arg.ends_with(".liz") || arg.ends_with(".lua") {
-                to_race.push(arg);
+                race_paths.push(arg);
             } else if !first_arg && !arg.starts_with("-") {
-                to_race.push(arg);
+                race_paths.push(arg);
+            } else {
+                return Err(liz_dbg_err!("Could not understand an argument", arg));
             }
         } else {
-            if let Some(ref mut to_rise_args) = to_rise_args {
+            if let Some(ref mut to_rise_args) = rise_args {
                 to_rise_args.push(arg);
             } else {
-                to_rise_args = Some(vec![arg]);
+                rise_args = Some(vec![arg]);
             }
         }
         if first_arg {
             first_arg = false;
         }
     }
-    if to_race.is_empty() {
-        to_race.push(format!("start"));
+    if race_paths.is_empty() {
+        race_paths.push(format!("start"));
     }
-    let first_path = &to_race[0];
-    let handler = liz::rise(first_path, &to_rise_args)?;
-    for race_path in to_race {
-        let results = liz::race(&race_path, &handler)?;
+    let first_path = &race_paths[0];
+    let (rise_path, handler) =
+        liz::rise(first_path, &rise_args).map_err(|err| liz_dbg_ebb!(err))?;
+    race_paths[0] = rise_path;
+    for race_path in race_paths {
+        let results = liz::race(&race_path, &handler).map_err(|err| liz_dbg_ebb!(err))?;
         liz_dbg_inf!("Race finished", race_path, results);
     }
     Ok(())

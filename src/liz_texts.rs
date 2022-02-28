@@ -3,18 +3,18 @@ use std::io::{prelude::*, BufReader};
 use std::sync::{Arc, Mutex};
 use std::thread::JoinHandle;
 
-use crate::liz_debug::{dbg_err, dbg_stp};
+use crate::liz_debug::{dbg_err, dbg_step};
 use crate::liz_forms::Forms;
 use crate::liz_parse::{Parser, TEXT_PARSER};
 use crate::LizError;
 
 pub fn text(source: &str) -> Forms {
-    dbg_stp!(source);
+    dbg_step!(source);
     TEXT_PARSER.parse(source)
 }
 
 pub fn ask(message: &str) -> Result<String, LizError> {
-    dbg_stp!(message);
+    dbg_step!(message);
     print!("{}", message);
     std::io::stdout().flush().map_err(|err| dbg_err!(err))?;
     let mut buffer = String::new();
@@ -25,7 +25,7 @@ pub fn ask(message: &str) -> Result<String, LizError> {
 }
 
 pub fn ask_int(message: &str) -> Result<i32, LizError> {
-    dbg_stp!(message);
+    dbg_step!(message);
     print!("{}", message);
     std::io::stdout().flush().map_err(|err| dbg_err!(err))?;
     let mut buffer = String::new();
@@ -37,7 +37,7 @@ pub fn ask_int(message: &str) -> Result<i32, LizError> {
 }
 
 pub fn ask_float(message: &str) -> Result<f64, LizError> {
-    dbg_stp!(message);
+    dbg_step!(message);
     print!("{}", message);
     std::io::stdout().flush().map_err(|err| dbg_err!(err))?;
     let mut buffer = String::new();
@@ -49,19 +49,19 @@ pub fn ask_float(message: &str) -> Result<f64, LizError> {
 }
 
 pub fn ask_bool(message: &str) -> Result<bool, LizError> {
-    dbg_stp!(message);
+    dbg_step!(message);
     let result = ask(message).map_err(|err| dbg_err!(err))?;
     let result = result.to_lowercase();
     Ok(result == "t" || result == "true" || result == "y" || result == "yes")
 }
 
 pub fn len(text: &str) -> usize {
-    dbg_stp!(text);
+    dbg_step!(text);
     text.len()
 }
 
 pub fn del(text: &str, start: usize, end: usize) -> String {
-    dbg_stp!(text, start, end);
+    dbg_step!(text, start, end);
     let mut start = start;
     let mut end = end;
     if start > text.len() {
@@ -80,32 +80,32 @@ pub fn del(text: &str, start: usize, end: usize) -> String {
 }
 
 pub fn trim(text: &str) -> String {
-    dbg_stp!(text);
+    dbg_step!(text);
     String::from(text.trim())
 }
 
 pub fn is_empty(text: &str) -> bool {
-    dbg_stp!(text);
+    dbg_step!(text);
     text.is_empty()
 }
 
 pub fn is_ascii(text: &str) -> bool {
-    dbg_stp!(text);
+    dbg_step!(text);
     text.is_ascii()
 }
 
 pub fn tolower(text: &str) -> String {
-    dbg_stp!(text);
+    dbg_step!(text);
     String::from(text.to_lowercase())
 }
 
 pub fn toupper(text: &str) -> String {
-    dbg_stp!(text);
+    dbg_step!(text);
     String::from(text.to_uppercase())
 }
 
 pub fn tocapital(text: &str) -> String {
-    dbg_stp!(text);
+    dbg_step!(text);
     if text.is_empty() {
         return String::default();
     }
@@ -117,44 +117,44 @@ pub fn tocapital(text: &str) -> String {
 }
 
 pub fn contains(text: &str, part: &str) -> bool {
-    dbg_stp!(text, part);
+    dbg_step!(text, part);
     text.contains(part)
 }
 
 pub fn find(text: &str, part: &str) -> Option<usize> {
-    dbg_stp!(text, part);
+    dbg_step!(text, part);
     text.find(part)
 }
 
 pub fn rfind(text: &str, part: &str) -> Option<usize> {
-    dbg_stp!(text, part);
+    dbg_step!(text, part);
     text.rfind(part)
 }
 
 pub fn starts_with(text: &str, prefix: &str) -> bool {
-    dbg_stp!(text, prefix);
+    dbg_step!(text, prefix);
     text.starts_with(prefix)
 }
 
 pub fn ends_with(text: &str, suffix: &str) -> bool {
-    dbg_stp!(text, suffix);
+    dbg_step!(text, suffix);
     text.ends_with(suffix)
 }
 
 pub fn split(text: &str, pattern: &str) -> Vec<String> {
-    dbg_stp!(text, pattern);
+    dbg_step!(text, pattern);
     text.split(pattern).map(|item| item.to_string()).collect()
 }
 
 pub fn split_spaces(text: &str) -> Vec<String> {
-    dbg_stp!(text);
+    dbg_step!(text);
     text.split_whitespace()
         .map(|item| item.to_string())
         .collect()
 }
 
 pub fn text_file_find(path: &str, content: String) -> Result<Option<Vec<String>>, LizError> {
-    dbg_stp!(path, content);
+    dbg_step!(path, content);
     text_file_find_any(path, vec![content])
 }
 
@@ -162,7 +162,7 @@ pub fn text_file_find_any(
     path: &str,
     contents: Vec<String>,
 ) -> Result<Option<Vec<String>>, LizError> {
-    dbg_stp!(path, contents);
+    dbg_step!(path, contents);
     let mut results: Option<Vec<String>> = None;
     let file = File::open(path).map_err(|err| dbg_err!(err))?;
     let mut reader = BufReader::new(file);
@@ -206,7 +206,7 @@ pub fn text_files_find(
     paths: Vec<String>,
     content: String,
 ) -> Result<Option<Vec<String>>, LizError> {
-    dbg_stp!(paths, content);
+    dbg_step!(paths, content);
     text_files_find_any(paths, vec![content])
 }
 
@@ -214,7 +214,7 @@ pub fn text_files_find_any(
     paths: Vec<String>,
     contents: Vec<String>,
 ) -> Result<Option<Vec<String>>, LizError> {
-    dbg_stp!(paths, contents);
+    dbg_step!(paths, contents);
     let cpus = num_cpus::get();
     let pool = Arc::new(Mutex::new(paths));
     let mut handles: Vec<JoinHandle<Option<Vec<String>>>> = Vec::with_capacity(cpus);
@@ -277,7 +277,7 @@ pub fn text_files_find_any(
 }
 
 pub fn text_file_founds(found: &str) -> Vec<String> {
-    dbg_stp!(found);
+    dbg_step!(found);
     let mut result: Vec<String> = Vec::new();
     let mut actual = String::new();
     let mut first = true;
@@ -310,7 +310,7 @@ pub fn text_file_founds(found: &str) -> Vec<String> {
 }
 
 pub fn read(path: &str) -> Result<String, LizError> {
-    dbg_stp!(path);
+    dbg_step!(path);
     let mut file = std::fs::OpenOptions::new()
         .create(false)
         .write(false)
@@ -324,7 +324,7 @@ pub fn read(path: &str) -> Result<String, LizError> {
 }
 
 pub fn write(path: &str, contents: String) -> Result<(), LizError> {
-    dbg_stp!(path, contents);
+    dbg_step!(path, contents);
     let mut file = std::fs::OpenOptions::new()
         .create(true)
         .write(true)
@@ -336,7 +336,7 @@ pub fn write(path: &str, contents: String) -> Result<(), LizError> {
 }
 
 pub fn append(path: &str, contents: String) -> Result<(), LizError> {
-    dbg_stp!(path, contents);
+    dbg_step!(path, contents);
     let mut file = std::fs::OpenOptions::new()
         .create(true)
         .write(true)
@@ -348,7 +348,7 @@ pub fn append(path: &str, contents: String) -> Result<(), LizError> {
 }
 
 pub fn write_lines(path: &str, lines: Vec<String>) -> Result<(), LizError> {
-    dbg_stp!(path, lines);
+    dbg_step!(path, lines);
     let mut file = std::fs::OpenOptions::new()
         .create(true)
         .write(true)
@@ -363,7 +363,7 @@ pub fn write_lines(path: &str, lines: Vec<String>) -> Result<(), LizError> {
 }
 
 pub fn append_lines(path: &str, lines: Vec<String>) -> Result<(), LizError> {
-    dbg_stp!(path, lines);
+    dbg_step!(path, lines);
     let mut file = std::fs::OpenOptions::new()
         .create(true)
         .write(true)

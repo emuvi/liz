@@ -4,11 +4,11 @@ use reqwest::header::HeaderName;
 
 use std::collections::HashMap;
 
-use crate::liz_debug::{self, dbg_err, dbg_stp};
+use crate::liz_debug::{self, dbg_err, dbg_step};
 use crate::LizError;
 
 pub fn get(url: &str, with_headers: Option<HashMap<String, String>>) -> Result<String, LizError> {
-    dbg_stp!(url, with_headers);
+    dbg_step!(url, with_headers);
     let client = reqwest::blocking::Client::new();
     let builder = client.get(url);
     let mut headers = HeaderMap::new();
@@ -27,7 +27,7 @@ pub fn post(
     text: String,
     with_headers: Option<HashMap<String, String>>,
 ) -> Result<String, LizError> {
-    dbg_stp!(url, text, with_headers);
+    dbg_step!(url, text, with_headers);
     let client = reqwest::blocking::Client::new();
     let builder = client.post(url);
     let mut headers = HeaderMap::new();
@@ -47,7 +47,7 @@ pub fn download(
     destiny: &str,
     with_headers: Option<HashMap<String, String>>,
 ) -> Result<(), LizError> {
-    dbg_stp!(origin, destiny, with_headers);
+    dbg_step!(origin, destiny, with_headers);
     let client = reqwest::blocking::Client::new();
     let builder = client.get(origin);
     let mut headers = HeaderMap::new();

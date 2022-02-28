@@ -1,11 +1,11 @@
 use rlua::{Context, MultiValue, Table, Value as LuaValue};
 use serde_json::Value as JsonValue;
 
-use crate::liz_debug::{dbg_err, dbg_stp};
+use crate::liz_debug::{dbg_err, dbg_step};
 use crate::LizError;
 
 pub fn print_stack_dir(lane: Context) -> Result<(), LizError> {
-    dbg_stp!();
+    dbg_step!();
     let liz = get_liz(&lane).map_err(|err| dbg_err!(err))?;
     let stack: Table = liz.get("stack_dir").map_err(|err| dbg_err!(err))?;
     let size = stack.raw_len();
@@ -17,7 +17,7 @@ pub fn print_stack_dir(lane: Context) -> Result<(), LizError> {
 }
 
 pub fn put_stack_dir<'a>(lane: &Context<'a>, liz: &Table<'a>, dir: String) -> Result<(), LizError> {
-    dbg_stp!(dir);
+    dbg_step!(dir);
     let contains = liz.contains_key("stack_dir").map_err(|err| dbg_err!(err))?;
     if !contains {
         let stack = lane.create_table().map_err(|err| dbg_err!(err))?;
@@ -30,7 +30,7 @@ pub fn put_stack_dir<'a>(lane: &Context<'a>, liz: &Table<'a>, dir: String) -> Re
 }
 
 pub fn get_stack_dir(liz: &Table) -> Result<String, LizError> {
-    dbg_stp!();
+    dbg_step!();
     let stack: Table = liz.get("stack_dir").map_err(|err| dbg_err!(err))?;
     let last = stack.raw_len();
     let result: String = stack.get(last).map_err(|err| dbg_err!(err))?;
@@ -38,13 +38,13 @@ pub fn get_stack_dir(liz: &Table) -> Result<String, LizError> {
 }
 
 pub fn last_stack_dir(lane: Context) -> Result<String, LizError> {
-    dbg_stp!();
+    dbg_step!();
     let liz = get_liz(&lane).map_err(|err| dbg_err!(err))?;
     Ok(get_stack_dir(&liz).map_err(|err| dbg_err!(err))?)
 }
 
 pub fn pop_stack_dir(liz: &Table) -> Result<(), LizError> {
-    dbg_stp!();
+    dbg_step!();
     let stack: Table = liz.get("stack_dir").map_err(|err| dbg_err!(err))?;
     let last = stack.raw_len();
     stack.set(last, rlua::Nil).map_err(|err| dbg_err!(err))?;
@@ -52,7 +52,7 @@ pub fn pop_stack_dir(liz: &Table) -> Result<(), LizError> {
 }
 
 fn get_liz<'a>(lane: &Context<'a>) -> Result<Table<'a>, LizError> {
-    dbg_stp!();
+    dbg_step!();
     let globals = lane.globals();
     let liz: Table = globals.get("liz").map_err(|err| dbg_err!(err))?;
     Ok(liz)
@@ -66,7 +66,7 @@ pub fn treat_error<T>(result: Result<T, LizError>) -> Result<T, rlua::Error> {
 }
 
 pub fn to_json_multi(values: MultiValue) -> Result<Vec<String>, LizError> {
-    dbg_stp!(values);
+    dbg_step!(values);
     let mut result: Vec<String> = Vec::new();
     for value in values {
         result.push(to_json(value).map_err(|err| dbg_err!(err))?);
@@ -75,7 +75,7 @@ pub fn to_json_multi(values: MultiValue) -> Result<Vec<String>, LizError> {
 }
 
 pub fn to_json(value: LuaValue) -> Result<String, LizError> {
-    dbg_stp!(value);
+    dbg_step!(value);
     let result = match value {
         LuaValue::Nil => format!("null"),
         LuaValue::Boolean(data) => format!("{}", data),
@@ -120,7 +120,7 @@ pub fn to_json(value: LuaValue) -> Result<String, LizError> {
 }
 
 pub fn from_json<'a>(lane: Context<'a>, source: String) -> Result<LuaValue<'a>, LizError> {
-    dbg_stp!(source);
+    dbg_step!(source);
     if source.trim().is_empty() {
         return Ok(LuaValue::Nil);
     }
@@ -129,7 +129,7 @@ pub fn from_json<'a>(lane: Context<'a>, source: String) -> Result<LuaValue<'a>, 
 }
 
 fn from_json_value<'a>(lane: Context<'a>, value: JsonValue) -> Result<LuaValue<'a>, LizError> {
-    dbg_stp!(value);
+    dbg_step!(value);
     let result = match value {
         JsonValue::Null => LuaValue::Nil,
         JsonValue::Bool(data) => LuaValue::Boolean(data),
