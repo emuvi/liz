@@ -10,3 +10,5 @@ I shall map erros with dbg_ebb on each returning LizError inside the sensible fu
 
 ## Implement WildCards on Paths
 [EVAL](roud/wildcards.md) How to implement WildCards on Paths
+
+## Thread independent for archive file writes

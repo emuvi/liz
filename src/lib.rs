@@ -2,7 +2,8 @@ use rlua::{Context, Lua, MultiValue, Table};
 
 use std::error::Error;
 
-use liz_debug::{dbg_ebb, dbg_call, dbg_err, dbg_inf, dbg_step, dbg_trw};
+use liz_debug::{dbg_call, dbg_reav, dbg_step};
+use liz_debug::{dbg_ebb, dbg_err, dbg_inf, dbg_trw};
 
 pub mod liz_codes;
 pub mod liz_debug;
@@ -31,11 +32,13 @@ pub type LizError = Box<dyn Error + Send + Sync>;
 pub fn run(path: &str, args: &Option<Vec<String>>) -> Result<Vec<String>, LizError> {
     dbg_call!(path, args);
     let (rise_path, handler) = rise(path, args).map_err(|err| dbg_ebb!(err))?;
-    race(&rise_path, &handler).map_err(|err| dbg_ebb!(err))
+    dbg_step!(rise_path);
+    dbg_reav!(race(&rise_path, &handler).map_err(|err| dbg_ebb!(err)));
 }
 
 pub fn rise(path: &str, args: &Option<Vec<String>>) -> Result<(String, Lua), LizError> {
-    dbg_inf!("Rising", path, args);
+    dbg_call!(path, args);
+    dbg_inf!("Rising a new lane", path, args);
     let handler = Lua::new();
     let mut rise_path: Option<String> = None;
     let mut rise_error: Option<LizError> = None;
@@ -53,18 +56,18 @@ pub fn rise(path: &str, args: &Option<Vec<String>>) -> Result<(String, Lua), Liz
 }
 
 pub fn race(path: &str, handler: &Lua) -> Result<Vec<String>, LizError> {
-    dbg_inf!("Racing", path);
+    dbg_call!(path);
+    dbg_inf!("Racing the path on the lane", path);
     let mut result: Option<Result<Vec<String>, LizError>> = None;
     handler.context(|lane| result = Some(race_in(lane, path)));
     if result.is_none() {
-        return Err(dbg_trw!("WARN", "Could not reach a result", path));
+        dbg_reav!(Err(dbg_trw!("WARN", "Could not reach a result", path)));
     }
-    let result = result.unwrap();
-    result
+    dbg_reav!(result.unwrap());
 }
 
 pub fn race_in(lane: Context, path: &str) -> Result<Vec<String>, LizError> {
-    dbg_step!(path);
+    dbg_call!(path);
     let globals = lane.globals();
     let liz: Table = globals.get("liz").map_err(|err| dbg_err!(err))?;
 
@@ -101,19 +104,21 @@ pub fn race_in(lane: Context, path: &str) -> Result<Vec<String>, LizError> {
     let values = eval_in(lane, source).map_err(|err| dbg_ebb!(err))?;
     dbg_step!(values);
     utils::pop_stack_dir(&liz).map_err(|err| dbg_ebb!(err))?;
-    Ok(values)
+    dbg_reav!(Ok(values));
 }
 
 pub fn eval_in(lane: Context, source: String) -> Result<Vec<String>, LizError> {
+    dbg_call!(source);
     let mut source = source.trim();
     if source.starts_with("#!") {
         if let Some(first_line) = source.find("\n") {
             source = (&source[first_line + 1..]).trim();
         }
     }
+    dbg_step!(source);
     let values = lane
         .load(source)
         .eval::<MultiValue>()
         .map_err(|err| dbg_err!(err))?;
-    utils::to_json_multi(values)
+    dbg_reav!(utils::to_json_multi(values));
 }

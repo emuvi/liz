@@ -2,7 +2,8 @@ use rlua::{UserData, UserDataMethods};
 
 use std::sync::atomic::{AtomicBool, Ordering};
 
-use crate::liz_debug::{dbg_call, dbg_ebb, dbg_err, dbg_resp, dbg_step};
+use crate::liz_debug::{dbg_ebb, dbg_err};
+use crate::liz_debug::{dbg_call, dbg_reav, dbg_step};
 use crate::liz_fires;
 use crate::liz_forms::{Form, Forms};
 use crate::liz_parse::{Parser, CODE_PARSER};
@@ -10,6 +11,18 @@ use crate::liz_paths;
 use crate::liz_winds;
 use crate::utils;
 use crate::LizError;
+
+static UPDATE_LIZS: AtomicBool = AtomicBool::new(false);
+
+pub fn is_update_lizs() -> bool {
+    dbg_call!();
+    dbg_reav!(UPDATE_LIZS.load(Ordering::Acquire));
+}
+
+pub fn set_update_lizs(to: bool) {
+    dbg_call!(to);
+    UPDATE_LIZS.store(to, Ordering::Release)
+}
 
 impl UserData for Forms {
     fn add_methods<'lua, M: UserDataMethods<'lua, Self>>(methods: &mut M) {
@@ -52,14 +65,12 @@ impl UserData for Form {
 
 pub fn code(source: &str) -> Forms {
     dbg_call!(source);
-    let result = CODE_PARSER.parse(source);
-    dbg_resp!(result)
+    dbg_reav!(CODE_PARSER.parse(source));
 }
 
 pub fn edit() -> Forms {
     dbg_call!();
-    let result = Forms::edit();
-    dbg_resp!(result)
+    dbg_reav!(Forms::edit());
 }
 
 pub fn desk(terms: Vec<String>) -> Forms {
@@ -69,14 +80,12 @@ pub fn desk(terms: Vec<String>) -> Forms {
         dbg_step!(term);
         desk.push(Form::from(term));
     }
-    let result = Forms::new(desk);
-    dbg_resp!(result)
+    dbg_reav!(Forms::new(desk))
 }
 
 pub fn form(part: &str) -> Form {
     dbg_call!(part);
-    let result = Form::new(part);
-    dbg_resp!(result)
+    dbg_reav!(Form::new(part));
 }
 
 pub fn liz_suit_path(path: &str) -> Result<String, LizError> {
@@ -119,21 +128,7 @@ pub fn liz_suit_path(path: &str) -> Result<String, LizError> {
     } else {
         result
     };
-    let result = Ok(result);
-    dbg_resp!(result)
-}
-
-static UPDATE_LIZS: AtomicBool = AtomicBool::new(false);
-
-pub fn is_update_lizs() -> bool {
-    dbg_call!();
-    let result = UPDATE_LIZS.load(Ordering::Acquire);
-    dbg_resp!(result)
-}
-
-pub fn set_update_lizs(to: bool) {
-    dbg_call!(to);
-    UPDATE_LIZS.store(to, Ordering::Release)
+    dbg_reav!(Ok(result))
 }
 
 pub fn gotta_lizs(path: &str) -> Result<(), LizError> {
@@ -165,8 +160,7 @@ pub fn get_lizs_path_pos(path: &str) -> Option<usize> {
     dbg_step!(separator);
     let lizs_dir = format!("{}.lizs{}", separator, separator);
     dbg_step!(lizs_dir);
-    let result = path.rfind(&lizs_dir);
-    dbg_resp!(result)
+    dbg_reav!(path.rfind(&lizs_dir));
 }
 
 pub fn get_lizs_file(net_path: &str, local_path: &str) -> Result<(), LizError> {
@@ -187,8 +181,7 @@ pub fn git_root_find(path: &str) -> Result<Option<String>, LizError> {
         let check = liz_paths::path_join(&actual, ".git").map_err(|err| dbg_ebb!(err))?;
         dbg_step!(check);
         if liz_paths::is_dir(&check) {
-            let result = Ok(Some(actual));
-            return dbg_resp!(result);
+            dbg_reav!(Ok(Some(actual)));
         }
         actual = liz_paths::path_parent(&actual).map_err(|err| dbg_err!(err))?;
         dbg_step!(actual);
@@ -196,8 +189,7 @@ pub fn git_root_find(path: &str) -> Result<Option<String>, LizError> {
             break;
         }
     }
-    let result = Ok(Some(actual));
-    dbg_resp!(result)
+    dbg_reav!(Ok(Some(actual)));
 }
 
 pub fn git_is_ignored(path: &str) -> Result<bool, LizError> {
@@ -215,11 +207,9 @@ pub fn git_is_ignored(path: &str) -> Result<bool, LizError> {
         )
         .map_err(|err| dbg_ebb!(err))?;
         dbg_step!(code, output);
-        let result = Ok(code == 0 && !output.is_empty());
-        return dbg_resp!(result);
+        dbg_reav!(Ok(code == 0 && !output.is_empty()));
     }
-    let result = Ok(false);
-    dbg_resp!(result)
+    dbg_reav!(Ok(false));
 }
 
 pub fn git_has_changes(root: &str) -> Result<bool, LizError> {
@@ -229,6 +219,5 @@ pub fn git_has_changes(root: &str) -> Result<bool, LizError> {
     dbg_step!(output);
     let output = output.trim();
     dbg_step!(output);
-    let result = Ok(!output.ends_with("nothing to commit, working tree clean"));
-    dbg_resp!(result)
+    dbg_reav!(Ok(!output.ends_with("nothing to commit, working tree clean")));
 }

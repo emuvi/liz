@@ -9,23 +9,24 @@ use std::thread;
 use std::time::Duration;
 
 use crate::liz_codes;
-use crate::liz_debug::{dbg_ebb, dbg_err, dbg_knd, dbg_step};
+use crate::liz_debug::{dbg_call, dbg_reav, dbg_step};
+use crate::liz_debug::{dbg_ebb, dbg_err, dbg_knd};
 use crate::liz_paths;
 use crate::utils;
 use crate::LizError;
 
 pub fn race_wd(lane: Context, relative_path: &str) -> Result<Vec<String>, LizError> {
-    dbg_step!(relative_path);
+    dbg_call!(relative_path);
     let working_dir = liz_paths::wd().map_err(|err| dbg_ebb!(err))?;
     dbg_step!(working_dir);
     let full_path =
         liz_paths::path_join(&working_dir, relative_path).map_err(|err| dbg_ebb!(err))?;
     dbg_step!(full_path);
-    crate::race_in(lane, &full_path).map_err(|err| dbg_ebb!(err))
+    dbg_reav!(crate::race_in(lane, &full_path).map_err(|err| dbg_ebb!(err)));
 }
 
 pub fn spawn(lane: Context, path: &str, args: &Option<Vec<String>>) -> Result<Spawned, LizError> {
-    dbg_step!(path, args);
+    dbg_call!(path, args);
     let globals = lane.globals();
     let liz: Table = globals.get("liz").map_err(|err| dbg_err!(err))?;
 
@@ -49,8 +50,7 @@ pub fn spawn(lane: Context, path: &str, args: &Option<Vec<String>>) -> Result<Sp
     let spawn_path = liz_paths::path_absolute(&suit_path).map_err(|err| dbg_ebb!(err))?;
     dbg_step!(spawn_path);
 
-    liz.set("spawn_wd", spawn_wd)
-        .map_err(|err| dbg_err!(err))?;
+    liz.set("spawn_wd", spawn_wd).map_err(|err| dbg_err!(err))?;
     liz.set("spawn_dir", spawn_dir)
         .map_err(|err| dbg_err!(err))?;
     liz.set("spawn_path", spawn_path.clone())
@@ -77,26 +77,29 @@ pub fn spawn(lane: Context, path: &str, args: &Option<Vec<String>>) -> Result<Sp
             }
         })
         .map_err(|err| dbg_err!(err))?;
-    Ok(spawned)
+    let result = Ok(spawned);
+    dbg_reav!(result)
 }
 
 pub fn join(spawned: Spawned) -> Result<Vec<String>, LizError> {
-    dbg_step!(spawned);
-    spawned.join()
+    dbg_call!(spawned);
+    dbg_reav!(spawned.join());
 }
 
 pub fn join_all(spawneds: Vec<Spawned>) -> Result<Vec<Vec<String>>, LizError> {
-    dbg_step!(spawneds);
-    let mut result: Vec<Vec<String>> = Vec::new();
+    dbg_call!(spawneds);
+    let mut all_results: Vec<Vec<String>> = Vec::new();
     for spawned in spawneds {
-        result.push(spawned.join().map_err(|err| dbg_err!(err))?);
+        let spawned_result = spawned.join().map_err(|err| dbg_ebb!(err))?;
+        dbg_step!(spawned_result);
+        all_results.push(spawned_result);
     }
-    Ok(result)
+    dbg_reav!(Ok(all_results));
 }
 
 pub fn wait(spawned: Spawned) -> Result<(), LizError> {
     dbg_step!(spawned);
-    spawned.wait()
+    dbg_reav!(spawned.wait())
 }
 
 pub fn wait_all(spawneds: Vec<Spawned>) -> Result<(), LizError> {
