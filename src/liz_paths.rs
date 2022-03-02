@@ -41,12 +41,12 @@ pub fn cd(path: &str) -> Result<(), LizError> {
 
 pub fn wd() -> Result<String, LizError> {
     dbg_call!();
-    Ok(format!(
+    dbg_reav!(Ok(format!(
         "{}",
         std::env::current_dir()
             .map_err(|err| dbg_err!(err))?
             .display()
-    ))
+    )));
 }
 
 pub fn rn(origin: &str, destiny: &str) -> Result<(), LizError> {
