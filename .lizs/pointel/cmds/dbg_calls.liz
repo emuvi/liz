@@ -3,5 +3,6 @@ local file = liz.read(path)
 local code = liz.code(file)
 local begins = code:find_all("{")
 for _, v in pairs(begins) do
-    print(v)
+    local next = code:next_not_space(v)
+    code:println(next)
 end

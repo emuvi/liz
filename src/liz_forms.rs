@@ -99,6 +99,18 @@ impl Forms {
         dbg_reav!(result);
     }
 
+    pub fn next_not_space(&self, of: usize) -> Option<usize> {
+        dbg_call!();
+        let mut index = of + 1;
+        while index < self.desk.len() {
+            if !self.desk[index].is_whitespace() {
+                dbg_reav!(Some(index));
+            }
+            index += 1;
+        }
+        dbg_reav!(None);
+    }
+
     pub fn change_all(&mut self, of: &str, to: &str) {
         dbg_call!(of, to);
         for form in &mut self.desk {
@@ -106,6 +118,16 @@ impl Forms {
                 form.term = to.into();
             }
         }
+    }
+
+    pub fn print(&self, index: usize) {
+        dbg_call!();
+        self.desk[index].print();
+    }
+
+    pub fn println(&self, index: usize) {
+        dbg_call!();
+        self.desk[index].println();
     }
 
     pub fn print_all(&self) {
@@ -171,6 +193,11 @@ impl Form {
     pub fn print(&self) {
         dbg_call!();
         print!("'{}'", self.term);
+    }
+
+    pub fn println(&self) {
+        dbg_call!();
+        println!("'{}'", self.term);
     }
 
     pub fn is_whitespace(&self) -> bool {

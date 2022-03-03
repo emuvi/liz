@@ -43,8 +43,17 @@ impl UserData for Forms {
         methods.add_method("find_all_like", |_, slf, term: String| {
             Ok(slf.find_all_like(&term))
         });
+        methods.add_method("next_not_space", |_, slf, of: usize| {
+            Ok(slf.next_not_space(of))
+        });
         methods.add_method_mut("change_all", |_, slf, (of, to): (String, String)| {
             Ok(slf.change_all(&of, &to))
+        });
+        methods.add_method("print", |_, slf, index: usize| {
+            Ok(slf.print(index))
+        });
+        methods.add_method("println", |_, slf, index: usize| {
+            Ok(slf.println(index))
         });
         methods.add_method("print_all", |_, slf, ()| Ok(slf.print_all()));
         methods.add_method("build", |_, slf, ()| Ok(slf.build()));
@@ -57,6 +66,7 @@ impl UserData for Forms {
 impl UserData for Form {
     fn add_methods<'lua, M: UserDataMethods<'lua, Self>>(methods: &mut M) {
         methods.add_method("print", |_, slf, ()| Ok(slf.print()));
+        methods.add_method("println", |_, slf, ()| Ok(slf.println()));
         methods.add_method("is_whitespace", |_, slf, ()| Ok(slf.is_whitespace()));
         methods.add_method("is_linespace", |_, slf, ()| Ok(slf.is_linespace()));
         methods.add_method("is_linebreak", |_, slf, ()| Ok(slf.is_linebreak()));
