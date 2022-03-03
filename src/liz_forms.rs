@@ -1,5 +1,7 @@
-use crate::LizError;
+use crate::liz_debug::dbg_bleb;
+use crate::liz_debug::{dbg_call, dbg_reav, dbg_seal, dbg_step, dbg_tell};
 use crate::liz_texts;
+use crate::LizError;
 
 #[derive(Debug, Clone, PartialEq)]
 pub struct Forms {
@@ -12,51 +14,93 @@ pub struct Form {
 }
 
 impl Forms {
-    pub fn edit() -> Forms {
-        Forms { desk: Vec::new() }
+    pub fn new() -> Forms {
+        dbg_reav!(Forms { desk: Vec::new() });
     }
 
-    pub fn new(desk: Vec<Form>) -> Forms {
-        Forms { desk }
+    pub fn with(desk: Vec<Form>) -> Forms {
+        dbg_reav!(Forms { desk });
     }
 
-    pub fn from(slice: &[impl AsRef<str>]) -> Forms {
-        let mut desk: Vec<Form> = Vec::with_capacity(slice.len());
-        for item in slice {
-            desk.push(Form::new(item.as_ref()));
+    pub fn take(terms: Vec<String>) -> Forms {
+        dbg_call!(terms);
+        let mut desk: Vec<Form> = Vec::with_capacity(terms.len());
+        for term in terms {
+            desk.push(dbg_step!(Form::with(term)));
         }
-        Forms { desk }
+        dbg_reav!(Forms { desk });
+    }
+
+    pub fn from(terms: &[impl AsRef<str> + std::fmt::Debug]) -> Forms {
+        dbg_call!(terms);
+        let mut desk: Vec<Form> = Vec::with_capacity(terms.len());
+        for term in terms {
+            desk.push(dbg_step!(Form::from(term.as_ref())));
+        }
+        dbg_reav!(Forms { desk });
     }
 
     pub fn len(&self) -> usize {
-        self.desk.len()
+        dbg_call!();
+        dbg_reav!(self.desk.len());
     }
 
     pub fn get(&self, index: usize) -> &Form {
-        &self.desk[index]
+        dbg_call!(index);
+        dbg_reav!(&self.desk[index]);
     }
 
     pub fn set(&mut self, index: usize, form: Form) {
+        dbg_call!(index, form);
         self.desk[index] = form;
     }
 
     pub fn add(&mut self, index: usize, form: Form) {
+        dbg_call!(index, form);
         self.desk.insert(index, form)
     }
 
     pub fn put(&mut self, form: Form) {
+        dbg_call!(form);
         self.desk.push(form)
     }
 
     pub fn del(&mut self, index: usize) -> Form {
-        self.desk.remove(index)
+        dbg_call!(index);
+        dbg_reav!(self.desk.remove(index));
     }
 
     pub fn pop(&mut self) -> Option<Form> {
-        self.desk.pop()
+        dbg_call!();
+        dbg_reav!(self.desk.pop());
+    }
+
+    pub fn find_all(&self, term: &str) -> Vec<usize> {
+        dbg_call!(term);
+        dbg_reav!(self.find_all_pred(|form| { form.is_equals(term) }));
+    }
+
+    pub fn find_all_like(&self, term: &str) -> Vec<usize> {
+        dbg_call!(term);
+        dbg_reav!(self.find_all_pred(|form| { form.is_likely(term) }));
+    }
+
+    pub fn find_all_pred<F: Fn(&Form) -> bool>(&self, pred: F) -> Vec<usize> {
+        dbg_call!();
+        let mut result = Vec::new();
+        let mut index = 0;
+        for form in &self.desk {
+            if pred(form) {
+                dbg_tell!(form, index);
+                result.push(index);
+            }
+            index += 1;
+        }
+        dbg_reav!(result);
     }
 
     pub fn change_all(&mut self, of: &str, to: &str) {
+        dbg_call!(of, to);
         for form in &mut self.desk {
             if form.term == of {
                 form.term = to.into();
@@ -65,13 +109,14 @@ impl Forms {
     }
 
     pub fn print_all(&self) {
+        dbg_call!();
         print!("[");
         let mut first = true;
         for form in &self.desk {
             if first {
                 first = false;
             } else {
-                print!(",")        
+                print!(",")
             }
             form.print();
         }
@@ -79,69 +124,98 @@ impl Forms {
     }
 
     pub fn build(&self) -> String {
+        dbg_call!();
         let mut result = String::new();
         for form in &self.desk {
             result.push_str(&form.term);
         }
-        result
+        dbg_reav!(result);
     }
 
     pub fn write(&self, path: &str) -> Result<(), LizError> {
+        dbg_call!(path);
         let contents = self.build();
-        liz_texts::write(path, contents)
+        dbg_seal!(contents);
+        liz_texts::write(path, contents).map_err(|err| dbg_bleb!(err))
     }
 }
 
 impl Form {
-    pub fn new(term: &str) -> Form {
-        Form { term: term.into() }
+    pub fn new() -> Form {
+        dbg_call!();
+        dbg_reav!(Form {
+            term: String::default()
+        });
     }
 
-    pub fn from(term: String) -> Form {
-        Form { term }
+    pub fn with(term: String) -> Form {
+        dbg_call!(term);
+        dbg_reav!(Form { term });
+    }
+
+    pub fn from(term: &str) -> Form {
+        dbg_call!(term);
+        dbg_reav!(Form { term: term.into() });
+    }
+
+    pub fn is_equals(&self, term: &str) -> bool {
+        dbg_call!(term);
+        dbg_reav!(self.term == term);
+    }
+
+    pub fn is_likely(&self, term: &str) -> bool {
+        dbg_call!(term);
+        dbg_reav!(liz_texts::is_likely(&self.term, term));
     }
 
     pub fn print(&self) {
+        dbg_call!();
         print!("'{}'", self.term);
     }
 
     pub fn is_whitespace(&self) -> bool {
-        !self.term.chars().any(|ch| !ch.is_whitespace())
+        dbg_call!();
+        dbg_reav!(!self.term.chars().any(|ch| !ch.is_whitespace()));
     }
 
     pub fn is_linespace(&self) -> bool {
-        !self
+        dbg_call!();
+        dbg_reav!(!self
             .term
             .chars()
-            .any(|ch| LINE_SPACE_CHARS.iter().any(|item| ch != *item))
+            .any(|ch| LINE_SPACE_CHARS.iter().any(|item| ch != *item)));
     }
 
     pub fn is_linebreak(&self) -> bool {
-        !self
+        dbg_call!();
+        dbg_reav!(!self
             .term
             .chars()
-            .any(|ch| LINE_BREAK_CHARS.iter().any(|item| ch != *item))
+            .any(|ch| LINE_BREAK_CHARS.iter().any(|item| ch != *item)));
     }
 
     pub fn is_code_brackets(&self) -> bool {
-        !self
+        dbg_call!();
+        dbg_reav!(!self
             .term
             .chars()
-            .any(|ch| CODE_BRACKETS_CHARS.iter().any(|item| ch != *item))
+            .any(|ch| CODE_BRACKETS_CHARS.iter().any(|item| ch != *item)));
     }
 
     pub fn is_text_brackets(&self) -> bool {
-        !self
+        dbg_call!();
+        dbg_reav!(!self
             .term
             .chars()
-            .any(|ch| TEXT_BRACKETS_CHARS.iter().any(|item| ch != *item))
+            .any(|ch| TEXT_BRACKETS_CHARS.iter().any(|item| ch != *item)));
     }
 
     pub fn is_text_quotation(&self) -> bool {
-        !self
+        dbg_call!();
+        dbg_reav!(!self
             .term
             .chars()
-            .any(|ch| TEXT_QUOTATION_CHARS.iter().any(|item| ch != *item))
+            .any(|ch| TEXT_QUOTATION_CHARS.iter().any(|item| ch != *item)));
     }
 }
 

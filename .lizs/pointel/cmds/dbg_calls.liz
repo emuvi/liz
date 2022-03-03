@@ -1,0 +1,7 @@
+local path = liz.args[1]
+local file = liz.read(path)
+local code = liz.code(file)
+local begins = code:find_all("{")
+for _, v in pairs(begins) do
+    print(v)
+end

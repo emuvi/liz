@@ -26,7 +26,7 @@ pub fn is_verbose() -> bool {
 pub fn set_verbose(verbose: bool) {
     VERBOSE.store(verbose, Ordering::Release);
     if is_verbose() {
-        dbg_inf!("Verbose started");
+        dbg_info!("Verbose started");
     }
 }
 
@@ -37,7 +37,7 @@ pub fn is_archive() -> bool {
 pub fn set_archive(archive: bool) {
     ARCHIVE.store(archive, Ordering::Release);
     if is_archive() {
-        dbg_inf!("Archive started");
+        dbg_info!("Archive started");
     }
 }
 
@@ -47,6 +47,22 @@ pub fn get_dbg_size() -> usize {
 
 pub fn set_dbg_size(size: usize) {
     DBGSIZE.store(size, Ordering::Release)
+}
+
+pub fn set_dbg_calls() {
+    set_dbg_size(1)
+}
+
+pub fn set_dbg_reavs() {
+    set_dbg_size(2)
+}
+
+pub fn set_dbg_steps() {
+    set_dbg_size(3)
+}
+
+pub fn set_dbg_tells() {
+    set_dbg_size(4)
 }
 
 pub fn debug(message: impl AsRef<str>) {
@@ -78,11 +94,11 @@ pub fn throw(message: String) -> Box<MessageErr> {
     Box::new(MessageErr::of(message))
 }
 
-pub fn debug_inf(file: &str, line: u32, func: &str, vals: String, err: impl Display) -> String {
+pub fn debug_info(file: &str, line: u32, func: &str, vals: String, err: impl Display) -> String {
     debug_make("INFO", file, line, func, vals, err)
 }
 
-pub fn debug_ebb(file: &str, line: u32, func: &str, vals: String, err: LizError) -> LizError {
+pub fn debug_bleb(file: &str, line: u32, func: &str, vals: String, err: LizError) -> LizError {
     let from = format!("{}", err);
     let from = if let Some(pos) = from.rfind(" on (") {
         &from[pos + 4..]
@@ -94,11 +110,11 @@ pub fn debug_ebb(file: &str, line: u32, func: &str, vals: String, err: LizError)
     err
 }
 
-pub fn debug_err(file: &str, line: u32, func: &str, vals: String, err: impl Display) -> LizError {
+pub fn debug_erro(file: &str, line: u32, func: &str, vals: String, err: impl Display) -> LizError {
     throw(debug_make("ERRO", file, line, func, vals, err))
 }
 
-pub fn debug_trw(
+pub fn debug_jolt(
     kind: &str,
     file: &str,
     line: u32,
@@ -109,7 +125,7 @@ pub fn debug_trw(
     throw(debug_make(kind, file, line, func, vals, err))
 }
 
-pub fn debug_knd(
+pub fn debug_kind(
     kind: &str,
     file: &str,
     line: u32,
@@ -132,9 +148,21 @@ pub fn debug_reav(file: &str, line: u32, func: &str, vals: String) {
     }
 }
 
+pub fn debug_seal(file: &str, line: u32, func: &str, vals: String) {
+    if get_dbg_size() >= 3 {
+        debug_make("DBUG", file, line, func, vals, "[SEAL]");
+    }
+}
+
 pub fn debug_step(file: &str, line: u32, func: &str, vals: String) {
     if get_dbg_size() >= 3 {
         debug_make("DBUG", file, line, func, vals, "[STEP]");
+    }
+}
+
+pub fn debug_tell(file: &str, line: u32, func: &str, vals: String) {
+    if get_dbg_size() >= 4 {
+        debug_make("DBUG", file, line, func, vals, "[TELL]");
     }
 }
 
@@ -158,15 +186,15 @@ pub fn debug_make(
     message
 }
 
-macro_rules! dbg_fnc {
+macro_rules! dbg_func {
     () => {{
         fn f() {}
-        let name = crate::liz_debug::dbg_fnm!(f);
+        let name = crate::liz_debug::dbg_fnam!(f);
         &name[..name.len() - 3].trim_end_matches("::{{closure}}")
     }};
 }
 
-macro_rules! dbg_fnm {
+macro_rules! dbg_fnam {
     ($val:expr) => {{
         fn type_name_of<T>(_: T) -> &'static str {
             std::any::type_name::<T>()
@@ -175,7 +203,7 @@ macro_rules! dbg_fnm {
     }};
 }
 
-macro_rules! dbg_fvl {
+macro_rules! dbg_fval {
     ($v:expr) => {{
         let mut value = format!("{:?}", $v);
         if value.len() > 300 {
@@ -189,71 +217,74 @@ macro_rules! dbg_fvl {
     }};
 }
 
-macro_rules! dbg_fmr {
+macro_rules! dbg_fmts {
     () => (String::default());
-    ($v:expr) => (format!("result = {}", crate::liz_debug::dbg_fvl!(&$v)));
-    ($v:expr, $($n:expr),+) => (format!("result = {} , {}", crate::liz_debug::dbg_fvl!(&$v), crate::liz_debug::dbg_fmr!($($n),+)));
+    ($v:expr) => (format!("{} = {{{}}}", stringify!($v), crate::liz_debug::dbg_fval!(&$v)));
+    ($v:expr, $($n:expr),+) => (format!("{} = {{{}}} , {}", stringify!($v), crate::liz_debug::dbg_fval!(&$v), crate::liz_debug::dbg_fmts!($($n),+)));
 }
 
-macro_rules! dbg_fmt {
-    () => (String::default());
-    ($v:expr) => (format!("{} = {}", stringify!($v), crate::liz_debug::dbg_fvl!(&$v)));
-    ($v:expr, $($n:expr),+) => (format!("{} = {} , {}", stringify!($v), crate::liz_debug::dbg_fvl!(&$v), crate::liz_debug::dbg_fmt!($($n),+)));
+macro_rules! dbg_fmsn {
+    () => {
+        String::default()
+    };
+    ($v:expr) => {
+        format!("{{{}}}", crate::liz_debug::dbg_fval!(&$v))
+    };
 }
 
-macro_rules! dbg_inf {
+macro_rules! dbg_info {
     ($err:expr) => (
-        crate::liz_debug::debug_inf(file!(), line!(), crate::liz_debug::dbg_fnc!(), crate::liz_debug::dbg_fmt!(), $err)
+        crate::liz_debug::debug_info(file!(), line!(), crate::liz_debug::dbg_func!(), crate::liz_debug::dbg_fmts!(), $err)
     );
     ($err:expr, $($v:expr),+) => (
-        crate::liz_debug::debug_inf(file!(), line!(), crate::liz_debug::dbg_fnc!(), crate::liz_debug::dbg_fmt!($($v),+), $err)
+        crate::liz_debug::debug_info(file!(), line!(), crate::liz_debug::dbg_func!(), crate::liz_debug::dbg_fmts!($($v),+), $err)
     );
 }
 
-macro_rules! dbg_err {
+macro_rules! dbg_erro {
     ($err:expr) => (
-        crate::liz_debug::debug_err(file!(), line!(), crate::liz_debug::dbg_fnc!(), crate::liz_debug::dbg_fmt!(), $err)
+        crate::liz_debug::debug_erro(file!(), line!(), crate::liz_debug::dbg_func!(), crate::liz_debug::dbg_fmts!(), $err)
     );
     ($err:expr, $($v:expr),+) => (
-        crate::liz_debug::debug_err(file!(), line!(), crate::liz_debug::dbg_fnc!(), crate::liz_debug::dbg_fmt!($($v),+), $err)
+        crate::liz_debug::debug_erro(file!(), line!(), crate::liz_debug::dbg_func!(), crate::liz_debug::dbg_fmts!($($v),+), $err)
     );
 }
 
-macro_rules! dbg_ebb {
+macro_rules! dbg_bleb {
     ($err:expr) => (
-        crate::liz_debug::debug_ebb(file!(), line!(), crate::liz_debug::dbg_fnc!(), crate::liz_debug::dbg_fmt!(), $err)
+        crate::liz_debug::debug_bleb(file!(), line!(), crate::liz_debug::dbg_func!(), crate::liz_debug::dbg_fmts!(), $err)
     );
     ($err:expr, $($v:expr),+) => (
-        crate::liz_debug::debug_ebb(file!(), line!(), crate::liz_debug::dbg_fnc!(), crate::liz_debug::dbg_fmt!($($v),+), $err)
+        crate::liz_debug::debug_bleb(file!(), line!(), crate::liz_debug::dbg_func!(), crate::liz_debug::dbg_fmts!($($v),+), $err)
     );
 }
 
-macro_rules! dbg_trw {
+macro_rules! dbg_jolt {
     ($kind:expr, $msg:expr) => (
-        crate::liz_debug::debug_trw($kind, file!(), line!(), crate::liz_debug::dbg_fnc!(), crate::liz_debug::dbg_fmt!(), $msg)
+        crate::liz_debug::debug_jolt($kind, file!(), line!(), crate::liz_debug::dbg_func!(), crate::liz_debug::dbg_fmts!(), $msg)
     );
     ($kind:expr, $msg:expr, $($v:expr),+) => (
-        crate::liz_debug::debug_trw($kind, file!(), line!(), crate::liz_debug::dbg_fnc!(), crate::liz_debug::dbg_fmt!($($v),+), $msg)
+        crate::liz_debug::debug_jolt($kind, file!(), line!(), crate::liz_debug::dbg_func!(), crate::liz_debug::dbg_fmts!($($v),+), $msg)
     );
 }
 
-macro_rules! dbg_knd {
+macro_rules! dbg_kind {
     ($kind:expr, $msg:expr) => (
-        crate::liz_debug::debug_knd($kind, file!(), line!(), crate::liz_debug::dbg_fnc!(), crate::liz_debug::dbg_fmt!(), $msg)
+        crate::liz_debug::debug_kind($kind, file!(), line!(), crate::liz_debug::dbg_func!(), crate::liz_debug::dbg_fmts!(), $msg)
     );
     ($kind:expr, $msg:expr, $($v:expr),+) => (
-        crate::liz_debug::debug_knd($kind, file!(), line!(), crate::liz_debug::dbg_fnc!(), crate::liz_debug::dbg_fmt!($($v),+), $msg)
+        crate::liz_debug::debug_kind($kind, file!(), line!(), crate::liz_debug::dbg_func!(), crate::liz_debug::dbg_fmts!($($v),+), $msg)
     );
 }
 
 macro_rules! dbg_call {
     () => (
         #[cfg(debug_assertions)]
-        crate::liz_debug::debug_call(file!(), line!(), crate::liz_debug::dbg_fnc!(), String::default())
+        crate::liz_debug::debug_call(file!(), line!(), crate::liz_debug::dbg_func!(), String::default())
     );
     ($($v:expr),+) => (
         #[cfg(debug_assertions)]
-        crate::liz_debug::debug_call(file!(), line!(), crate::liz_debug::dbg_fnc!(), crate::liz_debug::dbg_fmt!($($v),+))
+        crate::liz_debug::debug_call(file!(), line!(), crate::liz_debug::dbg_func!(), crate::liz_debug::dbg_fmts!($($v),+))
     );
 }
 
@@ -264,39 +295,64 @@ macro_rules! dbg_reav {
         crate::liz_debug::debug_reav(
             file!(),
             line!(),
-            crate::liz_debug::dbg_fnc!(),
-            crate::liz_debug::dbg_fmr!(result),
+            crate::liz_debug::dbg_func!(),
+            crate::liz_debug::dbg_fmsn!(result),
         );
         return result;
     }};
 }
 
-macro_rules! dbg_step {
+macro_rules! dbg_seal {
     () => (
         #[cfg(debug_assertions)]
-        crate::liz_debug::debug_step(file!(), line!(), crate::liz_debug::dbg_fnc!(), String::default())
+        crate::liz_debug::debug_seal(file!(), line!(), crate::liz_debug::dbg_func!(), String::default())
     );
-    ($($v:ident),+) => (
+    ($($v:expr),+) => (
         #[cfg(debug_assertions)]
-        crate::liz_debug::debug_step(file!(), line!(), crate::liz_debug::dbg_fnc!(), crate::liz_debug::dbg_fmt!($($v),+))
+        crate::liz_debug::debug_seal(file!(), line!(), crate::liz_debug::dbg_func!(), crate::liz_debug::dbg_fmts!($($v),+))
     );
 }
 
-pub(crate) use {dbg_call, dbg_reav, dbg_step};
-pub(crate) use {dbg_ebb, dbg_err, dbg_inf, dbg_knd, dbg_trw};
-pub(crate) use {dbg_fmr, dbg_fmt, dbg_fnc, dbg_fnm, dbg_fvl};
+macro_rules! dbg_step {
+    ($xp:expr) => {{
+        let step = $xp;
+        #[cfg(debug_assertions)]
+        crate::liz_debug::debug_step(
+            file!(),
+            line!(),
+            crate::liz_debug::dbg_func!(),
+            crate::liz_debug::dbg_fmsn!(step),
+        );
+        step
+    }};
+}
+
+macro_rules! dbg_tell {
+    () => (
+        #[cfg(debug_assertions)]
+        crate::liz_debug::debug_tell(file!(), line!(), crate::liz_debug::dbg_func!(), String::default())
+    );
+    ($($v:expr),+) => (
+        #[cfg(debug_assertions)]
+        crate::liz_debug::debug_tell(file!(), line!(), crate::liz_debug::dbg_func!(), crate::liz_debug::dbg_fmts!($($v),+))
+    );
+}
+
+pub(crate) use {dbg_bleb, dbg_erro, dbg_info, dbg_jolt, dbg_kind};
+pub(crate) use {dbg_call, dbg_reav, dbg_seal, dbg_step, dbg_tell};
+pub(crate) use {dbg_fmsn, dbg_fmts, dbg_fnam, dbg_func, dbg_fval};
 
 #[macro_export]
-macro_rules! liz_dbg_fnc {
+macro_rules! liz_dbg_func {
     () => {{
         fn f() {}
-        let name = liz::liz_dbg_fnm!(f);
+        let name = liz::liz_dbg_fnam!(f);
         &name[..name.len() - 3].trim_end_matches("::{{closure}}")
     }};
 }
 
 #[macro_export]
-macro_rules! liz_dbg_fnm {
+macro_rules! liz_dbg_fnam {
     ($val:expr) => {{
         fn type_name_of<T>(_: T) -> &'static str {
             std::any::type_name::<T>()
@@ -306,7 +362,7 @@ macro_rules! liz_dbg_fnm {
 }
 
 #[macro_export]
-macro_rules! liz_dbg_fvl {
+macro_rules! liz_dbg_fval {
     ($v:expr) => {{
         let mut value = format!("{:?}", $v);
         if value.len() > 300 {
@@ -322,66 +378,69 @@ macro_rules! liz_dbg_fvl {
 }
 
 #[macro_export]
-macro_rules! liz_dbg_fmr {
+macro_rules! liz_dbg_fmts {
     () => (String::default());
-    ($v:expr) => (format!("result = {}", liz::liz_dbg_fvl!(&$v)));
-    ($v:expr, $($n:expr),+) => (format!("result = {} , {}", liz::liz_dbg_fvl!(&$v), liz::liz_dbg_fmr!($($n),+)));
+    ($v:expr) => (format!("{} = {{{}}}", stringify!($v), liz::liz_dbg_fval!(&$v)));
+    ($v:expr, $($n:expr),+) => (format!("{} = {{{}}} , {}", stringify!($v), liz::liz_dbg_fval!(&$v), liz::liz_dbg_fmts!($($n),+)));
 }
 
 #[macro_export]
-macro_rules! liz_dbg_fmt {
-    () => (String::default());
-    ($v:expr) => (format!("{} = {}", stringify!($v), liz::liz_dbg_fvl!(&$v)));
-    ($v:expr, $($n:expr),+) => (format!("{} = {} , {}", stringify!($v), liz::liz_dbg_fvl!(&$v), liz::liz_dbg_fmt!($($n),+)));
+macro_rules! liz_dbg_fmsn {
+    () => {
+        String::default()
+    };
+    ($v:expr) => {
+        format!("{{{}}}", liz::liz_dbg_fval!(&$v))
+    };
 }
 
 #[macro_export]
-macro_rules! liz_dbg_inf {
+macro_rules! liz_dbg_info {
     ($msg:expr) => (
-        liz::liz_debug::debug_inf(file!(), line!(), liz::liz_dbg_fnc!(), liz::liz_dbg_fmt!(), $msg)
+        liz::liz_debug::debug_info(file!(), line!(), liz::liz_dbg_func!(), liz::liz_dbg_fmts!(), $msg)
     );
     ($msg:expr, $($v:expr),+) => (
-        liz::liz_debug::debug_inf(file!(), line!(), liz::liz_dbg_fnc!(), liz::liz_dbg_fmt!($($v),+), $msg)
+        liz::liz_debug::debug_info(file!(), line!(), liz::liz_dbg_func!(), liz::liz_dbg_fmts!($($v),+), $msg)
     );
 }
 
 #[macro_export]
-macro_rules! liz_dbg_ebb {
+macro_rules! liz_dbg_bleb {
     ($err:expr) => (
-        liz::liz_debug::debug_ebb(file!(), line!(), liz::liz_dbg_fnc!(), liz::liz_dbg_fmt!(), $err)
+        liz::liz_debug::debug_bleb(file!(), line!(), liz::liz_dbg_func!(), liz::liz_dbg_fmts!(), $err)
     );
     ($err:expr, $($v:expr),+) => (
-        liz::liz_debug::debug_ebb(file!(), line!(), liz::liz_dbg_fnc!(), liz::liz_dbg_fmt!($($v),+), $err)
+        liz::liz_debug::debug_bleb(file!(), line!(), liz::liz_dbg_func!(), liz::liz_dbg_fmts!($($v),+), $err)
     );
 }
 
 #[macro_export]
-macro_rules! liz_dbg_err {
+macro_rules! liz_dbg_erro {
     ($msg:expr) => (
-        liz::liz_debug::debug_err(file!(), line!(), liz::liz_dbg_fnc!(), liz::liz_dbg_fmt!(), $msg)
+        liz::liz_debug::debug_erro(file!(), line!(), liz::liz_dbg_func!(), liz::liz_dbg_fmts!(), $msg)
     );
     ($msg:expr, $($v:expr),+) => (
-        liz::liz_debug::debug_err(file!(), line!(), liz::liz_dbg_fnc!(), liz::liz_dbg_fmt!($($v),+), $msg)
+        liz::liz_debug::debug_erro(file!(), line!(), liz::liz_dbg_func!(), liz::liz_dbg_fmts!($($v),+), $msg)
     );
 }
 
 #[macro_export]
-macro_rules! liz_dbg_trw {
+macro_rules! liz_dbg_jolt {
     ($kind:expr, $msg:expr) => (
-        liz::liz_debug::debug_thw($kind, file!(), line!(), liz::liz_debug::dbg_fnc!(), liz::liz_debug::dbg_fmt!(), $msg)
+        liz::liz_debug::debug_jolt($kind, file!(), line!(), liz::liz_debug::dbg_func!(), liz::liz_debug::dbg_fmts!(), $msg)
     );
     ($kind:expr, $msg:expr, $($v:expr),+) => (
-        liz::liz_debug::debug_thw($kind, file!(), line!(), liz::liz_debug::dbg_fnc!(), liz::liz_debug::dbg_fmt!($($v),+), $msg)
+        liz::liz_debug::debug_jolt($kind, file!(), line!(), liz::liz_debug::dbg_func!(), liz::liz_debug::dbg_fmts!($($v),+), $msg)
     );
 }
 
 #[macro_export]
-macro_rules! liz_dbg_knd {
+macro_rules! liz_dbg_kind {
     ($kind:expr, $msg:expr) => (
-        liz::liz_debug::debug_knd($kind, file!(), line!(), liz::liz_debug::dbg_fnc!(), liz::liz_debug::dbg_fmt!(), $msg)
+        liz::liz_debug::debug_kind($kind, file!(), line!(), liz::liz_debug::dbg_func!(), liz::liz_debug::dbg_fmts!(), $msg)
     );
     ($kind:expr, $msg:expr, $($v:expr),+) => (
-        liz::liz_debug::debug_knd($kind, file!(), line!(), liz::liz_debug::dbg_fnc!(), liz::liz_debug::dbg_fmt!($($v),+), $msg)
+        liz::liz_debug::debug_kind($kind, file!(), line!(), liz::liz_debug::dbg_func!(), liz::liz_debug::dbg_fmts!($($v),+), $msg)
     );
 }
 
@@ -389,11 +448,11 @@ macro_rules! liz_dbg_knd {
 macro_rules! liz_dbg_call {
     () => (
         #[cfg(debug_assertions)]
-        liz::liz_debug::debug_call(file!(), line!(), liz::liz_dbg_fnc!(), String::default())
+        liz::liz_debug::debug_call(file!(), line!(), liz::liz_dbg_func!(), String::default())
     );
-    ($($v:ident),+) => (
+    ($($v:expr),+) => (
         #[cfg(debug_assertions)]
-        liz::liz_debug::debug_call(file!(), line!(), liz::liz_dbg_fnc!(), liz::liz_dbg_fmt!($($v),+))
+        liz::liz_debug::debug_call(file!(), line!(), liz::liz_dbg_func!(), liz::liz_dbg_fmts!($($v),+))
     );
 }
 
@@ -405,22 +464,49 @@ macro_rules! liz_dbg_reav {
         liz::liz_debug::debug_reav(
             file!(),
             line!(),
-            liz::liz_dbg_fnc!(),
-            liz::liz_dbg_fmr!(result),
+            liz::liz_dbg_func!(),
+            liz::liz_dbg_fmsn!(result),
         );
         return result;
     }};
 }
 
 #[macro_export]
-macro_rules! liz_dbg_step {
+macro_rules! liz_dbg_seal {
     () => (
         #[cfg(debug_assertions)]
-        liz::liz_debug::debug_step(file!(), line!(), liz::liz_dbg_fnc!(), String::default())
+        liz::liz_debug::debug_seal(file!(), line!(), liz::liz_dbg_func!(), String::default())
     );
-    ($($v:ident),+) => (
+    ($($v:expr),+) => (
         #[cfg(debug_assertions)]
-        liz::liz_debug::debug_step(file!(), line!(), liz::liz_dbg_fnc!(), liz::liz_dbg_fmt!($($v),+))
+        liz::liz_debug::debug_seal(file!(), line!(), liz::liz_dbg_func!(), liz::liz_dbg_fmts!($($v),+))
+    );
+}
+
+#[macro_export]
+macro_rules! liz_dbg_step {
+    ($xp:expr) => {{
+        let result = $xp;
+        #[cfg(debug_assertions)]
+        liz::liz_debug::debug_step(
+            file!(),
+            line!(),
+            liz::liz_dbg_func!(),
+            liz::liz_dbg_fmsn!(result),
+        );
+        return result;
+    }};
+}
+
+#[macro_export]
+macro_rules! liz_dbg_tell {
+    () => (
+        #[cfg(debug_assertions)]
+        liz::liz_debug::debug_tell(file!(), line!(), liz::liz_dbg_func!(), String::default())
+    );
+    ($($v:expr),+) => (
+        #[cfg(debug_assertions)]
+        liz::liz_debug::debug_tell(file!(), line!(), liz::liz_dbg_func!(), liz::liz_dbg_fmts!($($v),+))
     );
 }
 

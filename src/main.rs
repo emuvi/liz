@@ -1,5 +1,5 @@
 use liz::LizError;
-use liz::{liz_dbg_ebb, liz_dbg_err, liz_dbg_inf};
+use liz::{liz_dbg_bleb, liz_dbg_erro, liz_dbg_info};
 
 fn main() -> Result<(), LizError> {
     let mut race_paths: Vec<String> = Vec::new();
@@ -18,8 +18,16 @@ fn main() -> Result<(), LizError> {
                 liz::liz_debug::set_verbose(true);
             } else if arg == "-a" || arg == "--archive" {
                 liz::liz_debug::set_archive(true);
-            } else if arg == "-u" || arg == "--update" {
+            } else if arg == "-lu" || arg == "--lizs-update" {
                 liz::liz_codes::set_update_lizs(true);
+            } else if arg == "-dc" || arg == "--debug-calls" {
+                liz::liz_debug::set_dbg_calls();
+            } else if arg == "-dr" || arg == "--debug-reavs" {
+                liz::liz_debug::set_dbg_reavs();
+            } else if arg == "-ds" || arg == "--debug-steps" {
+                liz::liz_debug::set_dbg_steps();
+            } else if arg == "-dt" || arg == "--debug-tells" {
+                liz::liz_debug::set_dbg_tells();
             } else if arg == "--" {
                 script_args = true;
             } else if arg.ends_with(".liz") || arg.ends_with(".lua") {
@@ -27,7 +35,7 @@ fn main() -> Result<(), LizError> {
             } else if !first_arg && !arg.starts_with("-") {
                 race_paths.push(arg);
             } else if !first_arg {
-                return Err(liz_dbg_err!("Could not understand an argument", arg));
+                return Err(liz_dbg_erro!("Could not understand an argument", arg));
             }
         } else {
             if let Some(ref mut to_rise_args) = rise_args {
@@ -45,11 +53,11 @@ fn main() -> Result<(), LizError> {
     }
     let first_path = &race_paths[0];
     let (rise_path, handler) =
-        liz::rise(first_path, &rise_args).map_err(|err| liz_dbg_ebb!(err))?;
+        liz::rise(first_path, &rise_args).map_err(|err| liz_dbg_bleb!(err))?;
     race_paths[0] = rise_path;
     for race_path in race_paths {
-        let results = liz::race(&race_path, &handler).map_err(|err| liz_dbg_ebb!(err))?;
-        liz_dbg_inf!("Race finished", race_path, results);
+        let results = liz::race(&race_path, &handler).map_err(|err| liz_dbg_bleb!(err))?;
+        liz_dbg_info!("Race finished", race_path, results);
     }
     Ok(())
 }
@@ -65,9 +73,15 @@ USAGE:
     liz [FLAGS] [PATH]... [-- ARGS] 
 
 FLAGS:
-    -v, --verbose   Prints the verbose information;
-    -V, --version   Prints the version information;
-    -h, --help      Prints the usage information;
+    -V, --version       Prints the version information.
+    -v, --verbose       Prints the verbose information.
+    -a, --archive       Saves the archive log on a file.
+    -lu, --lizs-update  Updates the lizs scrips on each call.
+    -dc, --debug-calls  If liz has debug symbols, debugs the functions calls.
+    -dr, --debug-reavs  If liz has debug symbols, debugs the functions returns.
+    -ds, --debug-steps  If liz has debug symbols, debugs the functions operations.
+    -dt, --debug-tells  If liz has debug symbols, debugs the functions iterations.
+    -h, --help          Prints this usage information.
 
 PATH:
     Address of the script to be loaded and executed. It is not necessary to put the extension .liz but if no path was specified, Liz will try to execute the ./start.liz path.

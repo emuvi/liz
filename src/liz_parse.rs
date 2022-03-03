@@ -287,13 +287,13 @@ impl BlockParserHelper {
 
     fn commit_accrued(&mut self) {
         if !self.accrued.is_empty() {
-            self.result.push(Form::from(self.accrued.clone()));
+            self.result.push(Form::with(self.accrued.clone()));
             self.accrued.clear();
         }
     }
 
     fn got_form(&mut self, from: String) {
-        self.result.push(Form::from(from));
+        self.result.push(Form::with(from));
     }
 }
 
@@ -414,7 +414,7 @@ impl<'a> Parser for BlockParser<'a> {
             index += 1;
         }
         helper.commit_accrued();
-        Forms::new(helper.result)
+        Forms::with(helper.result)
     }
 }
 
