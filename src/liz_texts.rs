@@ -7,6 +7,11 @@ use crate::liz_debug::{dbg_erro};
 use crate::liz_debug::{dbg_call, dbg_reav, dbg_tell};
 use crate::LizError;
 
+pub static LINE_SPACE_CHARS: &[char] = &[' ', '\t'];
+pub static LINE_BREAK_CHARS: &[char] = &['\n', '\r'];
+pub static BRACKETS_CHARS: &[char] = &['(', ')', '[', ']', '{', '}', '<', '>'];
+pub static QUOTATION_CHARS: &[char] = &['\'', '"'];
+
 pub fn ask(message: &str) -> Result<String, LizError> {
     dbg_call!(message);
     print!("{}", message);
@@ -88,6 +93,11 @@ pub fn is_ascii(text: &str) -> bool {
     text.is_ascii()
 }
 
+pub fn is_equals(text: &str, with: &str) -> bool {
+    dbg_call!(text, with);
+    dbg_reav!(text == with);
+}
+
 pub fn is_likely(text: &str, with: &str) -> bool {
     dbg_call!(text, with);
     let mut side_a = text.chars();
@@ -111,6 +121,39 @@ pub fn is_likely(text: &str, with: &str) -> bool {
         }
     }
     dbg_reav!(true);
+}
+
+pub fn is_whitespace(text: &str) -> bool {
+    dbg_call!();
+    dbg_reav!(!text.chars().any(|ch| !ch.is_whitespace()));
+}
+
+pub fn is_linespace(text: &str) -> bool {
+    dbg_call!();
+    dbg_reav!(!text
+        .chars()
+        .any(|ch| LINE_SPACE_CHARS.iter().any(|item| ch != *item)));
+}
+
+pub fn is_linebreak(text: &str) -> bool {
+    dbg_call!();
+    dbg_reav!(!text
+        .chars()
+        .any(|ch| LINE_BREAK_CHARS.iter().any(|item| ch != *item)));
+}
+
+pub fn is_brackets(text: &str) -> bool {
+    dbg_call!();
+    dbg_reav!(!text
+        .chars()
+        .any(|ch| BRACKETS_CHARS.iter().any(|item| ch != *item)));
+}
+
+pub fn is_quotation(text: &str) -> bool {
+    dbg_call!();
+    dbg_reav!(!text
+        .chars()
+        .any(|ch| QUOTATION_CHARS.iter().any(|item| ch != *item)));
 }
 
 pub fn tolower(text: &str) -> String {

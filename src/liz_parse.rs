@@ -1,28 +1,28 @@
 use crate::liz_forms;
 
-pub fn parse_group_whitespace(forms: &mut Vec<String>) -> usize {
-    parse_group_whitespace_on(forms, 0, liz_forms::forms_len(forms))
+pub fn rig_group_whitespace(forms: &mut Vec<String>) -> usize {
+    rig_group_whitespace_on(forms, 0, liz_forms::kit_len(forms))
 }
 
-pub fn parse_group_whitespace_on(forms: &mut Vec<String>, from: usize, till: usize) -> usize {
-    parse_group_near_ask_on(forms, from, till, |ch| ch.is_whitespace())
+pub fn rig_group_whitespace_on(forms: &mut Vec<String>, from: usize, till: usize) -> usize {
+    rig_group_near_ask_on(forms, from, till, |ch| ch.is_whitespace())
 }
 
-pub fn parse_split_whitespace(forms: &mut Vec<String>) -> usize {
-    parse_split_whitespace_on(forms, 0, liz_forms::forms_len(forms))
+pub fn rig_split_whitespace(forms: &mut Vec<String>) -> usize {
+    rig_split_whitespace_on(forms, 0, liz_forms::kit_len(forms))
 }
 
-pub fn parse_split_whitespace_on(forms: &mut Vec<String>, from: usize, till: usize) -> usize {
-    parse_split_near_ask_on(forms, from, till, |ch| ch.is_whitespace())
+pub fn rig_split_whitespace_on(forms: &mut Vec<String>, from: usize, till: usize) -> usize {
+    rig_split_near_ask_on(forms, from, till, |ch| ch.is_whitespace())
 }
 
-pub fn parse_group_near_ask_on<F: Fn(char) -> bool>(
+pub fn rig_group_near_ask_on<F: Fn(char) -> bool>(
     forms: &mut Vec<String>,
     from: usize,
     till: usize,
     ask: F,
 ) -> usize {
-    let mut range = parse_del_range(forms, from, till);
+    let mut range = rig_del_range(forms, from, till);
     let mut results = Vec::new();
     loop {
         if range.is_empty() {
@@ -52,17 +52,17 @@ pub fn parse_group_near_ask_on<F: Fn(char) -> bool>(
         }
     }
     let result = results.len();
-    parse_put_range(forms, from, results);
+    rig_put_range(forms, from, results);
     result
 }
 
-pub fn parse_split_near_ask_on<F: Fn(char) -> bool>(
+pub fn rig_split_near_ask_on<F: Fn(char) -> bool>(
     forms: &mut Vec<String>,
     from: usize,
     till: usize,
     ask: F,
 ) -> usize {
-    let range = parse_del_range(forms, from, till);
+    let range = rig_del_range(forms, from, till);
     let mut helps = ParserHelper::new();
     let mut state = false;
     for form in range {
@@ -77,23 +77,23 @@ pub fn parse_split_near_ask_on<F: Fn(char) -> bool>(
     helps.commit_accrued();
     let range = helps.results;
     let result = range.len();
-    parse_put_range(forms, from, range);
+    rig_put_range(forms, from, range);
     result
 }
 
-pub fn parse_del_range(forms: &mut Vec<String>, from: usize, till: usize) -> Vec<String> {
+pub fn rig_del_range(forms: &mut Vec<String>, from: usize, till: usize) -> Vec<String> {
     let size = till - from;
     let mut result = Vec::with_capacity(size);
     for _ in 0..size {
-        result.push(liz_forms::forms_del(forms, from));
+        result.push(liz_forms::kit_del(forms, from));
     }
     result
 }
 
-pub fn parse_put_range(forms: &mut Vec<String>, on: usize, range: Vec<String>) {
+pub fn rig_put_range(forms: &mut Vec<String>, on: usize, range: Vec<String>) {
     let mut delta = 0;
     for form in range {
-        liz_forms::forms_add(forms, on + delta, form);
+        liz_forms::kit_add(forms, on + delta, form);
         delta += 1;
     }
 }

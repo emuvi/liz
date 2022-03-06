@@ -183,88 +183,80 @@ pub fn desk(terms: Vec<String>) -> Forms {
 impl UserData for Forms {
     fn add_methods<'lua, M: UserDataMethods<'lua, Self>>(methods: &mut M) {
         // Basic Methods
-        methods.add_method("len", |_, slf, ()| Ok(liz_forms::forms_len(&slf.desk)));
+        methods.add_method("len", |_, slf, ()| Ok(liz_forms::kit_len(&slf.desk)));
 
         methods.add_method("get", |_, slf, index: usize| {
-            Ok(liz_forms::forms_get(&slf.desk, index).to_string())
+            Ok(liz_forms::kit_get(&slf.desk, index).to_string())
         });
 
         methods.add_method_mut("set", |_, slf, (index, form): (usize, String)| {
-            Ok(liz_forms::forms_set(&mut slf.desk, index, form))
+            Ok(liz_forms::kit_set(&mut slf.desk, index, form))
         });
 
         methods.add_method_mut("add", |_, slf, (index, form): (usize, String)| {
-            Ok(liz_forms::forms_add(&mut slf.desk, index, form))
+            Ok(liz_forms::kit_add(&mut slf.desk, index, form))
         });
 
         methods.add_method_mut("put", |_, slf, form: String| {
-            Ok(liz_forms::forms_put(&mut slf.desk, form))
+            Ok(liz_forms::kit_put(&mut slf.desk, form))
         });
 
         methods.add_method_mut("del", |_, slf, index: usize| {
-            Ok(liz_forms::forms_del(&mut slf.desk, index))
+            Ok(liz_forms::kit_del(&mut slf.desk, index))
         });
 
-        methods.add_method_mut("pop", |_, slf, ()| Ok(liz_forms::forms_pop(&mut slf.desk)));
+        methods.add_method_mut("pop", |_, slf, ()| Ok(liz_forms::kit_pop(&mut slf.desk)));
 
         // Find Methods
         methods.add_method("find_all", |_, slf, term: String| {
-            Ok(liz_forms::forms_find_all(&slf.desk, &term))
+            Ok(liz_forms::kit_find_all(&slf.desk, &term))
         });
 
         methods.add_method("find_all_like", |_, slf, term: String| {
-            Ok(liz_forms::forms_find_all_like(&slf.desk, &term))
+            Ok(liz_forms::kit_find_all_like(&slf.desk, &term))
         });
 
         methods.add_method("first_some", |_, slf, ()| {
-            Ok(liz_forms::forms_first_some(&slf.desk))
+            Ok(liz_forms::kit_first_some(&slf.desk))
         });
 
         methods.add_method("prior_some", |_, slf, of: usize| {
-            Ok(liz_forms::forms_prior_some(&slf.desk, of))
+            Ok(liz_forms::kit_prior_some(&slf.desk, of))
         });
 
         methods.add_method("later_some", |_, slf, of: usize| {
-            Ok(liz_forms::forms_later_some(&slf.desk, of))
+            Ok(liz_forms::kit_later_some(&slf.desk, of))
         });
 
         methods.add_method("final_some", |_, slf, ()| {
-            Ok(liz_forms::forms_final_some(&slf.desk))
+            Ok(liz_forms::kit_final_some(&slf.desk))
         });
 
         // Mutate Methods
         methods.add_method_mut("change_all", |_, slf, (of, to): (String, String)| {
-            Ok(liz_forms::forms_change_all(&mut slf.desk, &of, &to))
+            Ok(liz_forms::kit_change_all(&mut slf.desk, &of, &to))
         });
 
         // Finish Methods
-        methods.add_method("print", |_, slf, index: usize| {
-            Ok(liz_forms::forms_print(&slf.desk, index))
-        });
-
-        methods.add_method("println", |_, slf, index: usize| {
-            Ok(liz_forms::forms_println(&slf.desk, index))
-        });
-
         methods.add_method("print_all", |_, slf, ()| {
-            Ok(liz_forms::forms_print_all(&slf.desk))
+            Ok(liz_forms::kit_print_all(&slf.desk))
         });
 
-        methods.add_method("build", |_, slf, ()| Ok(liz_forms::forms_build(&slf.desk)));
+        methods.add_method("build", |_, slf, ()| Ok(liz_forms::kit_build(&slf.desk)));
 
         methods.add_method("write", |_, slf, path: String| {
-            utils::treat_error(liz_forms::forms_write(&slf.desk, &path))
+            utils::treat_error(liz_forms::kit_write(&slf.desk, &path))
         });
 
         // Parse Methods
         methods.add_method_mut("group_whitespace", |_, slf, ()| {
-            Ok(liz_parse::parse_group_whitespace(&mut slf.desk))
+            Ok(liz_parse::rig_group_whitespace(&mut slf.desk))
         });
 
         methods.add_method_mut(
             "group_whitespace_on",
             |_, slf, (from, till): (usize, usize)| {
-                Ok(liz_parse::parse_group_whitespace_on(
+                Ok(liz_parse::rig_group_whitespace_on(
                     &mut slf.desk,
                     from,
                     till,
@@ -273,13 +265,13 @@ impl UserData for Forms {
         );
 
         methods.add_method_mut("split_whitespace", |_, slf, ()| {
-            Ok(liz_parse::parse_split_whitespace(&mut slf.desk))
+            Ok(liz_parse::rig_split_whitespace(&mut slf.desk))
         });
 
         methods.add_method_mut(
             "split_whitespace_on",
             |_, slf, (from, till): (usize, usize)| {
-                Ok(liz_parse::parse_split_whitespace_on(
+                Ok(liz_parse::rig_split_whitespace_on(
                     &mut slf.desk,
                     from,
                     till,
