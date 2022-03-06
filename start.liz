@@ -1,1 +1,3 @@
 print("Hello World from Liz")
+local code = liz.code("'a' 'bd' de")
+code:split_whitespace_all()

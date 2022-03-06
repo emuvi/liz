@@ -5,14 +5,7 @@ use std::thread::JoinHandle;
 
 use crate::liz_debug::{dbg_erro};
 use crate::liz_debug::{dbg_call, dbg_reav, dbg_tell};
-use crate::liz_forms::Forms;
-use crate::liz_parse::{Parser, TEXT_PARSER};
 use crate::LizError;
-
-pub fn text(source: &str) -> Forms {
-    dbg_call!(source);
-    TEXT_PARSER.parse(source)
-}
 
 pub fn ask(message: &str) -> Result<String, LizError> {
     dbg_call!(message);

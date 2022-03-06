@@ -1,257 +1,250 @@
 use crate::liz_debug::dbg_bleb;
-use crate::liz_debug::{dbg_call, dbg_reav, dbg_seal, dbg_step, dbg_tell};
+use crate::liz_debug::{dbg_call, dbg_reav, dbg_seal, dbg_tell};
 use crate::liz_texts;
 use crate::LizError;
 
 #[derive(Debug, Clone, PartialEq)]
 pub struct Forms {
-    pub desk: Vec<Form>,
+    pub desk: Vec<String>,
 }
 
-#[derive(Debug, Clone, PartialEq)]
-pub struct Form {
-    pub term: String,
+pub fn forms_len(forms: &Vec<String>) -> usize {
+    dbg_call!();
+    dbg_reav!(forms.len());
 }
 
-impl Forms {
-    pub fn new() -> Forms {
-        dbg_reav!(Forms { desk: Vec::new() });
-    }
+pub fn forms_get(forms: &Vec<String>, index: usize) -> &str {
+    dbg_call!(index);
+    dbg_reav!(&forms[index]);
+}
 
-    pub fn with(desk: Vec<Form>) -> Forms {
-        dbg_reav!(Forms { desk });
-    }
+pub fn forms_set(forms: &mut Vec<String>, index: usize, form: String) {
+    dbg_call!(index, form);
+    forms[index] = form;
+}
 
-    pub fn take(terms: Vec<String>) -> Forms {
-        dbg_call!(terms);
-        let mut desk: Vec<Form> = Vec::with_capacity(terms.len());
-        for term in terms {
-            desk.push(dbg_step!(Form::with(term)));
+pub fn forms_add(forms: &mut Vec<String>, index: usize, form: String) {
+    dbg_call!(index, form);
+    forms.insert(index, form)
+}
+
+pub fn forms_put(forms: &mut Vec<String>, form: String) {
+    dbg_call!(form);
+    forms.push(form)
+}
+
+pub fn forms_del(forms: &mut Vec<String>, index: usize) -> String {
+    dbg_call!(index);
+    dbg_reav!(forms.remove(index));
+}
+
+pub fn forms_pop(forms: &mut Vec<String>) -> Option<String> {
+    dbg_call!();
+    dbg_reav!(forms.pop());
+}
+
+pub fn forms_find_all(forms: &Vec<String>, part: &str) -> Vec<usize> {
+    dbg_call!(part);
+    dbg_reav!(forms_find_all_ask(forms, |form| {
+        form_is_equals(form, part)
+    }));
+}
+
+pub fn forms_find_all_like(forms: &Vec<String>, part: &str) -> Vec<usize> {
+    dbg_call!(part);
+    dbg_reav!(forms_find_all_ask(forms, |form| {
+        form_is_likely(form, part)
+    }));
+}
+
+pub fn forms_find_all_ask<F: Fn(&str) -> bool>(forms: &Vec<String>, ask: F) -> Vec<usize> {
+    dbg_call!();
+    let mut result = Vec::new();
+    let mut index = 0;
+    for form in forms {
+        if ask(form) {
+            dbg_tell!(form, index);
+            result.push(index);
         }
-        dbg_reav!(Forms { desk });
+        index += 1;
     }
+    dbg_reav!(result);
+}
 
-    pub fn from(terms: &[impl AsRef<str> + std::fmt::Debug]) -> Forms {
-        dbg_call!(terms);
-        let mut desk: Vec<Form> = Vec::with_capacity(terms.len());
-        for term in terms {
-            desk.push(dbg_step!(Form::from(term.as_ref())));
+pub fn forms_first_some(forms: &Vec<String>) -> Option<usize> {
+    dbg_call!();
+    let mut index = 0;
+    while index < forms.len() {
+        if !form_is_whitespace(&forms[index]) {
+            dbg_reav!(Some(index));
         }
-        dbg_reav!(Forms { desk });
+        index += 1;
     }
+    dbg_reav!(None);
+}
 
-    pub fn len(&self) -> usize {
-        dbg_call!();
-        dbg_reav!(self.desk.len());
-    }
-
-    pub fn get(&self, index: usize) -> &Form {
-        dbg_call!(index);
-        dbg_reav!(&self.desk[index]);
-    }
-
-    pub fn set(&mut self, index: usize, form: Form) {
-        dbg_call!(index, form);
-        self.desk[index] = form;
-    }
-
-    pub fn add(&mut self, index: usize, form: Form) {
-        dbg_call!(index, form);
-        self.desk.insert(index, form)
-    }
-
-    pub fn put(&mut self, form: Form) {
-        dbg_call!(form);
-        self.desk.push(form)
-    }
-
-    pub fn del(&mut self, index: usize) -> Form {
-        dbg_call!(index);
-        dbg_reav!(self.desk.remove(index));
-    }
-
-    pub fn pop(&mut self) -> Option<Form> {
-        dbg_call!();
-        dbg_reav!(self.desk.pop());
-    }
-
-    pub fn find_all(&self, term: &str) -> Vec<usize> {
-        dbg_call!(term);
-        dbg_reav!(self.find_all_pred(|form| { form.is_equals(term) }));
-    }
-
-    pub fn find_all_like(&self, term: &str) -> Vec<usize> {
-        dbg_call!(term);
-        dbg_reav!(self.find_all_pred(|form| { form.is_likely(term) }));
-    }
-
-    pub fn find_all_pred<F: Fn(&Form) -> bool>(&self, pred: F) -> Vec<usize> {
-        dbg_call!();
-        let mut result = Vec::new();
-        let mut index = 0;
-        for form in &self.desk {
-            if pred(form) {
-                dbg_tell!(form, index);
-                result.push(index);
-            }
-            index += 1;
-        }
-        dbg_reav!(result);
-    }
-
-    pub fn next_not_space(&self, of: usize) -> Option<usize> {
-        dbg_call!();
-        let mut index = of + 1;
-        while index < self.desk.len() {
-            if !self.desk[index].is_whitespace() {
-                dbg_reav!(Some(index));
-            }
-            index += 1;
-        }
-        dbg_reav!(None);
-    }
-
-    pub fn change_all(&mut self, of: &str, to: &str) {
-        dbg_call!(of, to);
-        for form in &mut self.desk {
-            if form.term == of {
-                form.term = to.into();
-            }
+pub fn forms_prior_some(forms: &Vec<String>, of: usize) -> Option<usize> {
+    dbg_call!();
+    let mut index = of;
+    while index > 0 {
+        index -= 1;
+        if !form_is_whitespace(&forms[index]) {
+            dbg_reav!(Some(index));
         }
     }
+    dbg_reav!(None);
+}
 
-    pub fn print(&self, index: usize) {
-        dbg_call!();
-        self.desk[index].print();
-    }
-
-    pub fn println(&self, index: usize) {
-        dbg_call!();
-        self.desk[index].println();
-    }
-
-    pub fn print_all(&self) {
-        dbg_call!();
-        print!("[");
-        let mut first = true;
-        for form in &self.desk {
-            if first {
-                first = false;
-            } else {
-                print!(",")
-            }
-            form.print();
+pub fn forms_later_some(forms: &Vec<String>, of: usize) -> Option<usize> {
+    dbg_call!();
+    let mut index = of;
+    while index < forms.len() - 1 {
+        index += 1;
+        if !form_is_whitespace(&forms[index]) {
+            dbg_reav!(Some(index));
         }
-        println!("]");
     }
+    dbg_reav!(None);
+}
 
-    pub fn build(&self) -> String {
-        dbg_call!();
-        let mut result = String::new();
-        for form in &self.desk {
-            result.push_str(&form.term);
+pub fn forms_final_some(forms: &Vec<String>) -> Option<usize> {
+    dbg_call!();
+    let mut index = forms.len();
+    while index > 0 {
+        index -= 1;
+        if !form_is_whitespace(&forms[index]) {
+            dbg_reav!(Some(index));
         }
-        dbg_reav!(result);
     }
+    dbg_reav!(None);
+}
 
-    pub fn write(&self, path: &str) -> Result<(), LizError> {
-        dbg_call!(path);
-        let contents = self.build();
-        dbg_seal!(contents);
-        liz_texts::write(path, contents).map_err(|err| dbg_bleb!(err))
+pub fn forms_change_all(forms: &mut Vec<String>, of: &str, to: &str) {
+    dbg_call!(of, to);
+    forms_change_all_ask(forms, of, to, |form| form_is_equals(form, of))
+}
+
+pub fn forms_change_all_like(forms: &mut Vec<String>, of: &str, to: &str) {
+    dbg_call!(of, to);
+    forms_change_all_ask(forms, of, to, |form| form_is_likely(form, of))
+}
+
+pub fn forms_change_all_ask<F: Fn(&str) -> bool>(
+    forms: &mut Vec<String>,
+    of: &str,
+    to: &str,
+    ask: F,
+) {
+    dbg_call!(of, to);
+    let mut indexes = Vec::new();
+    for (index, form) in forms.iter().enumerate() {
+        if ask(form) {
+            indexes.push(index);
+        }
+    }
+    for index in indexes {
+        forms[index] = to.into();
     }
 }
 
-impl Form {
-    pub fn new() -> Form {
-        dbg_call!();
-        dbg_reav!(Form {
-            term: String::default()
-        });
-    }
+pub fn forms_print(forms: &Vec<String>, index: usize) {
+    dbg_call!();
+    form_print(&forms[index]);
+}
 
-    pub fn with(term: String) -> Form {
-        dbg_call!(term);
-        dbg_reav!(Form { term });
-    }
+pub fn forms_println(forms: &Vec<String>, index: usize) {
+    dbg_call!();
+    form_println(&forms[index]);
+}
 
-    pub fn from(term: &str) -> Form {
-        dbg_call!(term);
-        dbg_reav!(Form { term: term.into() });
+pub fn forms_print_all(forms: &Vec<String>) {
+    dbg_call!();
+    print!("[");
+    let mut first = true;
+    for form in forms {
+        if first {
+            first = false;
+        } else {
+            print!(",")
+        }
+        form_print(form);
     }
+    println!("]");
+}
 
-    pub fn is_equals(&self, term: &str) -> bool {
-        dbg_call!(term);
-        dbg_reav!(self.term == term);
+pub fn forms_build(forms: &Vec<String>) -> String {
+    dbg_call!();
+    let mut result = String::new();
+    for form in forms {
+        result.push_str(form);
     }
+    dbg_reav!(result);
+}
 
-    pub fn is_likely(&self, term: &str) -> bool {
-        dbg_call!(term);
-        dbg_reav!(liz_texts::is_likely(&self.term, term));
-    }
+pub fn forms_write(forms: &Vec<String>, path: &str) -> Result<(), LizError> {
+    dbg_call!(path);
+    let contents = forms_build(forms);
+    dbg_seal!(contents);
+    liz_texts::write(path, contents).map_err(|err| dbg_bleb!(err))
+}
 
-    pub fn print(&self) {
-        dbg_call!();
-        print!("'{}'", self.term);
-    }
+pub fn form_is_equals(form: &str, with: &str) -> bool {
+    dbg_call!(form, with);
+    dbg_reav!(form == with);
+}
 
-    pub fn println(&self) {
-        dbg_call!();
-        println!("'{}'", self.term);
-    }
+pub fn form_is_likely(form: &str, with: &str) -> bool {
+    dbg_call!(form, with);
+    dbg_reav!(liz_texts::is_likely(form, with));
+}
 
-    pub fn is_whitespace(&self) -> bool {
-        dbg_call!();
-        dbg_reav!(!self.term.chars().any(|ch| !ch.is_whitespace()));
-    }
+pub fn form_print(form: &str) {
+    dbg_call!();
+    print!("'{}'", form);
+}
 
-    pub fn is_linespace(&self) -> bool {
-        dbg_call!();
-        dbg_reav!(!self
-            .term
-            .chars()
-            .any(|ch| LINE_SPACE_CHARS.iter().any(|item| ch != *item)));
-    }
+pub fn form_println(form: &str) {
+    dbg_call!();
+    println!("'{}'", form);
+}
 
-    pub fn is_linebreak(&self) -> bool {
-        dbg_call!();
-        dbg_reav!(!self
-            .term
-            .chars()
-            .any(|ch| LINE_BREAK_CHARS.iter().any(|item| ch != *item)));
-    }
+pub fn form_is_whitespace(form: &str) -> bool {
+    dbg_call!();
+    dbg_reav!(!form.chars().any(|ch| !ch.is_whitespace()));
+}
 
-    pub fn is_code_brackets(&self) -> bool {
-        dbg_call!();
-        dbg_reav!(!self
-            .term
-            .chars()
-            .any(|ch| CODE_BRACKETS_CHARS.iter().any(|item| ch != *item)));
-    }
+pub fn form_is_linespace(form: &str) -> bool {
+    dbg_call!();
+    dbg_reav!(!form
+        .chars()
+        .any(|ch| LINE_SPACE_CHARS.iter().any(|item| ch != *item)));
+}
 
-    pub fn is_text_brackets(&self) -> bool {
-        dbg_call!();
-        dbg_reav!(!self
-            .term
-            .chars()
-            .any(|ch| TEXT_BRACKETS_CHARS.iter().any(|item| ch != *item)));
-    }
+pub fn form_is_linebreak(form: &str) -> bool {
+    dbg_call!();
+    dbg_reav!(!form
+        .chars()
+        .any(|ch| LINE_BREAK_CHARS.iter().any(|item| ch != *item)));
+}
 
-    pub fn is_text_quotation(&self) -> bool {
-        dbg_call!();
-        dbg_reav!(!self
-            .term
-            .chars()
-            .any(|ch| TEXT_QUOTATION_CHARS.iter().any(|item| ch != *item)));
-    }
+pub fn form_is_brackets(form: &str) -> bool {
+    dbg_call!();
+    dbg_reav!(!form
+        .chars()
+        .any(|ch| BRACKETS_CHARS.iter().any(|item| ch != *item)));
+}
+
+pub fn form_is_quotation(form: &str) -> bool {
+    dbg_call!();
+    dbg_reav!(!form
+        .chars()
+        .any(|ch| QUOTATION_CHARS.iter().any(|item| ch != *item)));
 }
 
 pub static LINE_SPACE_CHARS: &[char] = &[' ', '\t'];
 
 pub static LINE_BREAK_CHARS: &[char] = &['\n', '\r'];
 
-pub static CODE_BRACKETS_CHARS: &[char] = &['(', ')', '[', ']', '{', '}'];
+pub static BRACKETS_CHARS: &[char] = &['(', ')', '[', ']', '{', '}', '<', '>'];
 
-pub static TEXT_BRACKETS_CHARS: &[char] = &['(', ')', '[', ']', '{', '}', '<', '>'];
-
-pub static TEXT_QUOTATION_CHARS: &[char] = &['\'', '"'];
+pub static QUOTATION_CHARS: &[char] = &['\'', '"'];

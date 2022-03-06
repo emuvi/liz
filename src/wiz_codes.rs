@@ -6,13 +6,11 @@ use crate::utils;
 use crate::LizError;
 
 pub fn inject_codes<'a>(lane: Context<'a>, liz: &Table<'a>) -> Result<(), LizError> {
-    let code = lane.create_function(|_, source: String| Ok(liz_codes::code(&source)))?;
-
     let edit = lane.create_function(|_, ()| Ok(liz_codes::edit()))?;
 
-    let desk = lane.create_function(|_, terms: Vec<String>| Ok(liz_codes::desk(terms)))?;
+    let code = lane.create_function(|_, source: String| Ok(liz_codes::code(source)))?;
 
-    let form = lane.create_function(|_, part: String| Ok(liz_codes::form(&part)))?;
+    let desk = lane.create_function(|_, terms: Vec<String>| Ok(liz_codes::desk(terms)))?;
 
     let liz_suit_path = lane
         .create_function(|_, path: String| utils::treat_error(liz_codes::liz_suit_path(&path)))?;
@@ -41,7 +39,6 @@ pub fn inject_codes<'a>(lane: Context<'a>, liz: &Table<'a>) -> Result<(), LizErr
     liz.set("code", code)?;
     liz.set("edit", edit)?;
     liz.set("desk", desk)?;
-    liz.set("form", form)?;
     liz.set("liz_suit_path", liz_suit_path)?;
     liz.set("is_update_lizs", is_update_lizs)?;
     liz.set("set_update_lizs", set_update_lizs)?;

@@ -2,8 +2,8 @@ use rlua::{Context, Lua, MultiValue, Table};
 
 use std::error::Error;
 
-use liz_debug::{dbg_call, dbg_reav, dbg_seal};
 use liz_debug::{dbg_bleb, dbg_erro, dbg_info, dbg_jolt};
+use liz_debug::{dbg_call, dbg_reav, dbg_seal};
 
 pub mod liz_codes;
 pub mod liz_debug;
@@ -69,7 +69,7 @@ pub fn race(path: &str, handler: &Lua) -> Result<Vec<String>, LizError> {
 pub fn race_in(lane: Context, path: &str) -> Result<Vec<String>, LizError> {
     dbg_call!(path);
     let globals = lane.globals();
-    let liz: Table = globals.get("liz").map_err(|err| dbg_erro!(err))?;
+    let liz: Table = globals.get("Liz").map_err(|err| dbg_erro!(err))?;
 
     let suit_path = liz_codes::liz_suit_path(path).map_err(|err| dbg_bleb!(err))?;
     dbg_seal!(suit_path);
@@ -93,7 +93,8 @@ pub fn race_in(lane: Context, path: &str) -> Result<Vec<String>, LizError> {
     dbg_seal!(race_path);
 
     liz.set("race_wd", race_wd).map_err(|err| dbg_erro!(err))?;
-    liz.set("race_dir", race_dir).map_err(|err| dbg_erro!(err))?;
+    liz.set("race_dir", race_dir)
+        .map_err(|err| dbg_erro!(err))?;
     liz.set("race_path", race_path.clone())
         .map_err(|err| dbg_erro!(err))?;
 

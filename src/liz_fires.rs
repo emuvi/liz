@@ -28,7 +28,7 @@ pub fn race_wd(lane: Context, relative_path: &str) -> Result<Vec<String>, LizErr
 pub fn spawn(lane: Context, path: &str, args: &Option<Vec<String>>) -> Result<Spawned, LizError> {
     dbg_call!(path, args);
     let globals = lane.globals();
-    let liz: Table = globals.get("liz").map_err(|err| dbg_erro!(err))?;
+    let liz: Table = globals.get("Liz").map_err(|err| dbg_erro!(err))?;
 
     let suit_path = liz_codes::liz_suit_path(path).map_err(|err| dbg_bleb!(err))?;
     dbg_seal!(suit_path);

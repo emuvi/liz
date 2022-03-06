@@ -54,7 +54,7 @@ pub fn pop_stack_dir(liz: &Table) -> Result<(), LizError> {
 fn get_liz<'a>(lane: &Context<'a>) -> Result<Table<'a>, LizError> {
     dbg_seal!();
     let globals = lane.globals();
-    let liz: Table = globals.get("liz").map_err(|err| dbg_erro!(err))?;
+    let liz: Table = globals.get("Liz").map_err(|err| dbg_erro!(err))?;
     Ok(liz)
 }
 

@@ -78,7 +78,7 @@ pub fn inject_all(
     wiz_winds::inject_winds(lane, &liz)?;
 
     let globals = lane.globals();
-    globals.set("liz", liz)?;
+    globals.set("Liz", liz)?;
 
     Ok(rise_path)
 }
