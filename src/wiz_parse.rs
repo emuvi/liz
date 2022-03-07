@@ -1,6 +1,8 @@
 use rlua::{Context, Table};
 
 use crate::liz_parse;
+use crate::liz_parse::BlockedBy;
+    use crate::liz_parse::BlockParser;
 use crate::LizError;
 
 pub fn inject_parse<'a>(lane: Context<'a>, liz: &Table<'a>) -> Result<(), LizError> {
@@ -48,6 +50,17 @@ pub fn inject_parse<'a>(lane: Context<'a>, liz: &Table<'a>) -> Result<(), LizErr
             Ok(forms)
         })?;
 
+    let rig_block_whitespace = lane.create_function(|_, ()| Ok (liz_parse::rig_block_whitespace()))?;
+
+    let rig_block_punctuation = lane.create_function(|_, ()| Ok (liz_parse::rig_block_punctuation()))?;
+    
+    let rig_split =
+        lane.create_function_mut(|_, (mut forms, from, till, blocks): (Vec<String>, usize, usize, Vec<BlockedBy>)| {
+            let blocks: Vec<Box<&dyn BlockParser>> = blocks.iter().map(|block| Box::new(block.get_parser())).collect();
+            liz_parse::rig_split(&mut forms, from, till, blocks);
+            Ok(forms)
+        })?;
+
     liz.set("rig_split_whitespace", rig_split_whitespace)?;
     liz.set("rig_split_whitespace_on", rig_split_whitespace_on)?;
     liz.set("rig_split_punctuation", rig_split_punctuation)?;
@@ -56,6 +69,10 @@ pub fn inject_parse<'a>(lane: Context<'a>, liz: &Table<'a>) -> Result<(), LizErr
     liz.set("rig_group_whitespace_on", rig_group_whitespace_on)?;
     liz.set("rig_group_punctuation", rig_group_punctuation)?;
     liz.set("rig_group_punctuation_on", rig_group_punctuation_on)?;
+
+    liz.set("rig_block_whitespace", rig_block_whitespace)?;
+    liz.set("rig_block_punctuation", rig_block_punctuation)?;
+    liz.set("rig_split", rig_split)?;
 
     Ok(())
 }

@@ -1,5 +1,7 @@
-local test = Liz.code("SELECT * FROM WHERE test=$12")
-test:split_whitespace()
-test:split_punctuation()
-test:print_all()
+local blocks = {Liz.rig_block_whitespace()}
+local tester = {"ab  cd"}
+local tested = Liz.rig_split(tester, 0, 1, blocks)
+for _, v in pairs(tested) do
+    print(v)
+end
 
