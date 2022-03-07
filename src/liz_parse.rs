@@ -265,8 +265,12 @@ pub fn rig_block_punctuation() -> BlockedBy {
     BlockedBy::Punctuation
 }
 
+pub fn rig_blocks_parsers(blocks: Vec<BlockedBy>) -> Vec<&'static dyn BlockParser> {
+    blocks.iter().map(|block| block.get_parser()).collect()
+}
+
 impl BlockedBy {
-    pub fn get_parser(&self) -> &dyn BlockParser {
+    pub fn get_parser(&self) -> &'static dyn BlockParser {
         match &self {
             BlockedBy::WhiteSpace => &BLOCK_WHITE_SPACE,
             BlockedBy::Punctuation => &BLOCK_PUNCTUATION,
@@ -327,7 +331,7 @@ pub fn rig_split(
     forms: &mut Vec<String>,
     from: usize,
     till: usize,
-    blocks: Vec<Box<&dyn BlockParser>>,
+    parsers: Vec<&'static dyn BlockParser>,
 ) -> usize {
     dbg_call!(forms, from, till);
     let range = liz_forms::kit_del_range(forms, from, till);
@@ -337,7 +341,7 @@ pub fn rig_split(
     loop {
         let mut already_accrued_now = false;
         if inside < 0 {
-            for (index, test_block) in blocks.iter().enumerate() {
+            for (index, test_block) in parsers.iter().enumerate() {
                 let opens_bound = test_block.opens(&helper);
                 if opens_bound.checked {
                     if !opens_bound.include {
@@ -350,7 +354,7 @@ pub fn rig_split(
             }
         }
         if inside >= 0 {
-            let inside_block = &blocks[inside as usize];
+            let inside_block = &parsers[inside as usize];
             let closes_bound = inside_block.closes(&helper);
             if closes_bound.checked {
                 if closes_bound.include {

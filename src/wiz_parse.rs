@@ -56,8 +56,8 @@ pub fn inject_parse<'a>(lane: Context<'a>, liz: &Table<'a>) -> Result<(), LizErr
     
     let rig_split =
         lane.create_function_mut(|_, (mut forms, from, till, blocks): (Vec<String>, usize, usize, Vec<BlockedBy>)| {
-            let blocks: Vec<Box<&dyn BlockParser>> = blocks.iter().map(|block| Box::new(block.get_parser())).collect();
-            liz_parse::rig_split(&mut forms, from, till, blocks);
+            let parsers = liz_parse::rig_blocks_parsers(blocks);
+            liz_parse::rig_split(&mut forms, from, till, parsers);
             Ok(forms)
         })?;
 
