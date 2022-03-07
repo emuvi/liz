@@ -54,6 +54,7 @@ pub fn rig_split_near_ask_on<F: Fn(char) -> bool>(
     let mut state = false;
     for form in range {
         dbg_tell!(form);
+        helps.commit_accrued();
         for ch in form.chars() {
             if ask(ch) != state {
                 helps.commit_accrued();
@@ -82,6 +83,7 @@ pub fn rig_split_each_ask_on<F: Fn(char) -> bool>(
     let mut helps = ParserHelper::new();
     for form in range {
         dbg_tell!(form);
+        helps.commit_accrued();
         for ch in form.chars() {
             if ask(ch) {
                 helps.commit_accrued();

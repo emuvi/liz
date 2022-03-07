@@ -1,1 +1,5 @@
-local test = ""
+local test = Liz.code("SELECT * FROM WHERE test=$12")
+test:split_whitespace()
+test:split_punctuation()
+test:print_all()
+
