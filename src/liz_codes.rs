@@ -3,7 +3,7 @@ use rlua::{UserData, UserDataMethods};
 use std::sync::atomic::{AtomicBool, Ordering};
 
 use crate::liz_debug::{dbg_bleb, dbg_erro};
-use crate::liz_debug::{dbg_call, dbg_reav, dbg_seal};
+use crate::liz_debug::{dbg_call, dbg_reav, dbg_step};
 use crate::liz_fires;
 use crate::liz_forms::{self, Forms};
 use crate::liz_parse;
@@ -27,26 +27,26 @@ pub fn set_update_lizs(to: bool) {
 pub fn liz_suit_path(path: &str) -> Result<String, LizError> {
     dbg_call!(path);
     let os_sep = liz_paths::os_sep().to_string();
-    dbg_seal!(os_sep);
+    dbg_step!(os_sep);
     let result = if path.contains("\\") && os_sep != "\\" {
         path.replace("\\", &os_sep)
     } else {
         String::from(path)
     };
-    dbg_seal!(result);
+    dbg_step!(result);
     let result = if result.contains("/") && os_sep != "/" {
         result.replace("/", &os_sep)
     } else {
         result
     };
-    dbg_seal!(result);
+    dbg_step!(result);
     let check_ext = result.to_lowercase();
     let result = if !(check_ext.ends_with(".liz") || check_ext.ends_with(".lua")) {
         format!("{}.liz", result)
     } else {
         result
     };
-    dbg_seal!(result);
+    dbg_step!(result);
     let result = if result.contains("$pwd") {
         result.replace(
             "$pwd",
@@ -55,7 +55,7 @@ pub fn liz_suit_path(path: &str) -> Result<String, LizError> {
     } else {
         result
     };
-    dbg_seal!(result);
+    dbg_step!(result);
     let result = if result.contains("$liz") {
         result.replace(
             "$liz",
@@ -70,13 +70,13 @@ pub fn liz_suit_path(path: &str) -> Result<String, LizError> {
 pub fn gotta_lizs(path: &str) -> Result<(), LizError> {
     dbg_call!(path);
     if let Some(lizs_pos) = get_lizs_path_pos(path) {
-        dbg_seal!(lizs_pos);
+        dbg_step!(lizs_pos);
         if is_update_lizs() || !liz_paths::has(path) {
             let path_dir = liz_paths::path_parent(path).map_err(|err| dbg_bleb!(err))?;
-            dbg_seal!(path_dir);
+            dbg_step!(path_dir);
             std::fs::create_dir_all(path_dir).map_err(|err| dbg_erro!(err))?;
             let net_path = (&path[lizs_pos + 7..]).replace("\\", "/");
-            dbg_seal!(net_path);
+            dbg_step!(net_path);
             get_lizs_file(&net_path, path).map_err(|err| dbg_bleb!(err))?;
         }
     }
@@ -86,21 +86,21 @@ pub fn gotta_lizs(path: &str) -> Result<(), LizError> {
 pub fn get_lizs(net_path: &str) -> Result<(), LizError> {
     dbg_call!(net_path);
     let local_path = liz_paths::path_join(".lizs", net_path).map_err(|err| dbg_bleb!(err))?;
-    dbg_seal!(local_path);
+    dbg_step!(local_path);
     get_lizs_file(&net_path, &local_path).map_err(|err| dbg_bleb!(err))
 }
 
 pub fn get_lizs_path_pos(path: &str) -> Option<usize> {
     dbg_call!(path);
     let separator = if path.contains("\\") { '\\' } else { '/' };
-    dbg_seal!(separator);
+    dbg_step!(separator);
     let mut lizs_dir = format!(".lizs{}", separator);
-    dbg_seal!(lizs_dir);
+    dbg_step!(lizs_dir);
     if path.starts_with(&lizs_dir) {
         dbg_reav!(Some(0));
     }
     lizs_dir.insert(0, separator);
-    dbg_seal!(lizs_dir);
+    dbg_step!(lizs_dir);
     dbg_reav!(path.rfind(&lizs_dir));
 }
 
@@ -110,22 +110,22 @@ pub fn get_lizs_file(net_path: &str, local_path: &str) -> Result<(), LizError> {
         "https://raw.githubusercontent.com/emuvi/lizs/main/{}",
         &net_path
     );
-    dbg_seal!(origin);
+    dbg_step!(origin);
     liz_winds::download(&origin, local_path, None).map_err(|err| dbg_bleb!(err))
 }
 
 pub fn git_root_find(path: &str) -> Result<Option<String>, LizError> {
     dbg_call!(path);
     let mut actual = liz_paths::path_absolute(path).map_err(|err| dbg_bleb!(err))?;
-    dbg_seal!(actual);
+    dbg_step!(actual);
     loop {
         let check = liz_paths::path_join(&actual, ".git").map_err(|err| dbg_bleb!(err))?;
-        dbg_seal!(check);
+        dbg_step!(check);
         if liz_paths::is_dir(&check) {
             dbg_reav!(Ok(Some(actual)));
         }
         actual = liz_paths::path_parent(&actual).map_err(|err| dbg_erro!(err))?;
-        dbg_seal!(actual);
+        dbg_step!(actual);
         if actual.is_empty() {
             break;
         }
@@ -136,9 +136,9 @@ pub fn git_root_find(path: &str) -> Result<Option<String>, LizError> {
 pub fn git_is_ignored(path: &str) -> Result<bool, LizError> {
     dbg_call!(path);
     if let Some(root) = git_root_find(path).map_err(|err| dbg_bleb!(err))? {
-        dbg_seal!(root);
+        dbg_step!(root);
         let relative = liz_paths::path_relative(path, &root).map_err(|err| dbg_bleb!(err))?;
-        dbg_seal!(relative);
+        dbg_step!(relative);
         let (code, output) = liz_fires::cmd(
             "git",
             &["check-ignore", &relative],
@@ -147,7 +147,7 @@ pub fn git_is_ignored(path: &str) -> Result<bool, LizError> {
             Some(false),
         )
         .map_err(|err| dbg_bleb!(err))?;
-        dbg_seal!(code, output);
+        dbg_step!(code, output);
         dbg_reav!(Ok(code == 0 && !output.is_empty()));
     }
     dbg_reav!(Ok(false));
@@ -157,9 +157,9 @@ pub fn git_has_changes(root: &str) -> Result<bool, LizError> {
     dbg_call!(root);
     let (_, output) = liz_fires::cmd("git", &["status"], Some(root), Some(false), Some(true))
         .map_err(|err| dbg_bleb!(err))?;
-    dbg_seal!(output);
+    dbg_step!(output);
     let output = output.trim();
-    dbg_seal!(output);
+    dbg_step!(output);
     dbg_reav!(Ok(
         !output.ends_with("nothing to commit, working tree clean")
     ));
@@ -224,12 +224,12 @@ impl UserData for Forms {
             Ok(liz_forms::kit_prior_some(&slf.desk, of))
         });
 
-        methods.add_method("later_some", |_, slf, of: usize| {
-            Ok(liz_forms::kit_later_some(&slf.desk, of))
+        methods.add_method("next_some", |_, slf, of: usize| {
+            Ok(liz_forms::kit_next_some(&slf.desk, of))
         });
 
-        methods.add_method("final_some", |_, slf, ()| {
-            Ok(liz_forms::kit_final_some(&slf.desk))
+        methods.add_method("last_some", |_, slf, ()| {
+            Ok(liz_forms::kit_last_some(&slf.desk))
         });
 
         // Mutate Methods

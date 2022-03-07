@@ -9,7 +9,7 @@ use std::thread;
 use std::time::Duration;
 
 use crate::liz_codes;
-use crate::liz_debug::{dbg_call, dbg_reav, dbg_seal};
+use crate::liz_debug::{dbg_call, dbg_reav, dbg_step};
 use crate::liz_debug::{dbg_bleb, dbg_erro, dbg_kind};
 use crate::liz_paths;
 use crate::utils;
@@ -18,10 +18,10 @@ use crate::LizError;
 pub fn race_wd(lane: Context, relative_path: &str) -> Result<Vec<String>, LizError> {
     dbg_call!(relative_path);
     let working_dir = liz_paths::wd().map_err(|err| dbg_bleb!(err))?;
-    dbg_seal!(working_dir);
+    dbg_step!(working_dir);
     let full_path =
         liz_paths::path_join(&working_dir, relative_path).map_err(|err| dbg_bleb!(err))?;
-    dbg_seal!(full_path);
+    dbg_step!(full_path);
     dbg_reav!(crate::race_in(lane, &full_path).map_err(|err| dbg_bleb!(err)));
 }
 
@@ -31,7 +31,7 @@ pub fn spawn(lane: Context, path: &str, args: &Option<Vec<String>>) -> Result<Sp
     let liz: Table = globals.get("Liz").map_err(|err| dbg_erro!(err))?;
 
     let suit_path = liz_codes::liz_suit_path(path).map_err(|err| dbg_bleb!(err))?;
-    dbg_seal!(suit_path);
+    dbg_step!(suit_path);
 
     let suit_path = if liz_paths::is_relative(&suit_path) {
         let stack_dir = utils::get_stack_dir(&liz).map_err(|err| dbg_bleb!(err))?;
@@ -39,16 +39,16 @@ pub fn spawn(lane: Context, path: &str, args: &Option<Vec<String>>) -> Result<Sp
     } else {
         suit_path
     };
-    dbg_seal!(suit_path);
+    dbg_step!(suit_path);
 
     let spawn_wd = liz_paths::wd().map_err(|err| dbg_bleb!(err))?;
-    dbg_seal!(spawn_wd);
+    dbg_step!(spawn_wd);
 
     let spawn_dir = liz_paths::path_parent(&suit_path).map_err(|err| dbg_bleb!(err))?;
-    dbg_seal!(spawn_dir);
+    dbg_step!(spawn_dir);
 
     let spawn_path = liz_paths::path_absolute(&suit_path).map_err(|err| dbg_bleb!(err))?;
-    dbg_seal!(spawn_path);
+    dbg_step!(spawn_path);
 
     liz.set("spawn_wd", spawn_wd).map_err(|err| dbg_erro!(err))?;
     liz.set("spawn_dir", spawn_dir)
@@ -58,7 +58,7 @@ pub fn spawn(lane: Context, path: &str, args: &Option<Vec<String>>) -> Result<Sp
 
     let spawn_index = SPAWN_COUNT.fetch_add(1, Ordering::SeqCst);
     let spawn_name = format!("spawn{}", spawn_index);
-    dbg_seal!(spawn_name);
+    dbg_step!(spawn_name);
 
     let spawned = Spawned::new(spawn_path, args.clone());
     let spawned_clone = spawned.clone();
@@ -91,19 +91,19 @@ pub fn join_all(spawneds: Vec<Spawned>) -> Result<Vec<Vec<String>>, LizError> {
     let mut all_results: Vec<Vec<String>> = Vec::new();
     for spawned in spawneds {
         let spawned_result = spawned.join().map_err(|err| dbg_bleb!(err))?;
-        dbg_seal!(spawned_result);
+        dbg_step!(spawned_result);
         all_results.push(spawned_result);
     }
     dbg_reav!(Ok(all_results));
 }
 
 pub fn wait(spawned: Spawned) -> Result<(), LizError> {
-    dbg_seal!(spawned);
+    dbg_step!(spawned);
     dbg_reav!(spawned.wait())
 }
 
 pub fn wait_all(spawneds: Vec<Spawned>) -> Result<(), LizError> {
-    dbg_seal!(spawneds);
+    dbg_step!(spawneds);
     for spawned in spawneds {
         spawned.wait().map_err(|err| dbg_erro!(err))?
     }
@@ -117,7 +117,7 @@ pub fn cmd(
     print: Option<bool>,
     throw: Option<bool>,
 ) -> Result<(i32, String), LizError> {
-    dbg_seal!();
+    dbg_step!();
     let mut cmd = Command::new(command);
     let args = args
         .iter()
@@ -178,12 +178,12 @@ pub fn cmd(
 }
 
 pub fn sleep(millis: u64) {
-    dbg_seal!(millis);
+    dbg_step!(millis);
     thread::sleep(Duration::from_millis(millis))
 }
 
 pub fn pause() -> Result<(), LizError> {
-    dbg_seal!();
+    dbg_step!();
     let mut stdin = std::io::stdin();
     let mut stdout = std::io::stdout();
     write!(stdout, "Press enter to continue...").map_err(|err| dbg_erro!(err))?;
@@ -194,7 +194,7 @@ pub fn pause() -> Result<(), LizError> {
 }
 
 pub fn liz_dir() -> Result<String, LizError> {
-    dbg_seal!();
+    dbg_step!();
     Ok(
         liz_paths::path_parent(liz_exe().map_err(|err| dbg_erro!(err))?.as_ref())
             .map_err(|err| dbg_erro!(err))?,
@@ -202,7 +202,7 @@ pub fn liz_dir() -> Result<String, LizError> {
 }
 
 pub fn liz_exe() -> Result<String, LizError> {
-    dbg_seal!();
+    dbg_step!();
     Ok(format!(
         "{}",
         std::env::current_exe()
@@ -212,27 +212,27 @@ pub fn liz_exe() -> Result<String, LizError> {
 }
 
 pub fn exe_ext() -> &'static str {
-    dbg_seal!();
+    dbg_step!();
     std::env::consts::EXE_EXTENSION
 }
 
 pub fn get_os() -> &'static str {
-    dbg_seal!();
+    dbg_step!();
     std::env::consts::OS
 }
 
 pub fn is_lin() -> bool {
-    dbg_seal!();
+    dbg_step!();
     std::env::consts::OS == "linux"
 }
 
 pub fn is_mac() -> bool {
-    dbg_seal!();
+    dbg_step!();
     std::env::consts::OS == "macos"
 }
 
 pub fn is_win() -> bool {
-    dbg_seal!();
+    dbg_step!();
     std::env::consts::OS == "windows"
 }
 

@@ -21,13 +21,13 @@ fn main() -> Result<(), LizError> {
             } else if arg == "-lu" || arg == "--lizs-update" {
                 liz::liz_codes::set_update_lizs(true);
             } else if arg == "-dc" || arg == "--debug-calls" {
-                liz::liz_debug::set_dbg_calls();
+                liz::liz_debug::put_dbg_calls();
             } else if arg == "-dr" || arg == "--debug-reavs" {
-                liz::liz_debug::set_dbg_reavs();
+                liz::liz_debug::put_dbg_reavs();
             } else if arg == "-ds" || arg == "--debug-steps" {
-                liz::liz_debug::set_dbg_steps();
+                liz::liz_debug::put_dbg_steps();
             } else if arg == "-dt" || arg == "--debug-tells" {
-                liz::liz_debug::set_dbg_tells();
+                liz::liz_debug::put_dbg_tells();
             } else if arg == "--" {
                 script_args = true;
             } else if arg.ends_with(".liz") || arg.ends_with(".lua") {

@@ -3,7 +3,7 @@ use rlua::{Context, Lua, MultiValue, Table};
 use std::error::Error;
 
 use liz_debug::{dbg_bleb, dbg_erro, dbg_info, dbg_jolt};
-use liz_debug::{dbg_call, dbg_reav, dbg_seal};
+use liz_debug::{dbg_call, dbg_reav, dbg_step};
 
 pub mod liz_codes;
 pub mod liz_debug;
@@ -16,6 +16,7 @@ pub mod liz_times;
 pub mod liz_winds;
 
 mod tst_paths;
+mod tst_parse;
 
 mod utils;
 
@@ -32,7 +33,7 @@ pub type LizError = Box<dyn Error + Send + Sync>;
 pub fn run(path: &str, args: &Option<Vec<String>>) -> Result<Vec<String>, LizError> {
     dbg_call!(path, args);
     let (rise_path, handler) = rise(path, args).map_err(|err| dbg_bleb!(err))?;
-    dbg_seal!(rise_path);
+    dbg_step!(rise_path);
     dbg_reav!(race(&rise_path, &handler).map_err(|err| dbg_bleb!(err)));
 }
 
@@ -72,7 +73,7 @@ pub fn race_in(lane: Context, path: &str) -> Result<Vec<String>, LizError> {
     let liz: Table = globals.get("Liz").map_err(|err| dbg_erro!(err))?;
 
     let suit_path = liz_codes::liz_suit_path(path).map_err(|err| dbg_bleb!(err))?;
-    dbg_seal!(suit_path);
+    dbg_step!(suit_path);
 
     let suit_path = if liz_paths::is_relative(&suit_path) {
         let stack_dir = utils::get_stack_dir(&liz).map_err(|err| dbg_bleb!(err))?;
@@ -80,17 +81,17 @@ pub fn race_in(lane: Context, path: &str) -> Result<Vec<String>, LizError> {
     } else {
         suit_path
     };
-    dbg_seal!(suit_path);
+    dbg_step!(suit_path);
 
     let race_wd = liz_paths::wd().map_err(|err| dbg_bleb!(err))?;
-    dbg_seal!(race_wd);
+    dbg_step!(race_wd);
 
     let race_dir = liz_paths::path_parent(&suit_path).map_err(|err| dbg_bleb!(err))?;
-    dbg_seal!(race_dir);
+    dbg_step!(race_dir);
     utils::put_stack_dir(&lane, &liz, race_dir.clone()).map_err(|err| dbg_bleb!(err))?;
 
     let race_path = liz_paths::path_absolute(&suit_path).map_err(|err| dbg_bleb!(err))?;
-    dbg_seal!(race_path);
+    dbg_step!(race_path);
 
     liz.set("race_wd", race_wd).map_err(|err| dbg_erro!(err))?;
     liz.set("race_dir", race_dir)
@@ -101,9 +102,9 @@ pub fn race_in(lane: Context, path: &str) -> Result<Vec<String>, LizError> {
     liz_codes::gotta_lizs(&race_path).map_err(|err| dbg_bleb!(err))?;
 
     let source = std::fs::read_to_string(race_path).map_err(|err| dbg_erro!(err))?;
-    dbg_seal!(source);
+    dbg_step!(source);
     let values = eval_in(lane, source).map_err(|err| dbg_bleb!(err))?;
-    dbg_seal!(values);
+    dbg_step!(values);
     utils::pop_stack_dir(&liz).map_err(|err| dbg_bleb!(err))?;
     dbg_reav!(Ok(values));
 }
@@ -116,7 +117,7 @@ pub fn eval_in(lane: Context, source: String) -> Result<Vec<String>, LizError> {
             source = (&source[first_line + 1..]).trim();
         }
     }
-    dbg_seal!(source);
+    dbg_step!(source);
     let values = lane
         .load(source)
         .eval::<MultiValue>()

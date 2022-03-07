@@ -1,6 +1,6 @@
 use std::path::Path;
 
-use crate::liz_debug::{dbg_call, dbg_erro, dbg_reav, dbg_seal};
+use crate::liz_debug::{dbg_call, dbg_erro, dbg_reav, dbg_step};
 use crate::LizError;
 
 pub fn has(path: &str) -> bool {
@@ -245,7 +245,7 @@ pub fn path_ext_is(path: &str, ext: &str) -> bool {
 }
 
 pub fn path_ext_is_on(path: &str, exts: Vec<String>) -> bool {
-    dbg_seal!(path, exts);
+    dbg_step!(path, exts);
     let ext = path_ext(path).to_lowercase();
     for case in exts {
         if ext == case.to_lowercase() {
@@ -426,7 +426,7 @@ fn path_list_in_make(path: &str, results: &mut Vec<String>) -> Result<(), LizErr
 }
 
 pub fn path_list_dirs(path: &str) -> Result<Vec<String>, LizError> {
-    dbg_seal!(path);
+    dbg_step!(path);
     let mut results = Vec::new();
     let entries = std::fs::read_dir(path).map_err(|err| dbg_erro!(err))?;
     for entry in entries {

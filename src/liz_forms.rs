@@ -1,11 +1,19 @@
 use crate::liz_debug::dbg_bleb;
-use crate::liz_debug::{dbg_call, dbg_reav, dbg_seal, dbg_tell};
+use crate::liz_debug::{dbg_call, dbg_reav, dbg_step, dbg_tell};
 use crate::liz_texts;
 use crate::LizError;
 
 #[derive(Debug, Clone, PartialEq)]
 pub struct Forms {
     pub desk: Vec<String>,
+}
+
+pub fn kit_new(from: &[impl AsRef<str>]) -> Vec<String> {
+    let mut result = Vec::with_capacity(from.len());
+    for item in from {
+        result.push(item.as_ref().into());
+    }
+    result
 }
 
 pub fn kit_len(forms: &Vec<String>) -> usize {
@@ -95,7 +103,7 @@ pub fn kit_prior_some(forms: &Vec<String>, of: usize) -> Option<usize> {
     dbg_reav!(None);
 }
 
-pub fn kit_later_some(forms: &Vec<String>, of: usize) -> Option<usize> {
+pub fn kit_next_some(forms: &Vec<String>, of: usize) -> Option<usize> {
     dbg_call!();
     let mut index = of;
     while index < forms.len() - 1 {
@@ -107,7 +115,7 @@ pub fn kit_later_some(forms: &Vec<String>, of: usize) -> Option<usize> {
     dbg_reav!(None);
 }
 
-pub fn kit_final_some(forms: &Vec<String>) -> Option<usize> {
+pub fn kit_last_some(forms: &Vec<String>) -> Option<usize> {
     dbg_call!();
     let mut index = forms.len();
     while index > 0 {
@@ -174,6 +182,6 @@ pub fn kit_build(forms: &Vec<String>) -> String {
 pub fn kit_write(forms: &Vec<String>, path: &str) -> Result<(), LizError> {
     dbg_call!(path);
     let contents = kit_build(forms);
-    dbg_seal!(contents);
+    dbg_step!(contents);
     liz_texts::write(path, contents).map_err(|err| dbg_bleb!(err))
 }

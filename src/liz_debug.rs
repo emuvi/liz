@@ -49,20 +49,25 @@ pub fn set_dbg_size(size: usize) {
     DBGSIZE.store(size, Ordering::Release)
 }
 
-pub fn set_dbg_calls() {
+pub fn put_dbg_calls() {
     set_dbg_size(1)
 }
 
-pub fn set_dbg_reavs() {
+pub fn put_dbg_reavs() {
     set_dbg_size(2)
 }
 
-pub fn set_dbg_steps() {
+pub fn put_dbg_steps() {
     set_dbg_size(3)
 }
 
-pub fn set_dbg_tells() {
+pub fn put_dbg_tells() {
     set_dbg_size(4)
+}
+
+pub fn put_dbg_verbose_tells() {
+    set_verbose(true);
+    put_dbg_tells();
 }
 
 pub fn debug(message: impl AsRef<str>) {
@@ -74,6 +79,7 @@ pub fn debug(message: impl AsRef<str>) {
         );
     }
     if is_archive() {
+        // [EVAL] - This is not working, why?
         let mut file = ARCFILE.lock().unwrap();
         writeln!(
             file,
@@ -148,12 +154,6 @@ pub fn debug_reav(file: &str, line: u32, func: &str, vals: String) {
     }
 }
 
-pub fn debug_seal(file: &str, line: u32, func: &str, vals: String) {
-    if get_dbg_size() >= 3 {
-        debug_make("DBUG", file, line, func, vals, "[SEAL]");
-    }
-}
-
 pub fn debug_step(file: &str, line: u32, func: &str, vals: String) {
     if get_dbg_size() >= 3 {
         debug_make("DBUG", file, line, func, vals, "[STEP]");
@@ -178,7 +178,7 @@ pub fn debug_make(
         format!("[{}] {} on ({}) in {}[{}]", kind, msg, func, file, line)
     } else {
         format!(
-            "[{}] {} as {{{}}} on ({}) in {}[{}]",
+            "[{}] {} as {} on ({}) in {}[{}]",
             kind, msg, vals, func, file, line
         )
     };
@@ -219,8 +219,8 @@ macro_rules! dbg_fval {
 
 macro_rules! dbg_fmts {
     () => (String::default());
-    ($v:expr) => (format!("{} = {{{}}}", stringify!($v), crate::liz_debug::dbg_fval!(&$v)));
-    ($v:expr, $($n:expr),+) => (format!("{} = {{{}}} , {}", stringify!($v), crate::liz_debug::dbg_fval!(&$v), crate::liz_debug::dbg_fmts!($($n),+)));
+    ($v:expr) => (format!("{} = {}", stringify!($v), crate::liz_debug::dbg_fval!(&$v)));
+    ($v:expr, $($n:expr),+) => (format!("{} = {} , {}", stringify!($v), crate::liz_debug::dbg_fval!(&$v), crate::liz_debug::dbg_fmts!($($n),+)));
 }
 
 macro_rules! dbg_fmsn {
@@ -228,7 +228,7 @@ macro_rules! dbg_fmsn {
         String::default()
     };
     ($v:expr) => {
-        format!("{{{}}}", crate::liz_debug::dbg_fval!(&$v))
+        format!("{}", crate::liz_debug::dbg_fval!(&$v))
     };
 }
 
@@ -302,29 +302,15 @@ macro_rules! dbg_reav {
     }};
 }
 
-macro_rules! dbg_seal {
+macro_rules! dbg_step {
     () => (
         #[cfg(debug_assertions)]
-        crate::liz_debug::debug_seal(file!(), line!(), crate::liz_debug::dbg_func!(), String::default())
+        crate::liz_debug::debug_step(file!(), line!(), crate::liz_debug::dbg_func!(), String::default())
     );
     ($($v:expr),+) => (
         #[cfg(debug_assertions)]
-        crate::liz_debug::debug_seal(file!(), line!(), crate::liz_debug::dbg_func!(), crate::liz_debug::dbg_fmts!($($v),+))
+        crate::liz_debug::debug_step(file!(), line!(), crate::liz_debug::dbg_func!(), crate::liz_debug::dbg_fmts!($($v),+))
     );
-}
-
-macro_rules! dbg_step {
-    ($xp:expr) => {{
-        let step = $xp;
-        #[cfg(debug_assertions)]
-        crate::liz_debug::debug_step(
-            file!(),
-            line!(),
-            crate::liz_debug::dbg_func!(),
-            crate::liz_debug::dbg_fmsn!(step),
-        );
-        step
-    }};
 }
 
 macro_rules! dbg_tell {
@@ -339,7 +325,7 @@ macro_rules! dbg_tell {
 }
 
 pub(crate) use {dbg_bleb, dbg_erro, dbg_info, dbg_jolt, dbg_kind};
-pub(crate) use {dbg_call, dbg_reav, dbg_seal, dbg_step, dbg_tell};
+pub(crate) use {dbg_call, dbg_reav, dbg_step, dbg_tell};
 pub(crate) use {dbg_fmsn, dbg_fmts, dbg_fnam, dbg_func, dbg_fval};
 
 #[macro_export]
@@ -380,8 +366,8 @@ macro_rules! liz_dbg_fval {
 #[macro_export]
 macro_rules! liz_dbg_fmts {
     () => (String::default());
-    ($v:expr) => (format!("{} = {{{}}}", stringify!($v), liz::liz_dbg_fval!(&$v)));
-    ($v:expr, $($n:expr),+) => (format!("{} = {{{}}} , {}", stringify!($v), liz::liz_dbg_fval!(&$v), liz::liz_dbg_fmts!($($n),+)));
+    ($v:expr) => (format!("{} = {}", stringify!($v), liz::liz_dbg_fval!(&$v)));
+    ($v:expr, $($n:expr),+) => (format!("{} = {} , {}", stringify!($v), liz::liz_dbg_fval!(&$v), liz::liz_dbg_fmts!($($n),+)));
 }
 
 #[macro_export]
@@ -390,7 +376,7 @@ macro_rules! liz_dbg_fmsn {
         String::default()
     };
     ($v:expr) => {
-        format!("{{{}}}", liz::liz_dbg_fval!(&$v))
+        format!("{}", liz::liz_dbg_fval!(&$v))
     };
 }
 
@@ -472,30 +458,15 @@ macro_rules! liz_dbg_reav {
 }
 
 #[macro_export]
-macro_rules! liz_dbg_seal {
+macro_rules! liz_dbg_step {
     () => (
         #[cfg(debug_assertions)]
-        liz::liz_debug::debug_seal(file!(), line!(), liz::liz_dbg_func!(), String::default())
+        liz::liz_debug::debug_step(file!(), line!(), liz::liz_dbg_func!(), String::default())
     );
     ($($v:expr),+) => (
         #[cfg(debug_assertions)]
-        liz::liz_debug::debug_seal(file!(), line!(), liz::liz_dbg_func!(), liz::liz_dbg_fmts!($($v),+))
+        liz::liz_debug::debug_step(file!(), line!(), liz::liz_dbg_func!(), liz::liz_dbg_fmts!($($v),+))
     );
-}
-
-#[macro_export]
-macro_rules! liz_dbg_step {
-    ($xp:expr) => {{
-        let result = $xp;
-        #[cfg(debug_assertions)]
-        liz::liz_debug::debug_step(
-            file!(),
-            line!(),
-            liz::liz_dbg_func!(),
-            liz::liz_dbg_fmsn!(result),
-        );
-        return result;
-    }};
 }
 
 #[macro_export]
