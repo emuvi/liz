@@ -8,7 +8,11 @@ pub struct Forms {
     pub desk: Vec<String>,
 }
 
-pub fn kit_new(from: &[impl AsRef<str>]) -> Vec<String> {
+pub fn kit_new() -> Vec<String> {
+    Vec::new()
+}
+
+pub fn kit_from(from: &[impl AsRef<str>]) -> Vec<String> {
     let mut result = Vec::with_capacity(from.len());
     for item in from {
         result.push(item.as_ref().into());
@@ -36,6 +40,14 @@ pub fn kit_add(forms: &mut Vec<String>, index: usize, form: String) {
     forms.insert(index, form)
 }
 
+pub fn kit_add_range(forms: &mut Vec<String>, on: usize, range: Vec<String>) {
+    let mut delta = 0;
+    for form in range {
+        kit_add(forms, on + delta, form);
+        delta += 1;
+    }
+}
+
 pub fn kit_put(forms: &mut Vec<String>, form: String) {
     dbg_call!(form);
     forms.push(form)
@@ -44,6 +56,15 @@ pub fn kit_put(forms: &mut Vec<String>, form: String) {
 pub fn kit_del(forms: &mut Vec<String>, index: usize) -> String {
     dbg_call!(index);
     dbg_reav!(forms.remove(index));
+}
+
+pub fn kit_del_range(forms: &mut Vec<String>, from: usize, till: usize) -> Vec<String> {
+    let size = till - from;
+    let mut result = Vec::with_capacity(size);
+    for _ in 0..size {
+        result.push(kit_del(forms, from));
+    }
+    result
 }
 
 pub fn kit_pop(forms: &mut Vec<String>) -> Option<String> {

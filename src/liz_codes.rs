@@ -197,12 +197,20 @@ impl UserData for Forms {
             Ok(liz_forms::kit_add(&mut slf.desk, index, form))
         });
 
+        methods.add_method_mut("add_range", |_, slf, (on, range): (usize, Vec<String>)| {
+            Ok(liz_forms::kit_add_range(&mut slf.desk, on, range))
+        });
+
         methods.add_method_mut("put", |_, slf, form: String| {
             Ok(liz_forms::kit_put(&mut slf.desk, form))
         });
 
         methods.add_method_mut("del", |_, slf, index: usize| {
             Ok(liz_forms::kit_del(&mut slf.desk, index))
+        });
+
+        methods.add_method_mut("del_range", |_, slf, (from, till): (usize, usize)| {
+            Ok(liz_forms::kit_del_range(&mut slf.desk, from, till))
         });
 
         methods.add_method_mut("pop", |_, slf, ()| Ok(liz_forms::kit_pop(&mut slf.desk)));
@@ -249,6 +257,36 @@ impl UserData for Forms {
         });
 
         // Parse Methods
+        methods.add_method_mut("split_whitespace", |_, slf, ()| {
+            Ok(liz_parse::rig_split_whitespace(&mut slf.desk))
+        });
+
+        methods.add_method_mut(
+            "split_whitespace_on",
+            |_, slf, (from, till): (usize, usize)| {
+                Ok(liz_parse::rig_split_whitespace_on(
+                    &mut slf.desk,
+                    from,
+                    till,
+                ))
+            },
+        );
+
+        methods.add_method_mut("split_punctuation", |_, slf, ()| {
+            Ok(liz_parse::rig_split_punctuation(&mut slf.desk))
+        });
+
+        methods.add_method_mut(
+            "split_punctuation_on",
+            |_, slf, (from, till): (usize, usize)| {
+                Ok(liz_parse::rig_split_punctuation_on(
+                    &mut slf.desk,
+                    from,
+                    till,
+                ))
+            },
+        );
+
         methods.add_method_mut("group_whitespace", |_, slf, ()| {
             Ok(liz_parse::rig_group_whitespace(&mut slf.desk))
         });
@@ -264,14 +302,14 @@ impl UserData for Forms {
             },
         );
 
-        methods.add_method_mut("split_whitespace", |_, slf, ()| {
-            Ok(liz_parse::rig_split_whitespace(&mut slf.desk))
+        methods.add_method_mut("group_punctuation", |_, slf, ()| {
+            Ok(liz_parse::rig_group_punctuation(&mut slf.desk))
         });
 
         methods.add_method_mut(
-            "split_whitespace_on",
+            "group_punctuation_on",
             |_, slf, (from, till): (usize, usize)| {
-                Ok(liz_parse::rig_split_whitespace_on(
+                Ok(liz_parse::rig_group_punctuation_on(
                     &mut slf.desk,
                     from,
                     till,

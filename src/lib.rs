@@ -23,6 +23,8 @@ mod utils;
 mod wiz_all;
 mod wiz_codes;
 mod wiz_fires;
+mod wiz_forms;
+mod wiz_parse;
 mod wiz_paths;
 mod wiz_texts;
 mod wiz_times;

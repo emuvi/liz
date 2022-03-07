@@ -3,6 +3,8 @@ use rlua::{Context, MultiValue, Value};
 use crate::liz_paths;
 use crate::wiz_codes;
 use crate::wiz_fires;
+use crate::wiz_forms;
+use crate::wiz_parse;
 use crate::wiz_paths;
 use crate::wiz_texts;
 use crate::wiz_times;
@@ -72,6 +74,8 @@ pub fn inject_all(
 
     wiz_codes::inject_codes(lane, &liz)?;
     wiz_fires::inject_execs(lane, &liz)?;
+    wiz_forms::inject_forms(lane, &liz)?;
+    wiz_parse::inject_parse(lane, &liz)?;
     wiz_paths::inject_paths(lane, &liz)?;
     wiz_texts::inject_texts(lane, &liz)?;
     wiz_times::inject_times(lane, &liz)?;
