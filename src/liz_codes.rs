@@ -6,7 +6,7 @@ use crate::liz_debug::{dbg_bleb, dbg_erro};
 use crate::liz_debug::{dbg_call, dbg_reav, dbg_step};
 use crate::liz_fires;
 use crate::liz_forms::{self, Forms};
-use crate::liz_parse;
+use crate::liz_parse::{self, BlockedBy};
 use crate::liz_paths;
 use crate::liz_winds;
 use crate::utils;
@@ -257,63 +257,14 @@ impl UserData for Forms {
         });
 
         // Parse Methods
-        methods.add_method_mut("split_whitespace", |_, slf, ()| {
-            Ok(liz_parse::rig_split_whitespace(&mut slf.desk))
+        methods.add_method_mut("parse_all", |_, slf, blocks: Vec<BlockedBy>| {
+            Ok(liz_parse::rig_parse_all(&mut slf.desk, blocks))
         });
 
         methods.add_method_mut(
-            "split_whitespace_on",
-            |_, slf, (from, till): (usize, usize)| {
-                Ok(liz_parse::rig_split_whitespace_on(
-                    &mut slf.desk,
-                    from,
-                    till,
-                ))
-            },
-        );
-
-        methods.add_method_mut("split_punctuation", |_, slf, ()| {
-            Ok(liz_parse::rig_split_punctuation(&mut slf.desk))
-        });
-
-        methods.add_method_mut(
-            "split_punctuation_on",
-            |_, slf, (from, till): (usize, usize)| {
-                Ok(liz_parse::rig_split_punctuation_on(
-                    &mut slf.desk,
-                    from,
-                    till,
-                ))
-            },
-        );
-
-        methods.add_method_mut("group_whitespace", |_, slf, ()| {
-            Ok(liz_parse::rig_group_whitespace(&mut slf.desk))
-        });
-
-        methods.add_method_mut(
-            "group_whitespace_on",
-            |_, slf, (from, till): (usize, usize)| {
-                Ok(liz_parse::rig_group_whitespace_on(
-                    &mut slf.desk,
-                    from,
-                    till,
-                ))
-            },
-        );
-
-        methods.add_method_mut("group_punctuation", |_, slf, ()| {
-            Ok(liz_parse::rig_group_punctuation(&mut slf.desk))
-        });
-
-        methods.add_method_mut(
-            "group_punctuation_on",
-            |_, slf, (from, till): (usize, usize)| {
-                Ok(liz_parse::rig_group_punctuation_on(
-                    &mut slf.desk,
-                    from,
-                    till,
-                ))
+            "parse_on",
+            |_, slf, (from, till, blocks): (usize, usize, Vec<BlockedBy>)| {
+                Ok(liz_parse::rig_parse_on(&mut slf.desk, from, till, blocks))
             },
         );
     }
