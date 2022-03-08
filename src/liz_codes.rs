@@ -6,7 +6,7 @@ use crate::liz_debug::{dbg_bleb, dbg_erro};
 use crate::liz_debug::{dbg_call, dbg_reav, dbg_step};
 use crate::liz_fires;
 use crate::liz_forms::{self, Forms};
-use crate::liz_parse::{self, BlockedBy};
+use crate::liz_parse::{self, BlockBy};
 use crate::liz_paths;
 use crate::liz_winds;
 use crate::utils;
@@ -257,13 +257,13 @@ impl UserData for Forms {
         });
 
         // Parse Methods
-        methods.add_method_mut("parse_all", |_, slf, blocks: Vec<BlockedBy>| {
+        methods.add_method_mut("parse_all", |_, slf, blocks: Vec<BlockBy>| {
             Ok(liz_parse::rig_parse_all(&mut slf.desk, blocks))
         });
 
         methods.add_method_mut(
             "parse_on",
-            |_, slf, (from, till, blocks): (usize, usize, Vec<BlockedBy>)| {
+            |_, slf, (from, till, blocks): (usize, usize, Vec<BlockBy>)| {
                 Ok(liz_parse::rig_parse_on(&mut slf.desk, from, till, blocks))
             },
         );

@@ -3,18 +3,23 @@ use rlua::UserData;
 use crate::liz_debug::{dbg_call, dbg_reav, dbg_step, dbg_tell};
 use crate::liz_forms;
 
-pub fn rig_whitespace() -> BlockedBy {
-    BlockedBy::WhiteSpace
+pub fn rig_white_space() -> BlockBy {
+    BlockBy::WhiteSpace
 }
 
-pub fn rig_punctuation() -> BlockedBy {
-    BlockedBy::Punctuation
+pub fn rig_punctuation() -> BlockBy {
+    BlockBy::Punctuation
 }
 
-pub fn rig_parse_all(
-    forms: &mut Vec<String>,
-    blocks: Vec<BlockedBy>
-) -> usize {
+pub fn rig_single_quotes() -> BlockBy {
+    BlockBy::SingleQuotes
+}
+
+pub fn rig_double_quotes() -> BlockBy {
+    BlockBy::DoubleQuotes
+}
+
+pub fn rig_parse_all(forms: &mut Vec<String>, blocks: Vec<BlockBy>) -> usize {
     rig_parse_on(forms, 0, liz_forms::kit_len(forms), blocks)
 }
 
@@ -22,7 +27,7 @@ pub fn rig_parse_on(
     forms: &mut Vec<String>,
     from: usize,
     till: usize,
-    blocks: Vec<BlockedBy>
+    blocks: Vec<BlockBy>,
 ) -> usize {
     dbg_call!(forms, from, till);
     let range = liz_forms::kit_del_range(forms, from, till);
@@ -36,11 +41,19 @@ pub fn rig_parse_on(
             for (index, test_block) in parsers.iter().enumerate() {
                 let opens_bound = test_block.opens(&helper);
                 if opens_bound.checked {
-                    if !opens_bound.include {
-                        helper.accrue_char_now();
-                        already_accrued_now = true;
+                    if opens_bound.include {
+                        helper.commit_accrued();
+                        if !already_accrued_now {
+                            helper.accrue_char_step();
+                        }
+                    } else {
+                        if !already_accrued_now {
+                            helper.accrue_char_step();
+                        }
+                        helper.commit_accrued();
                     }
-                    helper.commit_accrued();
+                    already_accrued_now = true;
+                    helper.set_opened();
                     inside = index as i64;
                 }
             }
@@ -50,15 +63,23 @@ pub fn rig_parse_on(
             let closes_bound = inside_block.closes(&helper);
             if closes_bound.checked {
                 if closes_bound.include {
-                    helper.accrue_char_now();
-                    already_accrued_now = true;
+                    if !already_accrued_now {
+                        helper.accrue_char_step();
+                    }
+                    helper.commit_accrued();
+                } else {
+                    helper.commit_accrued();
+                    if !already_accrued_now {
+                        helper.accrue_char_step();
+                    }
                 }
-                helper.commit_accrued();
+                already_accrued_now = true;
+                helper.set_closed();
                 inside = -1;
             }
         }
         if !already_accrued_now {
-            helper.accrue_char_now();
+            helper.accrue_char_step();
         }
         if !helper.advance() {
             break;
@@ -72,42 +93,59 @@ pub fn rig_parse_on(
     dbg_reav!(result);
 }
 
-fn get_parsers(blocks: Vec<BlockedBy>) -> Vec<&'static dyn BlockParser> {
+fn get_parsers(blocks: Vec<BlockBy>) -> Vec<&'static dyn BlockParser> {
     blocks.iter().map(|block| block.get_parser()).collect()
 }
 
 #[derive(Clone, PartialEq)]
-pub enum BlockedBy {
+pub enum BlockBy {
     WhiteSpace,
     Punctuation,
+    SingleQuotes,
+    DoubleQuotes,
 }
 
-impl BlockedBy {
+impl BlockBy {
     pub fn get_parser(&self) -> &'static dyn BlockParser {
         match &self {
-            BlockedBy::WhiteSpace => &BLOCK_WHITE_SPACE,
-            BlockedBy::Punctuation => &BLOCK_PUNCTUATION,
+            BlockBy::WhiteSpace => &BLOCK_WHITE_SPACE,
+            BlockBy::Punctuation => &BLOCK_PUNCTUATION,
+            BlockBy::SingleQuotes => &BLOCK_SINGLE_QUOTES,
+            BlockBy::DoubleQuotes => &BLOCK_DOUBLE_QUOTES,
         }
     }
 }
 
-impl UserData for BlockedBy {}
+impl UserData for BlockBy {}
 
 pub static BLOCK_WHITE_SPACE: BlockWhiteSpace = BlockWhiteSpace {};
+
 pub static BLOCK_PUNCTUATION: BlockPunctuation = BlockPunctuation {};
+
+pub static BLOCK_SINGLE_QUOTES: BlockQuotation = BlockQuotation {
+    opener: '\'',
+    closer: '\'',
+    escape: '\\',
+};
+
+pub static BLOCK_DOUBLE_QUOTES: BlockQuotation = BlockQuotation {
+    opener: '"',
+    closer: '"',
+    escape: '\\',
+};
 
 pub struct BlockWhiteSpace {}
 
 impl BlockParser for BlockWhiteSpace {
     fn opens(&self, helper: &ParserHelper) -> BlockBound {
         BlockBound {
-            checked: helper.get_char_now().is_whitespace(),
+            checked: helper.get_char_step().is_whitespace(),
             include: true,
         }
     }
     fn closes(&self, helper: &ParserHelper) -> BlockBound {
         BlockBound {
-            checked: !helper.get_char_now().is_whitespace(),
+            checked: !helper.get_char_step().is_whitespace(),
             include: false,
         }
     }
@@ -118,14 +156,40 @@ pub struct BlockPunctuation {}
 impl BlockParser for BlockPunctuation {
     fn opens(&self, helper: &ParserHelper) -> BlockBound {
         BlockBound {
-            checked: helper.get_char_now().is_ascii_punctuation(),
+            checked: helper.get_char_step().is_ascii_punctuation(),
             include: true,
         }
     }
+    fn closes(&self, _: &ParserHelper) -> BlockBound {
+        BlockBound {
+            checked: true,
+            include: false,
+        }
+    }
+}
+
+pub struct BlockQuotation {
+    opener: char,
+    closer: char,
+    escape: char,
+}
+
+impl BlockParser for BlockQuotation {
+    fn opens(&self, helper: &ParserHelper) -> BlockBound {
+        BlockBound {
+            checked: helper.get_char_step() == self.opener,
+            include: true,
+        }
+    }
+
     fn closes(&self, helper: &ParserHelper) -> BlockBound {
         BlockBound {
-            checked: helper.get_char_now().is_ascii_punctuation(),
-            include: false,
+            checked: !helper.is_step_on_opened()
+                && helper.get_char_step() == self.closer
+                && (helper.get_char_delta(-1) != self.escape
+                    || (helper.get_char_delta(-1) == self.escape
+                        && helper.get_char_delta(-2) == self.escape)),
+            include: true,
         }
     }
 }
@@ -144,8 +208,9 @@ pub struct ParserHelper {
     origins: Vec<char>,
     results: Vec<String>,
     accrued: String,
-    char_now: i64,
-    chars_size: i64,
+    char_step: i64,
+    char_size: i64,
+    opened_at: i64,
 }
 
 impl ParserHelper {
@@ -156,41 +221,66 @@ impl ParserHelper {
                 origins.push(ch);
             }
         }
-        let chars_size = origins.len() as i64;
+        let char_size = origins.len() as i64;
         Self {
             origins,
             results: Vec::new(),
             accrued: String::new(),
-            char_now: 0,
-            chars_size,
+            char_step: 0,
+            char_size: char_size,
+            opened_at: -1,
         }
     }
 
-    fn advance(&mut self) -> bool {
-        if self.char_now < self.chars_size - 1 {
-            self.char_now += 1;
+    pub fn advance(&mut self) -> bool {
+        if self.char_step < self.char_size - 1 {
+            self.char_step += 1;
             true
         } else {
             false
         }
     }
 
-    fn get_char(&self, at: i64) -> char {
-        if at >= 0 && at < self.chars_size {
-            return self.origins[at as usize];
+    pub fn get_char_at(&self, place: i64) -> char {
+        if place >= 0 && place < self.char_size {
+            return self.origins[place as usize];
         }
         '\0'
     }
 
-    fn get_char_now(&self) -> char {
-        self.get_char(self.char_now)
+    pub fn get_char_step(&self) -> char {
+        self.get_char_at(self.char_step)
     }
 
-    fn accrue_char_now(&mut self) {
-        self.accrued.push(self.get_char_now());
+    pub fn get_char_delta(&self, delta: i64) -> char {
+        self.get_char_at(self.char_step + delta)
     }
 
-    fn commit_accrued(&mut self) {
+    pub fn set_opened(&mut self) {
+        self.opened_at = self.char_step;
+    }
+
+    pub fn set_closed(&mut self) {
+        self.opened_at = -1;
+    }
+
+    pub fn set_opened_at(&mut self, place: i64) {
+        self.opened_at = place;
+    }
+
+    pub fn get_opened_at(&self) -> i64 {
+        self.opened_at
+    }
+
+    pub fn is_step_on_opened(&self) -> bool {
+        self.char_step == self.opened_at
+    }
+
+    pub fn accrue_char_step(&mut self) {
+        self.accrued.push(self.get_char_step());
+    }
+
+    pub fn commit_accrued(&mut self) {
         if !self.accrued.is_empty() {
             let accrued = self.accrued.clone();
             dbg_tell!(accrued);
