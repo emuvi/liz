@@ -1,7 +1,9 @@
+use regex::Regex;
 use rlua::UserData;
 
 use crate::liz_debug::{dbg_call, dbg_reav, dbg_step, dbg_tell};
 use crate::liz_forms;
+use crate::LizError;
 
 pub fn block_regex(regex: String) -> BlockBy {
     dbg_call!();
@@ -28,7 +30,7 @@ pub fn block_double_quotes() -> BlockBy {
     dbg_reav!(BlockBy::Imply(BlockImply::DoubleQuotes));
 }
 
-pub fn rig_parse_all(forms: &mut Vec<String>, blocks: Vec<BlockBy>) -> usize {
+pub fn rig_parse_all(forms: &mut Vec<String>, blocks: Vec<BlockBy>) -> Result<usize, LizError> {
     dbg_call!(forms, blocks);
     dbg_reav!(rig_parse_on(forms, 0, liz_forms::kit_len(forms), blocks));
 }
@@ -38,15 +40,15 @@ pub fn rig_parse_on(
     from: usize,
     till: usize,
     blocks: Vec<BlockBy>,
-) -> usize {
+) -> Result<usize, LizError> {
     dbg_call!(forms, from, till, blocks);
     let range = liz_forms::kit_del_range(forms, from, till);
     dbg_step!(range);
-    let parsers = get_traits(blocks);
+    let parsers = get_parsers(blocks)?;
     let indexed_parsers: Vec<(usize, Box<dyn BlockTrait>)> =
         parsers.into_iter().enumerate().collect();
     dbg_step!(indexed_parsers);
-    let mut helper = ParserHelper::new(range);
+    let mut helper = ParseHelper::new(range);
     let mut inside: i64 = -1;
     loop {
         dbg_tell!(inside);
@@ -88,7 +90,7 @@ pub fn rig_parse_on(
     dbg_step!(results);
     let result = results.len();
     liz_forms::kit_add_range(forms, from, results);
-    dbg_reav!(result);
+    dbg_reav!(Ok(result));
 }
 
 #[derive(Debug, Clone, PartialEq)]
@@ -100,9 +102,11 @@ pub enum BlockBy {
 impl UserData for BlockBy {}
 
 impl BlockBy {
-    pub fn get_trait(self) -> Box<dyn BlockTrait> {
-        match self {
-            BlockBy::Regex(regex) => Box::new(BlockRegex { regex }),
+    pub fn get_trait(self) -> Result<Box<dyn BlockTrait>, LizError> {
+        Ok(match self {
+            BlockBy::Regex(regex) => Box::new(BlockRegex {
+                regex: Regex::new(regex.as_ref())?,
+            }),
             BlockBy::Imply(imply) => match imply {
                 BlockImply::WhiteSpace => Box::new(BlockWhiteSpace {}),
                 BlockImply::Punctuation => Box::new(BlockPunctuation {}),
@@ -117,20 +121,20 @@ impl BlockBy {
                     escape: '\\',
                 }),
             },
-        }
+        })
     }
 }
 
 #[derive(Debug)]
 pub struct BlockRegex {
-    regex: String,
+    regex: Regex,
 }
 
 impl BlockTrait for BlockRegex {
-    fn opens(&self, helper: &ParserHelper) -> bool {
+    fn opens(&self, helper: &ParseHelper) -> bool {
         todo!()
     }
-    fn closes(&self, helper: &ParserHelper) -> bool {
+    fn closes(&self, helper: &ParseHelper) -> bool {
         todo!()
     }
 }
@@ -147,11 +151,11 @@ pub enum BlockImply {
 pub struct BlockWhiteSpace {}
 
 impl BlockTrait for BlockWhiteSpace {
-    fn opens(&self, helper: &ParserHelper) -> bool {
+    fn opens(&self, helper: &ParseHelper) -> bool {
         dbg_call!(helper);
         dbg_reav!(helper.get_char_step().is_whitespace());
     }
-    fn closes(&self, helper: &ParserHelper) -> bool {
+    fn closes(&self, helper: &ParseHelper) -> bool {
         dbg_call!(helper);
         dbg_reav!(!helper.get_char_next().is_whitespace());
     }
@@ -161,12 +165,12 @@ impl BlockTrait for BlockWhiteSpace {
 pub struct BlockPunctuation {}
 
 impl BlockTrait for BlockPunctuation {
-    fn opens(&self, helper: &ParserHelper) -> bool {
+    fn opens(&self, helper: &ParseHelper) -> bool {
         dbg_call!(helper);
         dbg_reav!(helper.get_char_step().is_ascii_punctuation());
     }
 
-    fn closes(&self, _: &ParserHelper) -> bool {
+    fn closes(&self, _: &ParseHelper) -> bool {
         dbg_reav!(true);
     }
 }
@@ -179,12 +183,12 @@ pub struct BlockQuotation {
 }
 
 impl BlockTrait for BlockQuotation {
-    fn opens(&self, helper: &ParserHelper) -> bool {
+    fn opens(&self, helper: &ParseHelper) -> bool {
         dbg_call!(helper);
         dbg_reav!(helper.get_char_step() == self.opener)
     }
 
-    fn closes(&self, helper: &ParserHelper) -> bool {
+    fn closes(&self, helper: &ParseHelper) -> bool {
         dbg_call!(helper);
         dbg_reav!(
             !helper.is_step_on_opened()
@@ -197,12 +201,12 @@ impl BlockTrait for BlockQuotation {
 }
 
 pub trait BlockTrait: std::fmt::Debug {
-    fn opens(&self, helper: &ParserHelper) -> bool;
-    fn closes(&self, helper: &ParserHelper) -> bool;
+    fn opens(&self, helper: &ParseHelper) -> bool;
+    fn closes(&self, helper: &ParseHelper) -> bool;
 }
 
 #[derive(Debug)]
-pub struct ParserHelper {
+pub struct ParseHelper {
     origins: Vec<char>,
     results: Vec<String>,
     accrued: String,
@@ -212,7 +216,7 @@ pub struct ParserHelper {
     step_accrued: bool,
 }
 
-impl ParserHelper {
+impl ParseHelper {
     fn new(forms: Vec<String>) -> Self {
         dbg_call!(forms);
         let mut origins: Vec<char> = Vec::new();
@@ -224,7 +228,7 @@ impl ParserHelper {
         dbg_step!(origins);
         let char_size = origins.len() as i64;
         dbg_step!(char_size);
-        dbg_reav!(Self {
+        dbg_reav!(ParseHelper {
             origins,
             results: Vec::new(),
             accrued: String::new(),
@@ -326,11 +330,11 @@ impl ParserHelper {
     }
 }
 
-fn get_traits(blocks: Vec<BlockBy>) -> Vec<Box<dyn BlockTrait>> {
+fn get_parsers(blocks: Vec<BlockBy>) -> Result<Vec<Box<dyn BlockTrait>>, LizError> {
     dbg_call!(blocks);
     let mut result: Vec<Box<dyn BlockTrait>> = Vec::with_capacity(blocks.len());
     for block in blocks {
-        result.push(block.get_trait());
+        result.push(block.get_trait()?);
     }
-    dbg_reav!(result);
+    dbg_reav!(Ok(result));
 }

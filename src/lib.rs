@@ -10,12 +10,14 @@ pub mod liz_debug;
 pub mod liz_fires;
 pub mod liz_forms;
 pub mod liz_group;
+pub mod liz_logic;
 pub mod liz_parse;
 pub mod liz_paths;
 pub mod liz_texts;
 pub mod liz_times;
 pub mod liz_winds;
 
+mod tst_group;
 mod tst_paths;
 mod tst_parse;
 

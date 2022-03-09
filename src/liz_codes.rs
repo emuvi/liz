@@ -6,6 +6,7 @@ use crate::liz_debug::{dbg_bleb, dbg_erro};
 use crate::liz_debug::{dbg_call, dbg_reav, dbg_step};
 use crate::liz_fires;
 use crate::liz_forms::{self, Forms};
+use crate::liz_group::{self, GroupPair};
 use crate::liz_parse::{self, BlockBy};
 use crate::liz_paths;
 use crate::liz_winds;
@@ -256,15 +257,35 @@ impl UserData for Forms {
             utils::treat_error(liz_forms::kit_write(&slf.desk, &path))
         });
 
-        // Parse Methods
+        // Gather Methods
+        methods.add_method_mut(
+            "group_all",
+            |_, slf, (groups, recursive): (Vec<GroupPair>, bool)| {
+                utils::treat_error(liz_group::rig_group_all(&mut slf.desk, groups, recursive))
+            },
+        );
+
+        methods.add_method_mut(
+            "group_on",
+            |_, slf, (from, till, groups, recursive): (usize, usize, Vec<GroupPair>, bool)| {
+                utils::treat_error(liz_group::rig_group_on(
+                    &mut slf.desk,
+                    from,
+                    till,
+                    groups,
+                    recursive,
+                ))
+            },
+        );
+
         methods.add_method_mut("parse_all", |_, slf, blocks: Vec<BlockBy>| {
-            Ok(liz_parse::rig_parse_all(&mut slf.desk, blocks))
+            utils::treat_error(liz_parse::rig_parse_all(&mut slf.desk, blocks))
         });
 
         methods.add_method_mut(
             "parse_on",
             |_, slf, (from, till, blocks): (usize, usize, Vec<BlockBy>)| {
-                Ok(liz_parse::rig_parse_on(&mut slf.desk, from, till, blocks))
+                utils::treat_error(liz_parse::rig_parse_on(&mut slf.desk, from, till, blocks))
             },
         );
     }

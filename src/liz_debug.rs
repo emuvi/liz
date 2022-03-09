@@ -1,5 +1,5 @@
-use once_cell::sync::Lazy;
 use chrono::offset::Utc;
+use once_cell::sync::Lazy;
 
 use std::error::Error;
 use std::fmt::Display;
@@ -18,6 +18,7 @@ use crate::LizError;
 static VERBOSE: AtomicBool = AtomicBool::new(false);
 static ARCHIVE: AtomicBool = AtomicBool::new(false);
 static ARCFILE: Lazy<Mutex<File>> = Lazy::new(|| Mutex::new(File::create("archive.log").unwrap()));
+static DBGTIME: AtomicBool = AtomicBool::new(false);
 static DBGSIZE: AtomicUsize = AtomicUsize::new(1);
 
 pub fn is_verbose() -> bool {
@@ -40,6 +41,18 @@ pub fn set_archive(archive: bool) {
     if is_archive() {
         dbg_info!("Archive started");
     }
+}
+
+pub fn is_dbg_time() -> bool {
+    DBGTIME.load(Ordering::Acquire)
+}
+
+pub fn set_dbg_time(time: bool) {
+    DBGTIME.store(time, Ordering::Release);
+}
+
+pub fn put_dbg_time() {
+    set_dbg_time(true);
 }
 
 pub fn get_dbg_size() -> usize {
@@ -73,22 +86,41 @@ pub fn put_dbg_verbose_tells() {
 
 pub fn debug(message: impl AsRef<str>) {
     if is_verbose() {
-        println!(
-            "({}) {}",
-            std::thread::current().name().unwrap_or(""),
-            message.as_ref()
-        );
+        if is_dbg_time() {
+            println!(
+                "{} ({}) {}",
+                Utc::now().format(liz_times::UNIQUE_REAL_FORMAT),
+                std::thread::current().name().unwrap_or(""),
+                message.as_ref()
+            );
+        } else {
+            println!(
+                "({}) {}",
+                std::thread::current().name().unwrap_or(""),
+                message.as_ref()
+            );
+        }
     }
     if is_archive() {
         let mut file = ARCFILE.lock().unwrap();
-        writeln!(
-            file,
-            "{} ({}) {}",
-            Utc::now().format(liz_times::UNIQUE_REAL_FORMAT),
-            std::thread::current().name().unwrap_or(""),
-            message.as_ref()
-        )
-        .unwrap();
+        if is_dbg_time() {
+            writeln!(
+                file,
+                "{} ({}) {}",
+                Utc::now().format(liz_times::UNIQUE_REAL_FORMAT),
+                std::thread::current().name().unwrap_or(""),
+                message.as_ref()
+            )
+            .unwrap();
+        } else {
+            writeln!(
+                file,
+                "({}) {}",
+                std::thread::current().name().unwrap_or(""),
+                message.as_ref()
+            )
+            .unwrap();
+        }
     }
 }
 
