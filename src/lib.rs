@@ -28,6 +28,7 @@ mod wiz_codes;
 mod wiz_fires;
 mod wiz_forms;
 mod wiz_group;
+mod wiz_logic;
 mod wiz_parse;
 mod wiz_paths;
 mod wiz_texts;
