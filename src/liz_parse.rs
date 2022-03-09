@@ -58,7 +58,10 @@ pub fn rig_parse_on(
                 let opens_bound = test_block.opens(&helper);
                 dbg_tell!(opens_bound);
                 if opens_bound {
-                    helper.commit_accrued();
+                    let opens_commit = test_block.opens_commit();
+                    if opens_commit {
+                        helper.commit_accrued();
+                    }
                     helper.accrue_char_step();
                     helper.set_opened();
                     inside = *index as i64;
@@ -74,7 +77,10 @@ pub fn rig_parse_on(
             dbg_tell!(closes_bound);
             if closes_bound {
                 helper.accrue_char_step();
-                helper.commit_accrued();
+                let closes_commit = inside_block.closes_commit();
+                if closes_commit {
+                    helper.commit_accrued();
+                }
                 helper.set_closed();
                 inside = -1;
                 dbg_tell!(inside);
@@ -132,10 +138,21 @@ pub struct BlockRegex {
 
 impl BlockTrait for BlockRegex {
     fn opens(&self, helper: &ParseHelper) -> bool {
-        todo!()
+        let checker = format!("{}{}", helper.get_accrued(), helper.get_char_step());
+        self.regex.is_match(&checker)
     }
+
+    fn opens_commit(&self) -> bool {
+        false
+    }
+
     fn closes(&self, helper: &ParseHelper) -> bool {
-        todo!()
+        let checker = format!("{}{}", helper.get_accrued(), helper.get_char_next());
+        !self.regex.is_match(&checker)
+    }
+
+    fn closes_commit(&self) -> bool {
+        true
     }
 }
 
@@ -155,9 +172,20 @@ impl BlockTrait for BlockWhiteSpace {
         dbg_call!(helper);
         dbg_reav!(helper.get_char_step().is_whitespace());
     }
+
+    fn opens_commit(&self) -> bool {
+        dbg_call!();
+        dbg_reav!(true);
+    }
+
     fn closes(&self, helper: &ParseHelper) -> bool {
         dbg_call!(helper);
         dbg_reav!(!helper.get_char_next().is_whitespace());
+    }
+
+    fn closes_commit(&self) -> bool {
+        dbg_call!();
+        dbg_reav!(true);
     }
 }
 
@@ -170,7 +198,17 @@ impl BlockTrait for BlockPunctuation {
         dbg_reav!(helper.get_char_step().is_ascii_punctuation());
     }
 
+    fn opens_commit(&self) -> bool {
+        dbg_call!();
+        dbg_reav!(true);
+    }
+
     fn closes(&self, _: &ParseHelper) -> bool {
+        dbg_reav!(true);
+    }
+
+    fn closes_commit(&self) -> bool {
+        dbg_call!();
         dbg_reav!(true);
     }
 }
@@ -188,6 +226,11 @@ impl BlockTrait for BlockQuotation {
         dbg_reav!(helper.get_char_step() == self.opener)
     }
 
+    fn opens_commit(&self) -> bool {
+        dbg_call!();
+        dbg_reav!(true);
+    }
+
     fn closes(&self, helper: &ParseHelper) -> bool {
         dbg_call!(helper);
         dbg_reav!(
@@ -198,11 +241,18 @@ impl BlockTrait for BlockQuotation {
                         && helper.get_char_delta(-2) == self.escape))
         );
     }
+
+    fn closes_commit(&self) -> bool {
+        dbg_call!();
+        dbg_reav!(true);
+    }
 }
 
 pub trait BlockTrait: std::fmt::Debug {
     fn opens(&self, helper: &ParseHelper) -> bool;
+    fn opens_commit(&self) -> bool;
     fn closes(&self, helper: &ParseHelper) -> bool;
+    fn closes_commit(&self) -> bool;
 }
 
 #[derive(Debug)]
@@ -293,6 +343,11 @@ impl ParseHelper {
     pub fn is_step_on_opened(&self) -> bool {
         dbg_call!();
         dbg_reav!(self.char_step == self.opened_at);
+    }
+
+    pub fn get_accrued(&self) -> &str {
+        dbg_call!();
+        dbg_reav!(&self.accrued);
     }
 
     pub fn accrue_char_step(&mut self) {
