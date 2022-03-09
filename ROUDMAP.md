@@ -13,4 +13,4 @@ I shall map erros with dbg_bleb on each returned LizError inside the sensible fu
 [EVAL](roud/wildcards.md) How to implement WildCards on Paths
 
 ## Independent thread to write the archive log file
-[TODO] Probably is better to let the user tp pipe the stdout to some file by the OS system
+[EVALUED] It is not needed because when debugging the performance is not the issue instead the correctness that is.

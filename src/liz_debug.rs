@@ -1,4 +1,5 @@
 use once_cell::sync::Lazy;
+use chrono::offset::Utc;
 
 use std::error::Error;
 use std::fmt::Display;
@@ -79,12 +80,11 @@ pub fn debug(message: impl AsRef<str>) {
         );
     }
     if is_archive() {
-        // [EVAL] - This is not working, why?
         let mut file = ARCFILE.lock().unwrap();
         writeln!(
             file,
             "{} ({}) {}",
-            liz_times::now(),
+            Utc::now().format(liz_times::UNIQUE_REAL_FORMAT),
             std::thread::current().name().unwrap_or(""),
             message.as_ref()
         )
@@ -178,8 +178,8 @@ pub fn debug_make(
         format!("[{}] {} on ({}) in {}[{}]", kind, msg, func, file, line)
     } else {
         format!(
-            "[{}] {} as {} on ({}) in {}[{}]",
-            kind, msg, vals, func, file, line
+            "[{}] {} on ({}) in {}[{}] as {}",
+            kind, msg, func, file, line, vals
         )
     };
     debug(&message);

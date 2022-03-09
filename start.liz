@@ -1,6 +1,11 @@
-local blocks = {Liz.rig_block_whitespace()}
-local tester = {"ab  cd"}
-local tested = Liz.rig_split(tester, 0, 1, blocks)
+local blocks = {
+    Liz.block_double_quotes(),
+    Liz.block_single_quotes(),
+    Liz.block_white_space(),
+    Liz.block_punctuation(),
+}
+local tester = {"ab ' $ a'  $cd"}
+local tested = Liz.rig_parse_all(tester, blocks)
 for _, v in pairs(tested) do
     print(v)
 end

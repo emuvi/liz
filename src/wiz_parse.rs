@@ -4,13 +4,15 @@ use crate::liz_parse::{self, BlockBy};
 use crate::LizError;
 
 pub fn inject_parse<'a>(lane: Context<'a>, liz: &Table<'a>) -> Result<(), LizError> {
-    let rig_white_space = lane.create_function(|_, ()| Ok(liz_parse::rig_white_space()))?;
+    let block_regex = lane.create_function(|_, regex: String| Ok(liz_parse::block_regex(regex)))?;
 
-    let rig_punctuation = lane.create_function(|_, ()| Ok(liz_parse::rig_punctuation()))?;
+    let block_white_space = lane.create_function(|_, ()| Ok(liz_parse::block_white_space()))?;
 
-    let rig_single_quotes = lane.create_function(|_, ()| Ok(liz_parse::rig_single_quotes()))?;
+    let block_punctuation = lane.create_function(|_, ()| Ok(liz_parse::block_punctuation()))?;
 
-    let rig_double_quotes = lane.create_function(|_, ()| Ok(liz_parse::rig_double_quotes()))?;
+    let block_single_quotes = lane.create_function(|_, ()| Ok(liz_parse::block_single_quotes()))?;
+
+    let block_double_quotes = lane.create_function(|_, ()| Ok(liz_parse::block_double_quotes()))?;
 
     let rig_parse_all =
         lane.create_function_mut(|_, (mut forms, blocks): (Vec<String>, Vec<BlockBy>)| {
@@ -25,10 +27,11 @@ pub fn inject_parse<'a>(lane: Context<'a>, liz: &Table<'a>) -> Result<(), LizErr
         },
     )?;
 
-    liz.set("rig_white_space", rig_white_space)?;
-    liz.set("rig_punctuation", rig_punctuation)?;
-    liz.set("rig_single_quotes", rig_single_quotes)?;
-    liz.set("rig_double_quotes", rig_double_quotes)?;
+    liz.set("block_regex", block_regex)?;
+    liz.set("block_white_space", block_white_space)?;
+    liz.set("block_punctuation", block_punctuation)?;
+    liz.set("block_single_quotes", block_single_quotes)?;
+    liz.set("block_double_quotes", block_double_quotes)?;
     liz.set("rig_parse_all", rig_parse_all)?;
     liz.set("rig_parse_on", rig_parse_on)?;
 
