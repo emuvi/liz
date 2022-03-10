@@ -15,6 +15,26 @@ pub fn block_white_space() -> BlockBy {
     dbg_reav!(BlockBy::Imply(BlockImply::WhiteSpace));
 }
 
+pub fn block_alphabetic() -> BlockBy {
+    dbg_call!();
+    dbg_reav!(BlockBy::Imply(BlockImply::Alphabetic));
+}
+
+pub fn block_numeric() -> BlockBy {
+    dbg_call!();
+    dbg_reav!(BlockBy::Imply(BlockImply::Numeric));
+}
+
+pub fn block_alpha_numeric() -> BlockBy {
+    dbg_call!();
+    dbg_reav!(BlockBy::Imply(BlockImply::AlphaNumeric));
+}
+
+pub fn block_char_number(starter: char) -> BlockBy {
+    dbg_call!();
+    dbg_reav!(BlockBy::Imply(BlockImply::CharNumber(starter)));
+}
+
 pub fn block_punctuation() -> BlockBy {
     dbg_call!();
     dbg_reav!(BlockBy::Imply(BlockImply::Punctuation));
@@ -111,6 +131,10 @@ impl BlockBy {
             }),
             BlockBy::Imply(imply) => match imply {
                 BlockImply::WhiteSpace => Box::new(BlockWhiteSpace {}),
+                BlockImply::Alphabetic => Box::new(BlockAlphabetic {}),
+                BlockImply::Numeric => Box::new(BlockNumeric {}),
+                BlockImply::AlphaNumeric => Box::new(BlockAlphaNumeric {}),
+                BlockImply::CharNumber(starter) => Box::new(BlockCharNumber { starter }),
                 BlockImply::Punctuation => Box::new(BlockPunctuation {}),
                 BlockImply::SingleQuotes => Box::new(BlockQuotation {
                     opener: '\'',
@@ -182,6 +206,10 @@ impl BlockTrait for BlockRegex {
 #[derive(Debug, Clone, PartialEq)]
 pub enum BlockImply {
     WhiteSpace,
+    Alphabetic,
+    Numeric,
+    AlphaNumeric,
+    CharNumber(char),
     Punctuation,
     SingleQuotes,
     DoubleQuotes,
@@ -203,6 +231,92 @@ impl BlockTrait for BlockWhiteSpace {
         dbg_call!(helper);
         dbg_reav!(BlockBound {
             checked: !helper.get_char_next().is_whitespace(),
+            commits: true,
+        });
+    }
+}
+
+#[derive(Debug)]
+pub struct BlockAlphabetic {}
+
+impl BlockTrait for BlockAlphabetic {
+    fn opens(&self, helper: &mut ParseHelper) -> BlockBound {
+        dbg_call!(helper);
+        dbg_reav!(BlockBound {
+            checked: helper.get_char_step().is_alphabetic(),
+            commits: true,
+        });
+    }
+
+    fn closes(&self, helper: &mut ParseHelper) -> BlockBound {
+        dbg_call!(helper);
+        dbg_reav!(BlockBound {
+            checked: !helper.get_char_next().is_alphabetic(),
+            commits: true,
+        });
+    }
+}
+
+#[derive(Debug)]
+pub struct BlockNumeric {}
+
+impl BlockTrait for BlockNumeric {
+    fn opens(&self, helper: &mut ParseHelper) -> BlockBound {
+        dbg_call!(helper);
+        dbg_reav!(BlockBound {
+            checked: helper.get_char_step().is_numeric(),
+            commits: true,
+        });
+    }
+
+    fn closes(&self, helper: &mut ParseHelper) -> BlockBound {
+        dbg_call!(helper);
+        dbg_reav!(BlockBound {
+            checked: !helper.get_char_next().is_numeric(),
+            commits: true,
+        });
+    }
+}
+
+#[derive(Debug)]
+pub struct BlockAlphaNumeric {}
+
+impl BlockTrait for BlockAlphaNumeric {
+    fn opens(&self, helper: &mut ParseHelper) -> BlockBound {
+        dbg_call!(helper);
+        dbg_reav!(BlockBound {
+            checked: helper.get_char_step().is_alphanumeric(),
+            commits: true,
+        });
+    }
+
+    fn closes(&self, helper: &mut ParseHelper) -> BlockBound {
+        dbg_call!(helper);
+        dbg_reav!(BlockBound {
+            checked: !helper.get_char_next().is_alphanumeric(),
+            commits: true,
+        });
+    }
+}
+
+#[derive(Debug)]
+pub struct BlockCharNumber {
+    starter: char,
+}
+
+impl BlockTrait for BlockCharNumber {
+    fn opens(&self, helper: &mut ParseHelper) -> BlockBound {
+        dbg_call!(helper);
+        dbg_reav!(BlockBound {
+            checked: helper.get_char_step() == self.starter && helper.get_char_next().is_numeric(),
+            commits: true,
+        });
+    }
+
+    fn closes(&self, helper: &mut ParseHelper) -> BlockBound {
+        dbg_call!(helper);
+        dbg_reav!(BlockBound {
+            checked: !helper.get_char_next().is_numeric(),
             commits: true,
         });
     }

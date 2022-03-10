@@ -9,6 +9,18 @@ pub fn inject_parse<'a>(lane: Context<'a>, liz: &Table<'a>) -> Result<(), LizErr
 
     let block_white_space = lane.create_function(|_, ()| Ok(liz_parse::block_white_space()))?;
 
+    let block_alphabetic = lane.create_function(|_, ()| Ok(liz_parse::block_alphabetic()))?;
+
+    let block_numeric = lane.create_function(|_, ()| Ok(liz_parse::block_numeric()))?;
+
+    let block_alpha_numeric = lane.create_function(|_, ()| Ok(liz_parse::block_alpha_numeric()))?;
+
+    let block_char_number = lane.create_function(|_, starter: String| {
+        Ok(liz_parse::block_char_number(
+            starter.chars().next().unwrap_or('\0'),
+        ))
+    })?;
+
     let block_punctuation = lane.create_function(|_, ()| Ok(liz_parse::block_punctuation()))?;
 
     let block_single_quotes = lane.create_function(|_, ()| Ok(liz_parse::block_single_quotes()))?;
@@ -34,6 +46,10 @@ pub fn inject_parse<'a>(lane: Context<'a>, liz: &Table<'a>) -> Result<(), LizErr
 
     liz.set("block_regex", block_regex)?;
     liz.set("block_white_space", block_white_space)?;
+    liz.set("block_alphabetic", block_alphabetic)?;
+    liz.set("block_numeric", block_numeric)?;
+    liz.set("block_alpha_numeric", block_alpha_numeric)?;
+    liz.set("block_char_number", block_char_number)?;
     liz.set("block_punctuation", block_punctuation)?;
     liz.set("block_single_quotes", block_single_quotes)?;
     liz.set("block_double_quotes", block_double_quotes)?;
