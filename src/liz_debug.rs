@@ -32,6 +32,10 @@ pub fn set_verbose(verbose: bool) {
     }
 }
 
+pub fn put_verbose() {
+    set_verbose(true);
+}
+
 pub fn is_archive() -> bool {
     ARCHIVE.load(Ordering::Acquire)
 }
@@ -41,6 +45,10 @@ pub fn set_archive(archive: bool) {
     if is_archive() {
         dbg_info!("Archive started");
     }
+}
+
+pub fn put_archive() {
+    set_archive(true);
 }
 
 pub fn is_dbg_time() -> bool {

@@ -45,7 +45,7 @@ pub fn rig_parse_on(
     let range = liz_forms::kit_del_range(forms, from, till);
     dbg_step!(range);
     let parsers = get_parsers(blocks)?;
-    let indexed_parsers: Vec<(usize, Box<dyn BlockTrait>)> =
+    let mut indexed_parsers: Vec<(usize, Box<dyn BlockTrait>)> =
         parsers.into_iter().enumerate().collect();
     dbg_step!(indexed_parsers);
     let mut helper = ParseHelper::new(range);
@@ -53,16 +53,14 @@ pub fn rig_parse_on(
     loop {
         dbg_tell!(inside);
         if inside < 0 {
-            for (index, test_block) in &indexed_parsers {
+            for (index, test_block) in &mut indexed_parsers {
                 dbg_tell!(index, test_block);
-                let opens_bound = test_block.opens(&helper);
+                let opens_bound = test_block.opens(&mut helper);
                 dbg_tell!(opens_bound);
-                if opens_bound {
-                    let opens_commit = test_block.opens_commit();
-                    if opens_commit {
+                if opens_bound.checked {
+                    if opens_bound.commits {
                         helper.commit_accrued();
                     }
-                    helper.accrue_char_step();
                     helper.set_opened();
                     inside = *index as i64;
                     dbg_tell!(inside);
@@ -70,15 +68,14 @@ pub fn rig_parse_on(
                 }
             }
         }
+        helper.accrue_char_step();
         if inside >= 0 {
             let inside_block = &indexed_parsers[inside as usize].1;
             dbg_tell!(inside_block);
-            let closes_bound = inside_block.closes(&helper);
+            let closes_bound = inside_block.closes(&mut helper);
             dbg_tell!(closes_bound);
-            if closes_bound {
-                helper.accrue_char_step();
-                let closes_commit = inside_block.closes_commit();
-                if closes_commit {
+            if closes_bound.checked {
+                if closes_bound.commits {
                     helper.commit_accrued();
                 }
                 helper.set_closed();
@@ -86,7 +83,6 @@ pub fn rig_parse_on(
                 dbg_tell!(inside);
             }
         }
-        helper.accrue_char_step();
         if !helper.advance() {
             break;
         }
@@ -137,22 +133,36 @@ pub struct BlockRegex {
 }
 
 impl BlockTrait for BlockRegex {
-    fn opens(&self, helper: &ParseHelper) -> bool {
+    fn opens(&self, helper: &mut ParseHelper) -> BlockBound {
+        dbg_call!(helper);
         let checker = format!("{}{}", helper.get_accrued(), helper.get_char_step());
-        self.regex.is_match(&checker)
+        dbg_step!(checker);
+        dbg_reav!(BlockBound {
+            checked: self.regex.is_match(&checker),
+            commits: false,
+        });
+        // [TODO] - I have to identify where it started accrue until there and opens the block from there
     }
 
-    fn opens_commit(&self) -> bool {
-        false
-    }
-
-    fn closes(&self, helper: &ParseHelper) -> bool {
-        let checker = format!("{}{}", helper.get_accrued(), helper.get_char_next());
-        !self.regex.is_match(&checker)
-    }
-
-    fn closes_commit(&self) -> bool {
-        true
+    fn closes(&self, helper: &mut ParseHelper) -> BlockBound {
+        dbg_call!(helper);
+        let accrued = helper.get_accrued();
+        dbg_step!(accrued);
+        let checker = format!("{}{}", accrued, helper.get_char_next());
+        dbg_step!(checker);
+        let match_end = self.regex.shortest_match(&checker);
+        dbg_step!(match_end);
+        let mut checked = true;
+        if let Some(match_end) = match_end {
+            dbg_step!(match_end);
+            if match_end > accrued.len() {
+                checked = false;
+            }
+        }
+        dbg_reav!(BlockBound {
+            checked,
+            commits: true,
+        });
     }
 }
 
@@ -168,24 +178,20 @@ pub enum BlockImply {
 pub struct BlockWhiteSpace {}
 
 impl BlockTrait for BlockWhiteSpace {
-    fn opens(&self, helper: &ParseHelper) -> bool {
+    fn opens(&self, helper: &mut ParseHelper) -> BlockBound {
         dbg_call!(helper);
-        dbg_reav!(helper.get_char_step().is_whitespace());
+        dbg_reav!(BlockBound {
+            checked: helper.get_char_step().is_whitespace(),
+            commits: true,
+        });
     }
 
-    fn opens_commit(&self) -> bool {
-        dbg_call!();
-        dbg_reav!(true);
-    }
-
-    fn closes(&self, helper: &ParseHelper) -> bool {
+    fn closes(&self, helper: &mut ParseHelper) -> BlockBound {
         dbg_call!(helper);
-        dbg_reav!(!helper.get_char_next().is_whitespace());
-    }
-
-    fn closes_commit(&self) -> bool {
-        dbg_call!();
-        dbg_reav!(true);
+        dbg_reav!(BlockBound {
+            checked: !helper.get_char_next().is_whitespace(),
+            commits: true,
+        });
     }
 }
 
@@ -193,23 +199,19 @@ impl BlockTrait for BlockWhiteSpace {
 pub struct BlockPunctuation {}
 
 impl BlockTrait for BlockPunctuation {
-    fn opens(&self, helper: &ParseHelper) -> bool {
+    fn opens(&self, helper: &mut ParseHelper) -> BlockBound {
         dbg_call!(helper);
-        dbg_reav!(helper.get_char_step().is_ascii_punctuation());
+        dbg_reav!(BlockBound {
+            checked: helper.get_char_step().is_ascii_punctuation(),
+            commits: true,
+        });
     }
 
-    fn opens_commit(&self) -> bool {
-        dbg_call!();
-        dbg_reav!(true);
-    }
-
-    fn closes(&self, _: &ParseHelper) -> bool {
-        dbg_reav!(true);
-    }
-
-    fn closes_commit(&self) -> bool {
-        dbg_call!();
-        dbg_reav!(true);
+    fn closes(&self, _: &mut ParseHelper) -> BlockBound {
+        dbg_reav!(BlockBound {
+            checked: true,
+            commits: true,
+        });
     }
 }
 
@@ -221,38 +223,36 @@ pub struct BlockQuotation {
 }
 
 impl BlockTrait for BlockQuotation {
-    fn opens(&self, helper: &ParseHelper) -> bool {
+    fn opens(&self, helper: &mut ParseHelper) -> BlockBound {
         dbg_call!(helper);
-        dbg_reav!(helper.get_char_step() == self.opener)
+        dbg_reav!(BlockBound {
+            checked: helper.get_char_step() == self.opener,
+            commits: true,
+        })
     }
 
-    fn opens_commit(&self) -> bool {
-        dbg_call!();
-        dbg_reav!(true);
-    }
-
-    fn closes(&self, helper: &ParseHelper) -> bool {
+    fn closes(&self, helper: &mut ParseHelper) -> BlockBound {
         dbg_call!(helper);
-        dbg_reav!(
-            !helper.is_step_on_opened()
+        dbg_reav!(BlockBound {
+            checked: !helper.is_step_on_opened()
                 && helper.get_char_step() == self.closer
                 && (helper.get_char_delta(-1) != self.escape
                     || (helper.get_char_delta(-1) == self.escape
-                        && helper.get_char_delta(-2) == self.escape))
-        );
-    }
-
-    fn closes_commit(&self) -> bool {
-        dbg_call!();
-        dbg_reav!(true);
+                        && helper.get_char_delta(-2) == self.escape)),
+            commits: true,
+        });
     }
 }
 
 pub trait BlockTrait: std::fmt::Debug {
-    fn opens(&self, helper: &ParseHelper) -> bool;
-    fn opens_commit(&self) -> bool;
-    fn closes(&self, helper: &ParseHelper) -> bool;
-    fn closes_commit(&self) -> bool;
+    fn opens(&self, helper: &mut ParseHelper) -> BlockBound;
+    fn closes(&self, helper: &mut ParseHelper) -> BlockBound;
+}
+
+#[derive(Debug)]
+pub struct BlockBound {
+    checked: bool,
+    commits: bool,
 }
 
 #[derive(Debug)]

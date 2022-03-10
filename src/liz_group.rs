@@ -243,7 +243,10 @@ pub struct GroupPunctuation {
 
 impl GroupTrait for GroupPunctuation {
     fn checks(&self, term: &str) -> bool {
-        liz_logic::sense_apply(self.sense, !term.chars().any(|ch| !ch.is_ascii_punctuation()))
+        liz_logic::sense_apply(
+            self.sense,
+            !term.chars().any(|ch| !ch.is_ascii_punctuation()),
+        )
     }
 }
 
