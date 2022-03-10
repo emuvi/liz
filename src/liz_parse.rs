@@ -137,11 +137,22 @@ impl BlockTrait for BlockRegex {
         dbg_call!(helper);
         let checker = format!("{}{}", helper.get_accrued(), helper.get_char_step());
         dbg_step!(checker);
+        let matcher = self.regex.find(&checker);
+        dbg_step!(matcher);
+        let mut checked = false;
+        dbg_step!(checked);
+        if let Some(matcher) = matcher {
+            dbg_step!(matcher);
+            checked = true;
+            dbg_step!(checked);
+            if matcher.start() > 0 {
+                helper.commit_accrued_till(matcher.start());
+            }
+        }
         dbg_reav!(BlockBound {
-            checked: self.regex.is_match(&checker),
+            checked,
             commits: false,
         });
-        // [TODO] - I have to identify where it started accrue until there and opens the block from there
     }
 
     fn closes(&self, helper: &mut ParseHelper) -> BlockBound {
@@ -150,13 +161,15 @@ impl BlockTrait for BlockRegex {
         dbg_step!(accrued);
         let checker = format!("{}{}", accrued, helper.get_char_next());
         dbg_step!(checker);
-        let match_end = self.regex.shortest_match(&checker);
-        dbg_step!(match_end);
+        let matcher = self.regex.find(&checker);
+        dbg_step!(matcher);
         let mut checked = true;
-        if let Some(match_end) = match_end {
-            dbg_step!(match_end);
-            if match_end > accrued.len() {
+        dbg_step!(checked);
+        if let Some(matcher) = matcher {
+            dbg_step!(matcher);
+            if matcher.end() > accrued.len() {
                 checked = false;
+                dbg_step!(checked);
             }
         }
         dbg_reav!(BlockBound {
@@ -319,7 +332,7 @@ impl ParseHelper {
 
     pub fn set_opened(&mut self) {
         dbg_call!();
-        self.opened_at = self.char_step;
+        self.opened_at = self.char_step - self.accrued.len() as i64;
         dbg_step!(self.opened_at);
     }
 
@@ -345,6 +358,11 @@ impl ParseHelper {
         dbg_reav!(self.char_step == self.opened_at);
     }
 
+    pub fn has_accrued(&self) -> bool {
+        dbg_call!();
+        dbg_reav!(!self.accrued.is_empty());
+    }
+
     pub fn get_accrued(&self) -> &str {
         dbg_call!();
         dbg_reav!(&self.accrued);
@@ -368,6 +386,17 @@ impl ParseHelper {
             self.results.push(accrued);
             dbg_step!(self.results);
             self.accrued.clear();
+        }
+    }
+
+    pub fn commit_accrued_till(&mut self, place: usize) {
+        dbg_call!();
+        if place < self.accrued.len() {
+            let accrued_till = String::from(&self.accrued[0..place]);
+            dbg_step!(accrued_till);
+            self.results.push(accrued_till);
+            dbg_step!(self.results);
+            self.accrued = String::from(&self.accrued[place..]);
         }
     }
 
