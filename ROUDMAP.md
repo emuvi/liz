@@ -12,5 +12,5 @@ I shall map erros with dbg_bleb on each returned LizError inside the sensible fu
 ## Implement WildCards on Paths
 [EVAL](roud/wildcards.md) How to implement WildCards on Paths
 
-## Independent thread to write the archive log file
-[EVALUED] It is not needed because when debugging the performance is not the issue instead the correctness that is.
+## Code generation for Liz.lua functions names descriptors
+[EVAL] How to implement a code generation for the Liz.lua file with the functions names of the available functionalities
