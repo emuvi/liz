@@ -136,7 +136,7 @@ pub fn wrong(message: String) -> Box<MessageErr> {
     Box::new(MessageErr::of(message))
 }
 
-pub fn throw(message: String) -> Box<MessageErr> {
+pub fn throw(message: String) -> LizError {
     Box::new(MessageErr::of(message))
 }
 
@@ -158,6 +158,10 @@ pub fn debug_bleb(file: &str, line: u32, func: &str, vals: String, err: LizError
 
 pub fn debug_erro(file: &str, line: u32, func: &str, vals: String, err: impl Display) -> LizError {
     throw(debug_make("ERRO", file, line, func, vals, err))
+}
+
+pub fn debug_errs(file: &str, line: u32, func: &str, vals: String, err: impl Display) -> String {
+    debug_make("ERRO", file, line, func, vals, err)
 }
 
 pub fn debug_jolt(
@@ -290,6 +294,15 @@ macro_rules! dbg_erro {
     );
 }
 
+macro_rules! dbg_errs {
+    ($err:expr) => (
+        crate::liz_debug::debug_errs(file!(), line!(), crate::liz_debug::dbg_func!(), crate::liz_debug::dbg_fmts!(), $err)
+    );
+    ($err:expr, $($v:expr),+) => (
+        crate::liz_debug::debug_errs(file!(), line!(), crate::liz_debug::dbg_func!(), crate::liz_debug::dbg_fmts!($($v),+), $err)
+    );
+}
+
 macro_rules! dbg_bleb {
     ($err:expr) => (
         crate::liz_debug::debug_bleb(file!(), line!(), crate::liz_debug::dbg_func!(), crate::liz_debug::dbg_fmts!(), $err)
@@ -364,7 +377,7 @@ macro_rules! dbg_tell {
     );
 }
 
-pub(crate) use {dbg_bleb, dbg_erro, dbg_info, dbg_jolt, dbg_kind};
+pub(crate) use {dbg_bleb, dbg_erro, dbg_errs, dbg_info, dbg_jolt, dbg_kind};
 pub(crate) use {dbg_call, dbg_reav, dbg_step, dbg_tell};
 pub(crate) use {dbg_fmsn, dbg_fmts, dbg_fnam, dbg_func, dbg_fval};
 
@@ -447,6 +460,16 @@ macro_rules! liz_dbg_erro {
     );
     ($msg:expr, $($v:expr),+) => (
         liz::liz_debug::debug_erro(file!(), line!(), liz::liz_dbg_func!(), liz::liz_dbg_fmts!($($v),+), $msg)
+    );
+}
+
+#[macro_export]
+macro_rules! liz_dbg_errs {
+    ($msg:expr) => (
+        liz::liz_debug::debug_errs(file!(), line!(), liz::liz_dbg_func!(), liz::liz_dbg_fmts!(), $msg)
+    );
+    ($msg:expr, $($v:expr),+) => (
+        liz::liz_debug::debug_errs(file!(), line!(), liz::liz_dbg_func!(), liz::liz_dbg_fmts!($($v),+), $msg)
     );
 }
 

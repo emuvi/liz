@@ -11,15 +11,19 @@ pub fn inject_group<'a>(lane: Context<'a>, liz: &Table<'a>) -> Result<(), LizErr
 
     let group_equals = lane.create_function(|_, term: String| Ok(liz_group::group_equals(term)))?;
 
-    let group_equals_not = lane.create_function(|_, term: String| Ok(liz_group::group_equals_not(term)))?;
+    let group_equals_not =
+        lane.create_function(|_, term: String| Ok(liz_group::group_equals_not(term)))?;
 
     let group_likely = lane.create_function(|_, term: String| Ok(liz_group::group_likely(term)))?;
 
-    let group_likely_not = lane.create_function(|_, term: String| Ok(liz_group::group_likely_not(term)))?;
+    let group_likely_not =
+        lane.create_function(|_, term: String| Ok(liz_group::group_likely_not(term)))?;
 
-    let group_regex = lane.create_function(|_, phrase: String| Ok(liz_group::group_regex(phrase)))?;
+    let group_regex =
+        lane.create_function(|_, phrase: String| Ok(liz_group::group_regex(phrase)))?;
 
-    let group_regex_not = lane.create_function(|_, phrase: String| Ok(liz_group::group_regex_not(phrase)))?;
+    let group_regex_not =
+        lane.create_function(|_, phrase: String| Ok(liz_group::group_regex_not(phrase)))?;
 
     let group_any = lane.create_function(|_, ()| Ok(liz_group::group_any()))?;
 
@@ -27,15 +31,17 @@ pub fn inject_group<'a>(lane: Context<'a>, liz: &Table<'a>) -> Result<(), LizErr
 
     let group_white_space = lane.create_function(|_, ()| Ok(liz_group::group_white_space()))?;
 
-    let group_white_space_not = lane.create_function(|_, ()| Ok(liz_group::group_white_space_not()))?;
+    let group_white_space_not =
+        lane.create_function(|_, ()| Ok(liz_group::group_white_space_not()))?;
 
     let group_punctuation = lane.create_function(|_, ()| Ok(liz_group::group_punctuation()))?;
 
-    let group_punctuation_not = lane.create_function(|_, ()| Ok(liz_group::group_punctuation_not()))?;
+    let group_punctuation_not =
+        lane.create_function(|_, ()| Ok(liz_group::group_punctuation_not()))?;
 
     let rig_group_all = lane.create_function_mut(
         |_, (mut forms, groups, recursive): (Vec<String>, Vec<GroupPair>, bool)| {
-            match utils::treat_error(liz_group::rig_group_all(&mut forms, groups, recursive)) {
+            match utils::treat_error(liz_group::rig_group_all(&mut forms, &groups, recursive)) {
                 Ok(_) => Ok(forms),
                 Err(err) => Err(err),
             }
@@ -52,7 +58,7 @@ pub fn inject_group<'a>(lane: Context<'a>, liz: &Table<'a>) -> Result<(), LizErr
             bool,
         )| {
             match utils::treat_error(liz_group::rig_group_on(
-                &mut forms, from, till, groups, recursive,
+                &mut forms, from, till, &groups, recursive,
             )) {
                 Ok(_) => Ok(forms),
                 Err(err) => Err(err),

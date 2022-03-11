@@ -50,7 +50,7 @@ pub fn block_double_quotes() -> BlockBy {
     dbg_reav!(BlockBy::Imply(BlockImply::DoubleQuotes));
 }
 
-pub fn rig_parse_all(forms: &mut Vec<String>, blocks: Vec<BlockBy>) -> Result<usize, LizError> {
+pub fn rig_parse_all(forms: &mut Vec<String>, blocks: &Vec<BlockBy>) -> Result<usize, LizError> {
     dbg_call!(forms, blocks);
     dbg_reav!(rig_parse_on(forms, 0, liz_forms::kit_len(forms), blocks));
 }
@@ -59,7 +59,7 @@ pub fn rig_parse_on(
     forms: &mut Vec<String>,
     from: usize,
     till: usize,
-    blocks: Vec<BlockBy>,
+    blocks: &Vec<BlockBy>,
 ) -> Result<usize, LizError> {
     dbg_call!(forms, from, till, blocks);
     let range = liz_forms::kit_del_range(forms, from, till);
@@ -124,8 +124,8 @@ pub enum BlockBy {
 impl UserData for BlockBy {}
 
 impl BlockBy {
-    pub fn get_trait(self) -> Result<Box<dyn BlockTrait>, LizError> {
-        Ok(match self {
+    pub fn get_trait(&self) -> Result<Box<dyn BlockTrait>, LizError> {
+        Ok(match &self {
             BlockBy::Regex(regex) => Box::new(BlockRegex {
                 regex: Regex::new(regex.as_ref())?,
             }),
@@ -134,7 +134,7 @@ impl BlockBy {
                 BlockImply::Alphabetic => Box::new(BlockAlphabetic {}),
                 BlockImply::Numeric => Box::new(BlockNumeric {}),
                 BlockImply::AlphaNumeric => Box::new(BlockAlphaNumeric {}),
-                BlockImply::CharNumber(starter) => Box::new(BlockCharNumber { starter }),
+                BlockImply::CharNumber(starter) => Box::new(BlockCharNumber { starter: *starter }),
                 BlockImply::Punctuation => Box::new(BlockPunctuation {}),
                 BlockImply::SingleQuotes => Box::new(BlockQuotation {
                     opener: '\'',
@@ -528,7 +528,7 @@ impl ParseHelper {
     }
 }
 
-fn get_parsers(blocks: Vec<BlockBy>) -> Result<Vec<Box<dyn BlockTrait>>, LizError> {
+fn get_parsers(blocks: &Vec<BlockBy>) -> Result<Vec<Box<dyn BlockTrait>>, LizError> {
     dbg_call!(blocks);
     let mut result: Vec<Box<dyn BlockTrait>> = Vec::with_capacity(blocks.len());
     for block in blocks {

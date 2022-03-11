@@ -29,7 +29,7 @@ pub fn inject_parse<'a>(lane: Context<'a>, liz: &Table<'a>) -> Result<(), LizErr
 
     let rig_parse_all =
         lane.create_function_mut(|_, (mut forms, blocks): (Vec<String>, Vec<BlockBy>)| {
-            match utils::treat_error(liz_parse::rig_parse_all(&mut forms, blocks)) {
+            match utils::treat_error(liz_parse::rig_parse_all(&mut forms, &blocks)) {
                 Ok(_) => Ok(forms),
                 Err(err) => Err(err),
             }
@@ -37,7 +37,7 @@ pub fn inject_parse<'a>(lane: Context<'a>, liz: &Table<'a>) -> Result<(), LizErr
 
     let rig_parse_on = lane.create_function_mut(
         |_, (mut forms, from, till, blocks): (Vec<String>, usize, usize, Vec<BlockBy>)| {
-            match utils::treat_error(liz_parse::rig_parse_on(&mut forms, from, till, blocks)) {
+            match utils::treat_error(liz_parse::rig_parse_on(&mut forms, from, till, &blocks)) {
                 Ok(_) => Ok(forms),
                 Err(err) => Err(err),
             }

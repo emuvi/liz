@@ -261,7 +261,7 @@ impl UserData for Forms {
         methods.add_method_mut(
             "group_all",
             |_, slf, (groups, recursive): (Vec<GroupPair>, bool)| {
-                utils::treat_error(liz_group::rig_group_all(&mut slf.desk, groups, recursive))
+                utils::treat_error(liz_group::rig_group_all(&mut slf.desk, &groups, recursive))
             },
         );
 
@@ -272,20 +272,20 @@ impl UserData for Forms {
                     &mut slf.desk,
                     from,
                     till,
-                    groups,
+                    &groups,
                     recursive,
                 ))
             },
         );
 
         methods.add_method_mut("parse_all", |_, slf, blocks: Vec<BlockBy>| {
-            utils::treat_error(liz_parse::rig_parse_all(&mut slf.desk, blocks))
+            utils::treat_error(liz_parse::rig_parse_all(&mut slf.desk, &blocks))
         });
 
         methods.add_method_mut(
             "parse_on",
             |_, slf, (from, till, blocks): (usize, usize, Vec<BlockBy>)| {
-                utils::treat_error(liz_parse::rig_parse_on(&mut slf.desk, from, till, blocks))
+                utils::treat_error(liz_parse::rig_parse_on(&mut slf.desk, from, till, &blocks))
             },
         );
     }

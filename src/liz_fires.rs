@@ -9,8 +9,8 @@ use std::thread;
 use std::time::Duration;
 
 use crate::liz_codes;
-use crate::liz_debug::{dbg_call, dbg_reav, dbg_step};
-use crate::liz_debug::{dbg_bleb, dbg_erro, dbg_kind};
+use crate::liz_debug::{self, dbg_call, dbg_reav, dbg_step};
+use crate::liz_debug::{dbg_bleb, dbg_erro, dbg_errs, dbg_kind};
 use crate::liz_paths;
 use crate::utils;
 use crate::LizError;
@@ -50,7 +50,8 @@ pub fn spawn(lane: Context, path: &str, args: &Option<Vec<String>>) -> Result<Sp
     let spawn_path = liz_paths::path_absolute(&suit_path).map_err(|err| dbg_bleb!(err))?;
     dbg_step!(spawn_path);
 
-    liz.set("spawn_wd", spawn_wd).map_err(|err| dbg_erro!(err))?;
+    liz.set("spawn_wd", spawn_wd)
+        .map_err(|err| dbg_erro!(err))?;
     liz.set("spawn_dir", spawn_dir)
         .map_err(|err| dbg_erro!(err))?;
     liz.set("spawn_path", spawn_path.clone())
@@ -273,7 +274,9 @@ impl Spawned {
             }
         } else {
             dbg_kind!("WARN", "Could not get the results from the join");
-            Err(dbg_erro!("Could not get the results from the join"))
+            Err(liz_debug::throw(dbg_errs!(
+                "Could not get the results from the join"
+            )))
         }
     }
 

@@ -74,7 +74,7 @@ pub fn group_punctuation_not() -> GroupIf {
 
 pub fn rig_group_all(
     forms: &mut Vec<String>,
-    groups: Vec<GroupPair>,
+    groups: &Vec<GroupPair>,
     recursive: bool,
 ) -> Result<usize, LizError> {
     dbg_call!(forms, groups);
@@ -91,7 +91,7 @@ pub fn rig_group_on(
     forms: &mut Vec<String>,
     from: usize,
     till: usize,
-    groups: Vec<GroupPair>,
+    groups: &Vec<GroupPair>,
     recursive: bool,
 ) -> Result<usize, LizError> {
     dbg_call!(forms, from, till, groups, recursive);
@@ -316,13 +316,15 @@ impl GroupHelper {
 }
 
 fn get_groupers(
-    groups: Vec<GroupPair>,
+    groups: &Vec<GroupPair>,
 ) -> Result<Vec<(Box<dyn GroupTrait>, Box<dyn GroupTrait>)>, LizError> {
     dbg_call!(groups);
     let mut result: Vec<(Box<dyn GroupTrait>, Box<dyn GroupTrait>)> =
         Vec::with_capacity(groups.len());
     for group in groups {
-        result.push((group.left.get_trait()?, group.right.get_trait()?));
+        let left = group.left.clone();
+        let right = group.right.clone();
+        result.push((left.get_trait()?, right.get_trait()?));
     }
     dbg_reav!(Ok(result));
 }
