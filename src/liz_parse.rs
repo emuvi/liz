@@ -369,7 +369,7 @@ impl BlockTrait for BlockQuotation {
     }
 }
 
-pub trait BlockTrait: std::fmt::Debug {
+pub trait BlockTrait: std::fmt::Debug + Send + Sync {
     fn opens(&self, helper: &mut ParseHelper) -> BlockBound;
     fn closes(&self, helper: &mut ParseHelper) -> BlockBound;
 }
