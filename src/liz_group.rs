@@ -74,15 +74,15 @@ pub fn group_punctuation_not() -> GroupIf {
 
 pub fn rig_group_all(
     forms: &mut Vec<String>,
-    groups: &Vec<GroupPair>,
+    groupers: &Vec<(Box<dyn GroupTrait>, Box<dyn GroupTrait>)>,
     recursive: bool,
 ) -> Result<usize, LizError> {
-    dbg_call!(forms, groups);
+    dbg_call!(forms, groupers, recursive);
     dbg_reav!(rig_group_on(
         forms,
         0,
         liz_forms::kit_len(forms),
-        groups,
+        groupers,
         recursive
     ));
 }
@@ -91,14 +91,12 @@ pub fn rig_group_on(
     forms: &mut Vec<String>,
     from: usize,
     till: usize,
-    groups: &Vec<GroupPair>,
+    groupers: &Vec<(Box<dyn GroupTrait>, Box<dyn GroupTrait>)>,
     recursive: bool,
 ) -> Result<usize, LizError> {
-    dbg_call!(forms, from, till, groups, recursive);
+    dbg_call!(forms, from, till, groupers, recursive);
     let range = liz_forms::kit_del_range(forms, from, till);
     dbg_step!(range);
-    let groupers = get_groupers(groups)?;
-    dbg_step!(groupers);
     let mut helper = GroupHelper::new(range);
     dbg_step!(helper);
     while let Some(term) = helper.advance() {
@@ -109,7 +107,7 @@ pub fn rig_group_on(
             let mut should_group = false;
             let left = helper.get_accrued();
             let right = &term;
-            for (left_test, right_test) in &groupers {
+            for (left_test, right_test) in groupers {
                 let left_check = left_test.checks(left);
                 let right_check = right_test.checks(right);
                 if left_check && right_check {
@@ -154,7 +152,7 @@ pub enum GroupIf {
 impl UserData for GroupIf {}
 
 impl GroupIf {
-    pub fn get_trait(self) -> Result<Box<dyn GroupTrait>, LizError> {
+    pub fn get_grouper(self) -> Result<Box<dyn GroupTrait>, LizError> {
         Ok(match self {
             GroupIf::Equals(sense, equals) => Box::new(GroupEquals { sense, equals }),
             GroupIf::Likely(sense, likely) => Box::new(GroupLikely { sense, likely }),
@@ -315,16 +313,14 @@ impl GroupHelper {
     }
 }
 
-fn get_groupers(
-    groups: &Vec<GroupPair>,
+pub fn get_groupers(
+    groups: Vec<GroupPair>,
 ) -> Result<Vec<(Box<dyn GroupTrait>, Box<dyn GroupTrait>)>, LizError> {
     dbg_call!(groups);
     let mut result: Vec<(Box<dyn GroupTrait>, Box<dyn GroupTrait>)> =
         Vec::with_capacity(groups.len());
     for group in groups {
-        let left = group.left.clone();
-        let right = group.right.clone();
-        result.push((left.get_trait()?, right.get_trait()?));
+        result.push((group.left.get_grouper()?, group.right.get_grouper()?));
     }
     dbg_reav!(Ok(result));
 }

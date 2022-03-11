@@ -50,23 +50,21 @@ pub fn block_double_quotes() -> BlockBy {
     dbg_reav!(BlockBy::Imply(BlockImply::DoubleQuotes));
 }
 
-pub fn rig_parse_all(forms: &mut Vec<String>, blocks: &Vec<BlockBy>) -> Result<usize, LizError> {
-    dbg_call!(forms, blocks);
-    dbg_reav!(rig_parse_on(forms, 0, liz_forms::kit_len(forms), blocks));
+pub fn rig_parse_all(forms: &mut Vec<String>, parsers: &Vec<Box<dyn BlockTrait>>) -> Result<usize, LizError> {
+    dbg_call!(forms, parsers);
+    dbg_reav!(rig_parse_on(forms, 0, liz_forms::kit_len(forms), parsers));
 }
 
 pub fn rig_parse_on(
     forms: &mut Vec<String>,
     from: usize,
     till: usize,
-    blocks: &Vec<BlockBy>,
+    parsers: &Vec<Box<dyn BlockTrait>>,
 ) -> Result<usize, LizError> {
-    dbg_call!(forms, from, till, blocks);
+    dbg_call!(forms, from, till, parsers);
     let range = liz_forms::kit_del_range(forms, from, till);
     dbg_step!(range);
-    let parsers = get_parsers(blocks)?;
-    let mut indexed_parsers: Vec<(usize, Box<dyn BlockTrait>)> =
-        parsers.into_iter().enumerate().collect();
+    let mut indexed_parsers: Vec<_> = parsers.iter().enumerate().collect();
     dbg_step!(indexed_parsers);
     let mut helper = ParseHelper::new(range);
     let mut inside: i64 = -1;
@@ -124,8 +122,8 @@ pub enum BlockBy {
 impl UserData for BlockBy {}
 
 impl BlockBy {
-    pub fn get_trait(&self) -> Result<Box<dyn BlockTrait>, LizError> {
-        Ok(match &self {
+    pub fn get_parser(self) -> Result<Box<dyn BlockTrait>, LizError> {
+        Ok(match self {
             BlockBy::Regex(regex) => Box::new(BlockRegex {
                 regex: Regex::new(regex.as_ref())?,
             }),
@@ -134,7 +132,7 @@ impl BlockBy {
                 BlockImply::Alphabetic => Box::new(BlockAlphabetic {}),
                 BlockImply::Numeric => Box::new(BlockNumeric {}),
                 BlockImply::AlphaNumeric => Box::new(BlockAlphaNumeric {}),
-                BlockImply::CharNumber(starter) => Box::new(BlockCharNumber { starter: *starter }),
+                BlockImply::CharNumber(starter) => Box::new(BlockCharNumber { starter }),
                 BlockImply::Punctuation => Box::new(BlockPunctuation {}),
                 BlockImply::SingleQuotes => Box::new(BlockQuotation {
                     opener: '\'',
@@ -151,7 +149,7 @@ impl BlockBy {
     }
 }
 
-#[derive(Debug)]
+#[derive(Debug, Clone)]
 pub struct BlockRegex {
     regex: Regex,
 }
@@ -215,7 +213,7 @@ pub enum BlockImply {
     DoubleQuotes,
 }
 
-#[derive(Debug)]
+#[derive(Debug, Clone)]
 pub struct BlockWhiteSpace {}
 
 impl BlockTrait for BlockWhiteSpace {
@@ -236,7 +234,7 @@ impl BlockTrait for BlockWhiteSpace {
     }
 }
 
-#[derive(Debug)]
+#[derive(Debug, Clone)]
 pub struct BlockAlphabetic {}
 
 impl BlockTrait for BlockAlphabetic {
@@ -257,7 +255,7 @@ impl BlockTrait for BlockAlphabetic {
     }
 }
 
-#[derive(Debug)]
+#[derive(Debug, Clone)]
 pub struct BlockNumeric {}
 
 impl BlockTrait for BlockNumeric {
@@ -278,7 +276,7 @@ impl BlockTrait for BlockNumeric {
     }
 }
 
-#[derive(Debug)]
+#[derive(Debug, Clone)]
 pub struct BlockAlphaNumeric {}
 
 impl BlockTrait for BlockAlphaNumeric {
@@ -299,7 +297,7 @@ impl BlockTrait for BlockAlphaNumeric {
     }
 }
 
-#[derive(Debug)]
+#[derive(Debug, Clone)]
 pub struct BlockCharNumber {
     starter: char,
 }
@@ -322,7 +320,7 @@ impl BlockTrait for BlockCharNumber {
     }
 }
 
-#[derive(Debug)]
+#[derive(Debug, Clone)]
 pub struct BlockPunctuation {}
 
 impl BlockTrait for BlockPunctuation {
@@ -342,7 +340,7 @@ impl BlockTrait for BlockPunctuation {
     }
 }
 
-#[derive(Debug)]
+#[derive(Debug, Clone)]
 pub struct BlockQuotation {
     opener: char,
     closer: char,
@@ -528,11 +526,11 @@ impl ParseHelper {
     }
 }
 
-fn get_parsers(blocks: &Vec<BlockBy>) -> Result<Vec<Box<dyn BlockTrait>>, LizError> {
+pub fn get_parsers(blocks: Vec<BlockBy>) -> Result<Vec<Box<dyn BlockTrait>>, LizError> {
     dbg_call!(blocks);
     let mut result: Vec<Box<dyn BlockTrait>> = Vec::with_capacity(blocks.len());
     for block in blocks {
-        result.push(block.get_trait()?);
+        result.push(block.get_parser()?);
     }
     dbg_reav!(Ok(result));
 }

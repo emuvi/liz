@@ -41,7 +41,11 @@ pub fn inject_group<'a>(lane: Context<'a>, liz: &Table<'a>) -> Result<(), LizErr
 
     let rig_group_all = lane.create_function_mut(
         |_, (mut forms, groups, recursive): (Vec<String>, Vec<GroupPair>, bool)| {
-            match utils::treat_error(liz_group::rig_group_all(&mut forms, &groups, recursive)) {
+            let groupers = match utils::treat_error(liz_group::get_groupers(groups)) {
+                Ok(groupers) => groupers,
+                Err(err) => (return Err(err)),
+            };
+            match utils::treat_error(liz_group::rig_group_all(&mut forms, &groupers, recursive)) {
                 Ok(_) => Ok(forms),
                 Err(err) => Err(err),
             }
@@ -57,8 +61,12 @@ pub fn inject_group<'a>(lane: Context<'a>, liz: &Table<'a>) -> Result<(), LizErr
             Vec<GroupPair>,
             bool,
         )| {
+            let groupers = match utils::treat_error(liz_group::get_groupers(groups)) {
+                Ok(groupers) => groupers,
+                Err(err) => (return Err(err)),
+            };
             match utils::treat_error(liz_group::rig_group_on(
-                &mut forms, from, till, &groups, recursive,
+                &mut forms, from, till, &groupers, recursive,
             )) {
                 Ok(_) => Ok(forms),
                 Err(err) => Err(err),

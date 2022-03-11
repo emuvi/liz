@@ -20,9 +20,9 @@ pub fn is_update_lizs() -> bool {
     dbg_reav!(UPDATE_LIZS.load(Ordering::Acquire));
 }
 
-pub fn set_update_lizs(to: bool) {
-    dbg_call!(to);
-    UPDATE_LIZS.store(to, Ordering::Release)
+pub fn set_update_lizs(always: bool) {
+    dbg_call!(always);
+    UPDATE_LIZS.store(always, Ordering::Release)
 }
 
 pub fn liz_suit_path(path: &str) -> Result<String, LizError> {
@@ -261,31 +261,47 @@ impl UserData for Forms {
         methods.add_method_mut(
             "group_all",
             |_, slf, (groups, recursive): (Vec<GroupPair>, bool)| {
-                utils::treat_error(liz_group::rig_group_all(&mut slf.desk, &groups, recursive))
+                let groupers = match utils::treat_error(liz_group::get_groupers(groups)) {
+                    Ok(parsers) => parsers,
+                    Err(err) => (return Err(err)),
+                };
+                utils::treat_error(liz_group::rig_group_all(&mut slf.desk, &groupers, recursive))
             },
         );
 
         methods.add_method_mut(
             "group_on",
             |_, slf, (from, till, groups, recursive): (usize, usize, Vec<GroupPair>, bool)| {
+                let groupers = match utils::treat_error(liz_group::get_groupers(groups)) {
+                    Ok(parsers) => parsers,
+                    Err(err) => (return Err(err)),
+                };
                 utils::treat_error(liz_group::rig_group_on(
                     &mut slf.desk,
                     from,
                     till,
-                    &groups,
+                    &groupers,
                     recursive,
                 ))
             },
         );
 
         methods.add_method_mut("parse_all", |_, slf, blocks: Vec<BlockBy>| {
-            utils::treat_error(liz_parse::rig_parse_all(&mut slf.desk, &blocks))
+            let parsers = match utils::treat_error(liz_parse::get_parsers(blocks)) {
+                Ok(parsers) => parsers,
+                Err(err) => (return Err(err)),
+            };
+            utils::treat_error(liz_parse::rig_parse_all(&mut slf.desk, &parsers))
         });
 
         methods.add_method_mut(
             "parse_on",
             |_, slf, (from, till, blocks): (usize, usize, Vec<BlockBy>)| {
-                utils::treat_error(liz_parse::rig_parse_on(&mut slf.desk, from, till, &blocks))
+                let parsers = match utils::treat_error(liz_parse::get_parsers(blocks)) {
+                    Ok(parsers) => parsers,
+                    Err(err) => (return Err(err)),
+                };
+                utils::treat_error(liz_parse::rig_parse_on(&mut slf.desk, from, till, &parsers))
             },
         );
     }
