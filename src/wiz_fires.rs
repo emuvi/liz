@@ -1,12 +1,33 @@
 use rlua::{Context, Table};
 
+use crate::liz_codes;
+use crate::liz_debug::{dbg_bleb, dbg_call, dbg_reav, dbg_step};
 use crate::liz_fires::{self, Spawned};
+use crate::liz_paths;
 use crate::utils;
 use crate::LizError;
 
+fn lane_suit_path<'a>(lane: Context<'a>, path: String) -> Result<String, LizError> {
+    dbg_call!(path);
+    let suit_path = liz_codes::liz_suit_path(&path).map_err(|err| dbg_bleb!(err))?;
+    dbg_step!(suit_path);
+    let suit_path = if liz_paths::is_relative(&suit_path) {
+        let stack_dir = utils::get_stacked_dir(lane).map_err(|err| dbg_bleb!(err))?;
+        liz_paths::path_join(&stack_dir, &suit_path).map_err(|err| dbg_bleb!(err))?
+    } else {
+        suit_path
+    };
+    dbg_reav!(Ok(suit_path));
+}
+
 pub fn inject_execs<'a>(lane: Context<'a>, liz: &Table<'a>) -> Result<(), LizError> {
-    let run = lane.create_function(|_, (path, args): (String, Option<Vec<String>>)| {
-        utils::treat_error(crate::run(&path, &args))
+    let run = lane.create_function(|lane, (path, args): (String, Option<Vec<String>>)| {
+        let lane_path = match utils::treat_error(lane_suit_path(lane, path)) {
+            Ok(lane_path) => lane_path,
+            Err(err) => return Err(err),
+        };
+        dbg_step!(lane_path);
+        utils::treat_error(crate::run(&lane_path, &args))
     })?;
 
     let eval = lane
@@ -90,4 +111,3 @@ pub fn inject_execs<'a>(lane: Context<'a>, liz: &Table<'a>) -> Result<(), LizErr
 
     Ok(())
 }
-

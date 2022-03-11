@@ -29,7 +29,7 @@ pub fn put_stack_dir<'a>(lane: &Context<'a>, liz: &Table<'a>, dir: String) -> Re
     Ok(())
 }
 
-pub fn get_stack_dir(liz: &Table) -> Result<String, LizError> {
+pub fn liz_stacked_dir(liz: &Table) -> Result<String, LizError> {
     dbg_step!();
     let stack: Table = liz.get("stack_dir").map_err(|err| dbg_erro!(err))?;
     let last = stack.raw_len();
@@ -37,10 +37,10 @@ pub fn get_stack_dir(liz: &Table) -> Result<String, LizError> {
     Ok(result)
 }
 
-pub fn last_stack_dir(lane: Context) -> Result<String, LizError> {
+pub fn get_stacked_dir(lane: Context) -> Result<String, LizError> {
     dbg_step!();
     let liz = get_liz(&lane).map_err(|err| dbg_erro!(err))?;
-    Ok(get_stack_dir(&liz).map_err(|err| dbg_erro!(err))?)
+    Ok(liz_stacked_dir(&liz).map_err(|err| dbg_erro!(err))?)
 }
 
 pub fn pop_stack_dir(liz: &Table) -> Result<(), LizError> {

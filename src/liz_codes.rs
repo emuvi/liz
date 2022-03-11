@@ -13,16 +13,16 @@ use crate::liz_winds;
 use crate::utils;
 use crate::LizError;
 
-static UPDATE_LIZS: AtomicBool = AtomicBool::new(false);
+static LIZS_UPDATE: AtomicBool = AtomicBool::new(false);
 
-pub fn is_update_lizs() -> bool {
+pub fn is_lizs_update() -> bool {
     dbg_call!();
-    dbg_reav!(UPDATE_LIZS.load(Ordering::Acquire));
+    dbg_reav!(LIZS_UPDATE.load(Ordering::Acquire));
 }
 
-pub fn set_update_lizs(always: bool) {
+pub fn set_lizs_update(always: bool) {
     dbg_call!(always);
-    UPDATE_LIZS.store(always, Ordering::Release)
+    LIZS_UPDATE.store(always, Ordering::Release)
 }
 
 pub fn liz_suit_path(path: &str) -> Result<String, LizError> {
@@ -72,7 +72,7 @@ pub fn gotta_lizs(path: &str) -> Result<(), LizError> {
     dbg_call!(path);
     if let Some(lizs_pos) = get_lizs_path_pos(path) {
         dbg_step!(lizs_pos);
-        if is_update_lizs() || !liz_paths::has(path) {
+        if is_lizs_update() || !liz_paths::has(path) {
             let path_dir = liz_paths::path_parent(path).map_err(|err| dbg_bleb!(err))?;
             dbg_step!(path_dir);
             std::fs::create_dir_all(path_dir).map_err(|err| dbg_erro!(err))?;

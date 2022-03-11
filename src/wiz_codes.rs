@@ -15,9 +15,9 @@ pub fn inject_codes<'a>(lane: Context<'a>, liz: &Table<'a>) -> Result<(), LizErr
     let liz_suit_path = lane
         .create_function(|_, path: String| utils::treat_error(liz_codes::liz_suit_path(&path)))?;
 
-    let is_update_lizs = lane.create_function(|_, ()| Ok(liz_codes::is_update_lizs()))?;
+    let is_lizs_update = lane.create_function(|_, ()| Ok(liz_codes::is_lizs_update()))?;
     
-    let set_update_lizs = lane.create_function(|_, to: bool| Ok(liz_codes::set_update_lizs(to)))?;
+    let set_lizs_update = lane.create_function(|_, to: bool| Ok(liz_codes::set_lizs_update(to)))?;
 
     let gotta_lizs = lane.create_function(|_, path: String| utils::treat_error(liz_codes::gotta_lizs(&path)))?;
 
@@ -40,8 +40,8 @@ pub fn inject_codes<'a>(lane: Context<'a>, liz: &Table<'a>) -> Result<(), LizErr
     liz.set("edit", edit)?;
     liz.set("desk", desk)?;
     liz.set("liz_suit_path", liz_suit_path)?;
-    liz.set("is_update_lizs", is_update_lizs)?;
-    liz.set("set_update_lizs", set_update_lizs)?;
+    liz.set("is_lizs_update", is_lizs_update)?;
+    liz.set("set_lizs_update", set_lizs_update)?;
     liz.set("gotta_lizs", gotta_lizs)?;
     liz.set("get_lizs", get_lizs)?;
     liz.set("get_lizs_path_pos", get_lizs_path_pos)?;

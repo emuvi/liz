@@ -83,7 +83,7 @@ pub fn race_in(lane: Context, path: &str) -> Result<Vec<String>, LizError> {
     dbg_step!(suit_path);
 
     let suit_path = if liz_paths::is_relative(&suit_path) {
-        let stack_dir = utils::get_stack_dir(&liz).map_err(|err| dbg_bleb!(err))?;
+        let stack_dir = utils::liz_stacked_dir(&liz).map_err(|err| dbg_bleb!(err))?;
         liz_paths::path_join(&stack_dir, &suit_path).map_err(|err| dbg_bleb!(err))?
     } else {
         suit_path

@@ -19,7 +19,7 @@ fn main() -> Result<(), LizError> {
             } else if arg == "-a" || arg == "--archive" {
                 liz::liz_debug::set_archive(true);
             } else if arg == "-lu" || arg == "--lizs-update" {
-                liz::liz_codes::set_update_lizs(true);
+                liz::liz_codes::set_lizs_update(true);
             } else if arg == "-dc" || arg == "--debug-calls" {
                 liz::liz_debug::put_dbg_calls();
             } else if arg == "-dr" || arg == "--debug-reavs" {

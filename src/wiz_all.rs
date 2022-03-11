@@ -54,8 +54,8 @@ pub fn inject_all(
     let print_stack_dir =
         lane.create_function(|lane, ()| utils::treat_error(utils::print_stack_dir(lane)))?;
 
-    let last_stack_dir =
-        lane.create_function(|lane, ()| utils::treat_error(utils::last_stack_dir(lane)))?;
+    let get_stacked_dir =
+        lane.create_function(|lane, ()| utils::treat_error(utils::get_stacked_dir(lane)))?;
 
     let to_json_multi = lane.create_function(|_, values: MultiValue| {
         utils::treat_error(utils::to_json_multi(values))
@@ -69,7 +69,7 @@ pub fn inject_all(
     })?;
 
     liz.set("print_stack_dir", print_stack_dir)?;
-    liz.set("last_stack_dir", last_stack_dir)?;
+    liz.set("get_stacked_dir", get_stacked_dir)?;
     liz.set("to_json_multi", to_json_multi)?;
     liz.set("to_json", to_json)?;
     liz.set("from_json", from_json)?;
