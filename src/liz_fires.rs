@@ -15,6 +15,16 @@ use crate::liz_paths;
 use crate::utils;
 use crate::LizError;
 
+pub fn run_wd(relative_path: &str, args: &Option<Vec<String>>) -> Result<Vec<String>, LizError> {
+    dbg_call!(relative_path);
+    let working_dir = liz_paths::wd().map_err(|err| dbg_bleb!(err))?;
+    dbg_step!(working_dir);
+    let full_path =
+        liz_paths::path_join(&working_dir, relative_path).map_err(|err| dbg_bleb!(err))?;
+    dbg_step!(full_path);
+    dbg_reav!(crate::run(&full_path, args).map_err(|err| dbg_bleb!(err)));
+}
+
 pub fn race_wd(lane: Context, relative_path: &str) -> Result<Vec<String>, LizError> {
     dbg_call!(relative_path);
     let working_dir = liz_paths::wd().map_err(|err| dbg_bleb!(err))?;

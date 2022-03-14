@@ -36,6 +36,10 @@ pub fn inject_execs<'a>(lane: Context<'a>, liz: &Table<'a>) -> Result<(), LizErr
     let race =
         lane.create_function(|lane, path: String| utils::treat_error(crate::race_in(lane, &path)))?;
 
+    let run_wd = lane.create_function(|_, (relative_path, args): (String, Option<Vec<String>>)| {
+        utils::treat_error(liz_fires::run_wd(&relative_path, &args))
+    })?;
+
     let race_wd = lane.create_function(|lane, relative_path: String| {
         utils::treat_error(liz_fires::race_wd(lane, &relative_path))
     })?;
@@ -92,6 +96,7 @@ pub fn inject_execs<'a>(lane: Context<'a>, liz: &Table<'a>) -> Result<(), LizErr
     liz.set("run", run)?;
     liz.set("eval", eval)?;
     liz.set("race", race)?;
+    liz.set("run_wd", run_wd)?;
     liz.set("race_wd", race_wd)?;
     liz.set("spawn", spawn)?;
     liz.set("join", join)?;
