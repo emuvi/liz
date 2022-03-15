@@ -60,7 +60,7 @@ pub fn liz_suit_path(path: &str) -> Result<String, LizError> {
     let result = if result.contains("$liz") {
         result.replace(
             "$liz",
-            liz_fires::liz_dir().map_err(|err| dbg_bleb!(err))?.as_ref(),
+            liz_fires::exe_dir().map_err(|err| dbg_bleb!(err))?.as_ref(),
         )
     } else {
         result

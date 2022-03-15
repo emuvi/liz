@@ -7,6 +7,7 @@ use std::fmt::Formatter;
 use std::fmt::Result;
 use std::fs::File;
 use std::io::Write;
+use std::path::PathBuf;
 use std::sync::{
     atomic::{AtomicBool, AtomicUsize, Ordering},
     Mutex,
@@ -17,7 +18,19 @@ use crate::LizError;
 
 static VERBOSE: AtomicBool = AtomicBool::new(false);
 static ARCHIVE: AtomicBool = AtomicBool::new(false);
-static ARCFILE: Lazy<Mutex<File>> = Lazy::new(|| Mutex::new(File::create("archive.log").unwrap()));
+static ARCFILE: Lazy<Mutex<File>> = Lazy::new(|| {
+    let exe_path = match std::env::current_exe() {
+        Ok(exe_path) => exe_path,
+        Err(_) => PathBuf::from("archive.log"),
+    };
+    let exe_name = match exe_path.file_stem() {
+        Some(exe_name) => format!("{}", exe_name.to_string_lossy()),
+        None => String::from("archive"),
+    };
+    let arc_name = format!("{}.log", exe_name);
+    let file = File::create(arc_name).expect("Could not create the archive file");
+    Mutex::new(file)
+});
 static DBGTIME: AtomicBool = AtomicBool::new(false);
 static DBGSIZE: AtomicUsize = AtomicUsize::new(1);
 
@@ -88,7 +101,7 @@ pub fn put_dbg_tells() {
 }
 
 pub fn put_dbg_verbose_tells() {
-    set_verbose(true);
+    put_verbose();
     put_dbg_tells();
 }
 

@@ -79,11 +79,17 @@ pub fn inject_execs<'a>(lane: Context<'a>, liz: &Table<'a>) -> Result<(), LizErr
 
     let pause = lane.create_function(|_, ()| utils::treat_error(liz_fires::pause()))?;
 
+    let exe_path = lane.create_function(|_, ()| utils::treat_error(liz_fires::exe_path()))?;
+
+    let exe_dir = lane.create_function(|_, ()| utils::treat_error(liz_fires::exe_dir()))?;
+    
+    let exe_name = lane.create_function(|_, ()| utils::treat_error(liz_fires::exe_name()))?;
+    
+    let exe_stem = lane.create_function(|_, ()| utils::treat_error(liz_fires::exe_stem()))?;
+    
     let exe_ext = lane.create_function(|_, ()| Ok(liz_fires::exe_ext()))?;
 
-    let liz_dir = lane.create_function(|_, ()| utils::treat_error(liz_fires::liz_dir()))?;
-
-    let liz_exe = lane.create_function(|_, ()| utils::treat_error(liz_fires::liz_exe()))?;
+    let dot_exe_ext = lane.create_function(|_, ()| Ok(liz_fires::dot_exe_ext()))?;
 
     let get_os = lane.create_function(|_, ()| Ok(liz_fires::get_os()))?;
 
@@ -106,9 +112,12 @@ pub fn inject_execs<'a>(lane: Context<'a>, liz: &Table<'a>) -> Result<(), LizErr
     liz.set("cmd", cmd)?;
     liz.set("sleep", sleep)?;
     liz.set("pause", pause)?;
-    liz.set("liz_dir", liz_dir)?;
-    liz.set("liz_exe", liz_exe)?;
+    liz.set("exe_path", exe_path)?;
+    liz.set("exe_dir", exe_dir)?;
+    liz.set("exe_name", exe_name)?;
+    liz.set("exe_stem", exe_stem)?;
     liz.set("exe_ext", exe_ext)?;
+    liz.set("dot_exe_ext", dot_exe_ext)?;
     liz.set("get_os", get_os)?;
     liz.set("is_lin", is_lin)?;
     liz.set("is_mac", is_mac)?;

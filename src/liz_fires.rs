@@ -109,12 +109,12 @@ pub fn join_all(spawneds: Vec<Spawned>) -> Result<Vec<Vec<String>>, LizError> {
 }
 
 pub fn wait(spawned: Spawned) -> Result<(), LizError> {
-    dbg_step!(spawned);
-    dbg_reav!(spawned.wait())
+    dbg_call!(spawned);
+    spawned.wait()
 }
 
 pub fn wait_all(spawneds: Vec<Spawned>) -> Result<(), LizError> {
-    dbg_step!(spawneds);
+    dbg_call!(spawneds);
     for spawned in spawneds {
         spawned.wait().map_err(|err| dbg_erro!(err))?
     }
@@ -128,7 +128,7 @@ pub fn cmd(
     print: Option<bool>,
     throw: Option<bool>,
 ) -> Result<(i32, String), LizError> {
-    dbg_step!();
+    dbg_call!(command, print, throw);
     let mut cmd = Command::new(command);
     let args = args
         .iter()
@@ -138,11 +138,13 @@ pub fn cmd(
             arg.into()
         })
         .collect::<Vec<&str>>();
+    dbg_step!(args);
     let dir: String = if let Some(dir) = dir {
         dir.as_ref().into()
     } else {
         ".".into()
     };
+    dbg_step!(dir);
     cmd.current_dir(&dir);
     let mut child = cmd
         .stdin(Stdio::null())
@@ -150,34 +152,40 @@ pub fn cmd(
         .stdout(Stdio::piped())
         .spawn()
         .map_err(|err| dbg_erro!(err, command, args, dir))?;
-    let mut out = String::new();
+    let mut output = String::new();
     child
         .stderr
         .take()
         .ok_or("Could not take on the child stderr")
         .map_err(|err| dbg_erro!(err))?
-        .read_to_string(&mut out)
+        .read_to_string(&mut output)
         .map_err(|err| dbg_erro!(err))?;
+    dbg_step!(output);
     child
         .stdout
         .take()
         .ok_or("Could not take on the child stdout")
         .map_err(|err| dbg_erro!(err))?
-        .read_to_string(&mut out)
+        .read_to_string(&mut output)
         .map_err(|err| dbg_erro!(err))?;
-    let out = out.trim();
-    let out = String::from(out);
+    dbg_step!(output);
+    let output = output.trim();
+    let output = String::from(output);
+    dbg_step!(output);
     let result = child
         .wait()
         .map_err(|err| dbg_erro!(err))?
         .code()
         .ok_or("Could not found the exit code")
         .map_err(|err| dbg_erro!(err))?;
+    dbg_step!(result);
     let print = if let Some(print) = print { print } else { true };
-    if print && !out.is_empty() {
-        println!("{}", out);
+    dbg_step!(print);
+    if print && !output.is_empty() {
+        println!("{}", output);
     }
     let throw = if let Some(throw) = throw { throw } else { true };
+    dbg_step!(throw);
     if throw && result != 0 {
         return Err(dbg_erro!(
             "Result code from command is different than zero",
@@ -185,16 +193,16 @@ pub fn cmd(
             result
         ));
     }
-    Ok((result, out))
+    Ok((result, output))
 }
 
 pub fn sleep(millis: u64) {
-    dbg_step!(millis);
+    dbg_call!(millis);
     thread::sleep(Duration::from_millis(millis))
 }
 
 pub fn pause() -> Result<(), LizError> {
-    dbg_step!();
+    dbg_call!();
     let mut stdin = std::io::stdin();
     let mut stdout = std::io::stdout();
     write!(stdout, "Press enter to continue...").map_err(|err| dbg_erro!(err))?;
@@ -204,47 +212,68 @@ pub fn pause() -> Result<(), LizError> {
     Ok(())
 }
 
-pub fn liz_dir() -> Result<String, LizError> {
-    dbg_step!();
-    Ok(
-        liz_paths::path_parent(liz_exe().map_err(|err| dbg_erro!(err))?.as_ref())
-            .map_err(|err| dbg_erro!(err))?,
-    )
-}
-
-pub fn liz_exe() -> Result<String, LizError> {
-    dbg_step!();
-    Ok(format!(
+pub fn exe_path() -> Result<String, LizError> {
+    dbg_call!();
+    dbg_reav!(Ok(format!(
         "{}",
         std::env::current_exe()
             .map_err(|err| dbg_erro!(err))?
             .display(),
-    ))
+    )));
+}
+
+pub fn exe_dir() -> Result<String, LizError> {
+    dbg_call!();
+    let exe_path = exe_path().map_err(|err| dbg_bleb!(err))?;
+    dbg_reav!(Ok(
+        liz_paths::path_parent(&exe_path).map_err(|err| dbg_bleb!(err))?,
+    ));
+}
+
+pub fn exe_name() -> Result<String, LizError> {
+    dbg_call!();
+    let exe_path = exe_path().map_err(|err| dbg_bleb!(err))?;
+    dbg_reav!(Ok(liz_paths::path_name(&exe_path).into()));
+}
+
+pub fn exe_stem() -> Result<String, LizError> {
+    dbg_call!();
+    let exe_path = exe_path().map_err(|err| dbg_bleb!(err))?;
+    dbg_reav!(Ok(liz_paths::path_stem(&exe_path).into()));
 }
 
 pub fn exe_ext() -> &'static str {
-    dbg_step!();
-    std::env::consts::EXE_EXTENSION
+    dbg_call!();
+    dbg_reav!(std::env::consts::EXE_EXTENSION);
+}
+
+pub fn dot_exe_ext() -> String {
+    dbg_call!();
+    dbg_reav!(if std::env::consts::EXE_EXTENSION.is_empty() {
+        String::default()
+    } else {
+        format!(".{}", std::env::consts::EXE_EXTENSION)
+    });
 }
 
 pub fn get_os() -> &'static str {
-    dbg_step!();
-    std::env::consts::OS
+    dbg_call!();
+    dbg_reav!(std::env::consts::OS);
 }
 
 pub fn is_lin() -> bool {
-    dbg_step!();
-    std::env::consts::OS == "linux"
+    dbg_call!();
+    dbg_reav!(std::env::consts::OS == "linux");
 }
 
 pub fn is_mac() -> bool {
-    dbg_step!();
-    std::env::consts::OS == "macos"
+    dbg_call!();
+    dbg_reav!(std::env::consts::OS == "macos");
 }
 
 pub fn is_win() -> bool {
-    dbg_step!();
-    std::env::consts::OS == "windows"
+    dbg_call!();
+    dbg_reav!(std::env::consts::OS == "windows");
 }
 
 static SPAWN_COUNT: AtomicUsize = AtomicUsize::new(1);
