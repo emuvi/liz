@@ -179,6 +179,9 @@ pub fn path_parts_join(parts: &[&str]) -> String {
     if parts.is_empty() {
         return String::default();
     }
+    if parts.len() == 1 {
+        return String::from(parts[0]);
+    }
     let mut result = String::new();
     let mut start = 1;
     let end = parts.len();
@@ -337,6 +340,9 @@ pub fn path_parent_find(path: &str, with_name: &str) -> Result<String, LizError>
 
 pub fn path_join(path: &str, child: &str) -> Result<String, LizError> {
     dbg_call!(path, child);
+    if child.is_empty() {
+        return Ok(String::from(path));
+    }
     if is_absolute(child) {
         return Err(dbg_erro!("The child must be relative", child));
     }
@@ -387,7 +393,9 @@ pub fn path_join(path: &str, child: &str) -> Result<String, LizError> {
 
 pub fn path_join_if_relative(base: &str, path: &str) -> Result<String, LizError> {
     dbg_call!(base, path);
-    if is_relative(path) {
+    if path.is_empty() {
+        Ok(String::from(base))
+    } else if is_relative(path) {
         path_join(base, path)
     } else {
         Ok(path.into())
