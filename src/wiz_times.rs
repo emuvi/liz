@@ -38,5 +38,7 @@ pub fn inject_times<'a>(lane: Context<'a>, liz: &Table<'a>) -> Result<(), LizErr
     liz.set("now_as", now_as)?;
     liz.set("now_ft", now_ft)?;
 
+    // [TODO] - How to get a DateTime<Utc> from script to pass to liz_times::fmt_xx functions?
+
     Ok(())
 }
