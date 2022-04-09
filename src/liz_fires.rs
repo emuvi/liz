@@ -148,23 +148,23 @@ pub fn cmd(
     cmd.current_dir(&dir);
     let mut child = cmd
         .stdin(Stdio::null())
-        .stderr(Stdio::piped())
         .stdout(Stdio::piped())
+        .stderr(Stdio::piped())
         .spawn()
         .map_err(|err| dbg_erro!(err, command, args, dir))?;
     let mut output = String::new();
     child
-        .stderr
+        .stdout
         .take()
-        .ok_or("Could not take on the child stderr")
+        .ok_or("Could not take on the child stdout")
         .map_err(|err| dbg_erro!(err))?
         .read_to_string(&mut output)
         .map_err(|err| dbg_erro!(err))?;
     dbg_step!(output);
     child
-        .stdout
+        .stderr
         .take()
-        .ok_or("Could not take on the child stdout")
+        .ok_or("Could not take on the child stderr")
         .map_err(|err| dbg_erro!(err))?
         .read_to_string(&mut output)
         .map_err(|err| dbg_erro!(err))?;
