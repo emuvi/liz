@@ -1,6 +1,6 @@
 [package]
 name = "liz"
-description = "Liz ( LuaWizard ) is a library and a command program that features a bunch of functionalities for lua scripts inside the liz global variable. "
+description = "Liz ( Lua Wizard ) is a library and a command program that features a bunch of functionalities for lua scripts inside the Liz global variable. "
 repository = "https://github.com/emuvi/liz/"
 authors = ["Éverton M. Vieira"]
 license = "LGPL-3.0-only"
