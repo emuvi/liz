@@ -1,64 +1,64 @@
 use rlua::{Context, Table};
+use rubx::rux_paths;
 
-use crate::liz_paths;
 use crate::utils;
 
 use crate::LizError;
 
 pub fn inject_paths<'a>(lane: Context<'a>, liz: &Table<'a>) -> Result<(), LizError> {
-    let has = lane.create_function(|_, path: String| Ok(liz_paths::has(&path)))?;
+    let has = lane.create_function(|_, path: String| Ok(rux_paths::has(&path)))?;
 
-    let is_dir = lane.create_function(|_, path: String| Ok(liz_paths::is_dir(&path)))?;
+    let is_dir = lane.create_function(|_, path: String| Ok(rux_paths::is_dir(&path)))?;
 
-    let is_file = lane.create_function(|_, path: String| Ok(liz_paths::is_file(&path)))?;
+    let is_file = lane.create_function(|_, path: String| Ok(rux_paths::is_file(&path)))?;
 
-    let is_absolute = lane.create_function(|_, path: String| Ok(liz_paths::is_absolute(&path)))?;
+    let is_absolute = lane.create_function(|_, path: String| Ok(rux_paths::is_absolute(&path)))?;
 
-    let is_relative = lane.create_function(|_, path: String| Ok(liz_paths::is_relative(&path)))?;
+    let is_relative = lane.create_function(|_, path: String| Ok(rux_paths::is_relative(&path)))?;
 
-    let is_symlink = lane.create_function(|_, path: String| Ok(liz_paths::is_symlink(&path)))?;
+    let is_symlink = lane.create_function(|_, path: String| Ok(rux_paths::is_symlink(&path)))?;
 
-    let cd = lane.create_function(|_, path: String| utils::treat_error(liz_paths::cd(&path)))?;
+    let cd = lane.create_function(|_, path: String| utils::treat_error(rux_paths::cd(&path)))?;
 
-    let wd = lane.create_function(|_, ()| utils::treat_error(liz_paths::wd()))?;
+    let wd = lane.create_function(|_, ()| utils::treat_error(rux_paths::wd()))?;
 
     let rn = lane.create_function(|_, (origin, destiny): (String, String)| {
-        utils::treat_error(liz_paths::rn(&origin, &destiny))
+        utils::treat_error(rux_paths::rn(&origin, &destiny))
     })?;
 
     let cp = lane.create_function(|_, (origin, destiny): (String, String)| {
-        utils::treat_error(liz_paths::cp(&origin, &destiny))
+        utils::treat_error(rux_paths::cp(&origin, &destiny))
     })?;
 
     let cp_tmp = lane.create_function(|_, (origin, destiny): (String, String)| {
-        utils::treat_error(liz_paths::cp_tmp(&origin, &destiny))
+        utils::treat_error(rux_paths::cp_tmp(&origin, &destiny))
     })?;
 
     let mv = lane.create_function(|_, (origin, destiny): (String, String)| {
-        utils::treat_error(liz_paths::mv(&origin, &destiny))
+        utils::treat_error(rux_paths::mv(&origin, &destiny))
     })?;
 
-    let rm = lane.create_function(|_, path: String| utils::treat_error(liz_paths::rm(&path)))?;
+    let rm = lane.create_function(|_, path: String| utils::treat_error(rux_paths::rm(&path)))?;
 
     let mkdir =
-        lane.create_function(|_, path: String| utils::treat_error(liz_paths::mkdir(&path)))?;
+        lane.create_function(|_, path: String| utils::treat_error(rux_paths::mkdir(&path)))?;
 
     let touch =
-        lane.create_function(|_, path: String| utils::treat_error(liz_paths::touch(&path)))?;
+        lane.create_function(|_, path: String| utils::treat_error(rux_paths::touch(&path)))?;
 
-    let os_sep = lane.create_function(|_, ()| Ok(String::from(*liz_paths::os_sep())))?;
+    let os_sep = lane.create_function(|_, ()| Ok(String::from(*rux_paths::os_sep())))?;
 
-    let path_sep = lane.create_function(|_, path: String| Ok(liz_paths::path_sep(&path)))?;
+    let path_sep = lane.create_function(|_, path: String| Ok(rux_paths::path_sep(&path)))?;
 
     let path_parts = lane.create_function(|_, path: String| {
-        Ok(liz_paths::path_parts(&path)
+        Ok(rux_paths::path_parts(&path)
             .into_iter()
             .map(String::from)
             .collect::<Vec<String>>())
     })?;
 
     let path_parts_join = lane.create_function(|_, parts: Vec<String>| {
-        Ok(liz_paths::path_parts_join(
+        Ok(rux_paths::path_parts_join(
             parts
                 .iter()
                 .map(String::as_str)
@@ -68,77 +68,77 @@ pub fn inject_paths<'a>(lane: Context<'a>, liz: &Table<'a>) -> Result<(), LizErr
     })?;
 
     let path_name =
-        lane.create_function(|_, path: String| Ok(String::from(liz_paths::path_name(&path))))?;
+        lane.create_function(|_, path: String| Ok(String::from(rux_paths::path_name(&path))))?;
 
     let path_stem =
-        lane.create_function(|_, path: String| Ok(String::from(liz_paths::path_stem(&path))))?;
+        lane.create_function(|_, path: String| Ok(String::from(rux_paths::path_stem(&path))))?;
 
     let path_ext =
-        lane.create_function(|_, path: String| Ok(String::from(liz_paths::path_ext(&path))))?;
+        lane.create_function(|_, path: String| Ok(String::from(rux_paths::path_ext(&path))))?;
 
     let path_ext_is = lane.create_function(|_, (path, ext): (String, String)| {
-        Ok(liz_paths::path_ext_is(&path, &ext))
+        Ok(rux_paths::path_ext_is(&path, &ext))
     })?;
 
     let path_ext_is_on = lane.create_function(|_, (path, exts): (String, Vec<String>)| {
-        Ok(liz_paths::path_ext_is_on(&path, exts))
+        Ok(rux_paths::path_ext_is_on(&path, exts))
     })?;
 
     let path_absolute = lane
-        .create_function(|_, path: String| utils::treat_error(liz_paths::path_absolute(&path)))?;
+        .create_function(|_, path: String| utils::treat_error(rux_paths::path_absolute(&path)))?;
 
     let path_relative = lane.create_function(|_, (path, base): (String, String)| {
-        utils::treat_error(liz_paths::path_relative(&path, &base))
+        utils::treat_error(rux_paths::path_relative(&path, &base))
     })?;
 
     let path_walk =
-        lane.create_function(|_, path: String| utils::treat_error(liz_paths::path_walk(&path)))?;
+        lane.create_function(|_, path: String| utils::treat_error(rux_paths::path_walk(&path)))?;
 
     let path_parent =
-        lane.create_function(|_, path: String| utils::treat_error(liz_paths::path_parent(&path)))?;
+        lane.create_function(|_, path: String| utils::treat_error(rux_paths::path_parent(&path)))?;
 
     let path_parent_find = lane.create_function(|_, (path, with_name): (String, String)| {
-        utils::treat_error(liz_paths::path_parent_find(&path, &with_name))
+        utils::treat_error(rux_paths::path_parent_find(&path, &with_name))
     })?;
 
     let path_join = lane.create_function(|_, (path, child): (String, String)| {
-        utils::treat_error(liz_paths::path_join(&path, &child))
+        utils::treat_error(rux_paths::path_join(&path, &child))
     })?;
 
     let path_join_if_relative = lane.create_function(|_, (base, path): (String, String)| {
-        utils::treat_error(liz_paths::path_join_if_relative(&base, &path))
+        utils::treat_error(rux_paths::path_join_if_relative(&base, &path))
     })?;
 
     let path_list =
-        lane.create_function(|_, path: String| utils::treat_error(liz_paths::path_list(&path)))?;
+        lane.create_function(|_, path: String| utils::treat_error(rux_paths::path_list(&path)))?;
 
     let path_list_in =
-        lane.create_function(|_, path: String| utils::treat_error(liz_paths::path_list_in(&path)))?;
+        lane.create_function(|_, path: String| utils::treat_error(rux_paths::path_list_in(&path)))?;
 
     let path_list_dirs = lane
-        .create_function(|_, path: String| utils::treat_error(liz_paths::path_list_dirs(&path)))?;
+        .create_function(|_, path: String| utils::treat_error(rux_paths::path_list_dirs(&path)))?;
 
     let path_list_dirs_in = lane.create_function(|_, path: String| {
-        utils::treat_error(liz_paths::path_list_dirs_in(&path))
+        utils::treat_error(rux_paths::path_list_dirs_in(&path))
     })?;
 
     let path_list_files = lane
-        .create_function(|_, path: String| utils::treat_error(liz_paths::path_list_files(&path)))?;
+        .create_function(|_, path: String| utils::treat_error(rux_paths::path_list_files(&path)))?;
 
     let path_list_files_in = lane.create_function(|_, path: String| {
-        utils::treat_error(liz_paths::path_list_files_in(&path))
+        utils::treat_error(rux_paths::path_list_files_in(&path))
     })?;
 
     let path_list_files_ext = lane.create_function(|_, (path, ext): (String, String)| {
-        utils::treat_error(liz_paths::path_list_files_ext(&path, &ext))
+        utils::treat_error(rux_paths::path_list_files_ext(&path, &ext))
     })?;
 
     let path_list_files_ext_in = lane.create_function(|_, (path, ext): (String, String)| {
-        utils::treat_error(liz_paths::path_list_files_ext_in(&path, &ext))
+        utils::treat_error(rux_paths::path_list_files_ext_in(&path, &ext))
     })?;
 
     let path_list_files_exts = lane.create_function(|_, (path, exts): (String, Vec<String>)| {
-        utils::treat_error(liz_paths::path_list_files_exts(
+        utils::treat_error(rux_paths::path_list_files_exts(
             &path,
             exts.iter()
                 .map(String::as_str)
@@ -149,7 +149,7 @@ pub fn inject_paths<'a>(lane: Context<'a>, liz: &Table<'a>) -> Result<(), LizErr
 
     let path_list_files_exts_in =
         lane.create_function(|_, (path, exts): (String, Vec<String>)| {
-            utils::treat_error(liz_paths::path_list_files_exts_in(
+            utils::treat_error(rux_paths::path_list_files_exts_in(
                 &path,
                 exts.iter()
                     .map(String::as_str)

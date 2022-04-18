@@ -1,5 +1,5 @@
 use liz::LizError;
-use liz::{liz_dbg_bleb, liz_dbg_erro, liz_dbg_info};
+use rubx::{rux_dbg_bleb, rux_dbg_erro, rux_dbg_info};
 
 fn main() -> Result<(), LizError> {
     let mut race_paths: Vec<String> = Vec::new();
@@ -15,19 +15,19 @@ fn main() -> Result<(), LizError> {
                 println!("Liz (LuaWizard) {}", env!("CARGO_PKG_VERSION"));
                 return Ok(());
             } else if arg == "-v" || arg == "--verbose" {
-                liz::liz_debug::set_verbose(true);
+                rubx::rux_debug::set_verbose(true);
             } else if arg == "-a" || arg == "--archive" {
-                liz::liz_debug::set_archive(true);
+                rubx::rux_debug::set_archive(true);
             } else if arg == "-lu" || arg == "--lizs-update" {
                 liz::liz_codes::set_lizs_update(true);
             } else if arg == "-dc" || arg == "--debug-calls" {
-                liz::liz_debug::put_dbg_calls();
+                rubx::rux_debug::put_dbg_calls();
             } else if arg == "-dr" || arg == "--debug-reavs" {
-                liz::liz_debug::put_dbg_reavs();
+                rubx::rux_debug::put_dbg_reavs();
             } else if arg == "-ds" || arg == "--debug-steps" {
-                liz::liz_debug::put_dbg_steps();
+                rubx::rux_debug::put_dbg_steps();
             } else if arg == "-dt" || arg == "--debug-tells" {
-                liz::liz_debug::put_dbg_tells();
+                rubx::rux_debug::put_dbg_tells();
             } else if arg == "--" {
                 script_args = true;
             } else if arg.ends_with(".liz") || arg.ends_with(".lua") {
@@ -35,7 +35,7 @@ fn main() -> Result<(), LizError> {
             } else if !first_arg && !arg.starts_with("-") {
                 race_paths.push(arg);
             } else if !first_arg {
-                return Err(liz_dbg_erro!("Could not understand an argument", arg));
+                return Err(rux_dbg_erro!("Could not understand an argument", arg));
             }
         } else {
             if let Some(ref mut to_rise_args) = rise_args {
@@ -53,11 +53,11 @@ fn main() -> Result<(), LizError> {
     }
     let first_path = &race_paths[0];
     let (rise_path, handler) =
-        liz::rise(first_path, &rise_args).map_err(|err| liz_dbg_bleb!(err))?;
+        liz::rise(first_path, &rise_args).map_err(|err| rux_dbg_bleb!(err))?;
     race_paths[0] = rise_path;
     for race_path in race_paths {
-        let results = liz::race(&race_path, &handler).map_err(|err| liz_dbg_bleb!(err))?;
-        liz_dbg_info!("Race finished", race_path, results);
+        let results = liz::race(&race_path, &handler).map_err(|err| rux_dbg_bleb!(err))?;
+        rux_dbg_info!("Race finished", race_path, results);
     }
     Ok(())
 }

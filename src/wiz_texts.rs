@@ -1,106 +1,108 @@
 use rlua::{Context, Table};
+use rubx::rux_texts;
 
-use crate::liz_texts;
 use crate::utils;
 
 use crate::LizError;
 
 pub fn inject_texts<'a>(lane: Context<'a>, liz: &Table<'a>) -> Result<(), LizError> {
     let ask =
-        lane.create_function(|_, message: String| utils::treat_error(liz_texts::ask(&message)))?;
+        lane.create_function(|_, message: String| utils::treat_error(rux_texts::ask(&message)))?;
 
     let ask_int = lane
-        .create_function(|_, message: String| utils::treat_error(liz_texts::ask_int(&message)))?;
+        .create_function(|_, message: String| utils::treat_error(rux_texts::ask_int(&message)))?;
 
     let ask_float = lane
-        .create_function(|_, message: String| utils::treat_error(liz_texts::ask_float(&message)))?;
+        .create_function(|_, message: String| utils::treat_error(rux_texts::ask_float(&message)))?;
 
     let ask_bool = lane
-        .create_function(|_, message: String| utils::treat_error(liz_texts::ask_bool(&message)))?;
+        .create_function(|_, message: String| utils::treat_error(rux_texts::ask_bool(&message)))?;
 
-    let len = lane.create_function(|_, text: String| Ok(liz_texts::len(&text)))?;
+    let len = lane.create_function(|_, text: String| Ok(rux_texts::len(&text)))?;
 
     let del = lane.create_function(|_, (text, start, end): (String, usize, usize)| {
-        Ok(liz_texts::del(&text, start, end))
+        Ok(rux_texts::del(&text, start, end))
     })?;
 
-    let trim = lane.create_function(|_, text: String| Ok(liz_texts::trim(&text)))?;
+    let trim = lane.create_function(|_, text: String| Ok(rux_texts::trim(&text)))?;
 
-    let is_empty = lane.create_function(|_, text: String| Ok(liz_texts::is_empty(&text)))?;
+    let is_empty = lane.create_function(|_, text: String| Ok(rux_texts::is_empty(&text)))?;
 
-    let is_ascii = lane.create_function(|_, text: String| Ok(liz_texts::is_ascii(&text)))?;
+    let is_ascii = lane.create_function(|_, text: String| Ok(rux_texts::is_ascii(&text)))?;
 
-    let is_likely = lane.create_function(|_, (text, with): (String, String)| Ok(liz_texts::is_likely(&text, &with)))?;
+    let is_likely = lane.create_function(|_, (text, with): (String, String)| {
+        Ok(rux_texts::is_likely(&text, &with))
+    })?;
 
-    let tolower = lane.create_function(|_, text: String| Ok(liz_texts::tolower(&text)))?;
+    let tolower = lane.create_function(|_, text: String| Ok(rux_texts::tolower(&text)))?;
 
-    let toupper = lane.create_function(|_, text: String| Ok(liz_texts::toupper(&text)))?;
+    let toupper = lane.create_function(|_, text: String| Ok(rux_texts::toupper(&text)))?;
 
-    let tocapital = lane.create_function(|_, text: String| Ok(liz_texts::tocapital(&text)))?;
+    let tocapital = lane.create_function(|_, text: String| Ok(rux_texts::tocapital(&text)))?;
 
     let contains = lane.create_function(|_, (text, part): (String, String)| {
-        Ok(liz_texts::contains(&text, &part))
+        Ok(rux_texts::contains(&text, &part))
     })?;
 
     let find = lane
-        .create_function(|_, (text, part): (String, String)| Ok(liz_texts::find(&text, &part)))?;
+        .create_function(|_, (text, part): (String, String)| Ok(rux_texts::find(&text, &part)))?;
 
     let rfind = lane
-        .create_function(|_, (text, part): (String, String)| Ok(liz_texts::rfind(&text, &part)))?;
+        .create_function(|_, (text, part): (String, String)| Ok(rux_texts::rfind(&text, &part)))?;
 
     let starts_with = lane.create_function(|_, (text, contents): (String, String)| {
-        Ok(liz_texts::starts_with(&text, &contents))
+        Ok(rux_texts::starts_with(&text, &contents))
     })?;
 
     let ends_with = lane.create_function(|_, (text, contents): (String, String)| {
-        Ok(liz_texts::ends_with(&text, &contents))
+        Ok(rux_texts::ends_with(&text, &contents))
     })?;
 
     let split = lane.create_function(|_, (text, pattern): (String, String)| {
-        Ok(liz_texts::split(&text, &pattern))
+        Ok(rux_texts::split(&text, &pattern))
     })?;
 
     let split_spaces =
-        lane.create_function(|_, text: String| Ok(liz_texts::split_spaces(&text)))?;
+        lane.create_function(|_, text: String| Ok(rux_texts::split_spaces(&text)))?;
 
     let text_file_find = lane.create_function(|_, (path, contents): (String, String)| {
-        utils::treat_error(liz_texts::text_file_find(&path, contents))
+        utils::treat_error(rux_texts::text_file_find(&path, contents))
     })?;
 
     let text_file_find_any =
         lane.create_function(|_, (path, contents): (String, Vec<String>)| {
-            utils::treat_error(liz_texts::text_file_find_any(&path, contents))
+            utils::treat_error(rux_texts::text_file_find_any(&path, contents))
         })?;
 
     let text_files_find = lane.create_function(|_, (paths, contents): (Vec<String>, String)| {
-        utils::treat_error(liz_texts::text_files_find(paths, contents))
+        utils::treat_error(rux_texts::text_files_find(paths, contents))
     })?;
 
     let text_files_find_any =
         lane.create_function(|_, (paths, contents): (Vec<String>, Vec<String>)| {
-            utils::treat_error(liz_texts::text_files_find_any(paths, contents))
+            utils::treat_error(rux_texts::text_files_find_any(paths, contents))
         })?;
 
     let text_file_founds =
-        lane.create_function(|_, found: String| Ok(liz_texts::text_file_founds(&found)))?;
+        lane.create_function(|_, found: String| Ok(rux_texts::text_file_founds(&found)))?;
 
     let read =
-        lane.create_function(|_, path: String| utils::treat_error(liz_texts::read(&path)))?;
+        lane.create_function(|_, path: String| utils::treat_error(rux_texts::read(&path)))?;
 
     let write = lane.create_function(|_, (path, contents): (String, String)| {
-        utils::treat_error(liz_texts::write(&path, contents))
+        utils::treat_error(rux_texts::write(&path, contents))
     })?;
 
     let append = lane.create_function(|_, (path, contents): (String, String)| {
-        utils::treat_error(liz_texts::append(&path, contents))
+        utils::treat_error(rux_texts::append(&path, contents))
     })?;
 
     let write_lines = lane.create_function(|_, (path, lines): (String, Vec<String>)| {
-        utils::treat_error(liz_texts::write_lines(&path, lines))
+        utils::treat_error(rux_texts::write_lines(&path, lines))
     })?;
 
     let append_lines = lane.create_function(|_, (path, lines): (String, Vec<String>)| {
-        utils::treat_error(liz_texts::append_lines(&path, lines))
+        utils::treat_error(rux_texts::append_lines(&path, lines))
     })?;
 
     liz.set("ask", ask)?;

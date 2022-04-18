@@ -1,6 +1,7 @@
-use crate::liz_debug::dbg_bleb;
-use crate::liz_debug::{dbg_call, dbg_reav, dbg_step, dbg_tell};
-use crate::liz_texts;
+use rubx::rux_texts;
+use rubx::rux_dbg_bleb;
+use rubx::{rux_dbg_call, rux_dbg_reav, rux_dbg_step, rux_dbg_tell};
+
 use crate::LizError;
 
 #[derive(Debug, Clone)]
@@ -21,22 +22,22 @@ pub fn kit_from(from: &[impl AsRef<str>]) -> Vec<String> {
 }
 
 pub fn kit_len(forms: &Vec<String>) -> usize {
-    dbg_call!();
-    dbg_reav!(forms.len());
+    rux_dbg_call!();
+    rux_dbg_reav!(forms.len());
 }
 
 pub fn kit_get(forms: &Vec<String>, index: usize) -> &str {
-    dbg_call!(index);
-    dbg_reav!(&forms[index]);
+    rux_dbg_call!(index);
+    rux_dbg_reav!(&forms[index]);
 }
 
 pub fn kit_set(forms: &mut Vec<String>, index: usize, form: String) {
-    dbg_call!(index, form);
+    rux_dbg_call!(index, form);
     forms[index] = form;
 }
 
 pub fn kit_add(forms: &mut Vec<String>, index: usize, form: String) {
-    dbg_call!(index, form);
+    rux_dbg_call!(index, form);
     forms.insert(index, form)
 }
 
@@ -49,13 +50,13 @@ pub fn kit_add_range(forms: &mut Vec<String>, on: usize, range: Vec<String>) {
 }
 
 pub fn kit_put(forms: &mut Vec<String>, form: String) {
-    dbg_call!(form);
+    rux_dbg_call!(form);
     forms.push(form)
 }
 
 pub fn kit_del(forms: &mut Vec<String>, index: usize) -> String {
-    dbg_call!(index);
-    dbg_reav!(forms.remove(index));
+    rux_dbg_call!(index);
+    rux_dbg_reav!(forms.remove(index));
 }
 
 pub fn kit_del_range(forms: &mut Vec<String>, from: usize, till: usize) -> Vec<String> {
@@ -68,94 +69,94 @@ pub fn kit_del_range(forms: &mut Vec<String>, from: usize, till: usize) -> Vec<S
 }
 
 pub fn kit_pop(forms: &mut Vec<String>) -> Option<String> {
-    dbg_call!();
-    dbg_reav!(forms.pop());
+    rux_dbg_call!();
+    rux_dbg_reav!(forms.pop());
 }
 
 pub fn kit_find_all(forms: &Vec<String>, part: &str) -> Vec<usize> {
-    dbg_call!(part);
-    dbg_reav!(kit_find_all_ask(forms, |form| {
-        liz_texts::is_equals(form, part)
+    rux_dbg_call!(part);
+    rux_dbg_reav!(kit_find_all_ask(forms, |form| {
+        rux_texts::is_equals(form, part)
     }));
 }
 
 pub fn kit_find_all_like(forms: &Vec<String>, part: &str) -> Vec<usize> {
-    dbg_call!(part);
-    dbg_reav!(kit_find_all_ask(forms, |form| {
-        liz_texts::is_likely(form, part)
+    rux_dbg_call!(part);
+    rux_dbg_reav!(kit_find_all_ask(forms, |form| {
+        rux_texts::is_likely(form, part)
     }));
 }
 
 pub fn kit_find_all_ask<F: Fn(&str) -> bool>(forms: &Vec<String>, ask: F) -> Vec<usize> {
-    dbg_call!();
+    rux_dbg_call!();
     let mut result = Vec::new();
     let mut index = 0;
     for form in forms {
         if ask(form) {
-            dbg_tell!(form, index);
+            rux_dbg_tell!(form, index);
             result.push(index);
         }
         index += 1;
     }
-    dbg_reav!(result);
+    rux_dbg_reav!(result);
 }
 
 pub fn kit_first_some(forms: &Vec<String>) -> Option<usize> {
-    dbg_call!();
+    rux_dbg_call!();
     let mut index = 0;
     while index < forms.len() {
-        if !liz_texts::is_whitespace(&forms[index]) {
-            dbg_reav!(Some(index));
+        if !rux_texts::is_whitespace(&forms[index]) {
+            rux_dbg_reav!(Some(index));
         }
         index += 1;
     }
-    dbg_reav!(None);
+    rux_dbg_reav!(None);
 }
 
 pub fn kit_prior_some(forms: &Vec<String>, of: usize) -> Option<usize> {
-    dbg_call!();
+    rux_dbg_call!();
     let mut index = of;
     while index > 0 {
         index -= 1;
-        if !liz_texts::is_whitespace(&forms[index]) {
-            dbg_reav!(Some(index));
+        if !rux_texts::is_whitespace(&forms[index]) {
+            rux_dbg_reav!(Some(index));
         }
     }
-    dbg_reav!(None);
+    rux_dbg_reav!(None);
 }
 
 pub fn kit_next_some(forms: &Vec<String>, of: usize) -> Option<usize> {
-    dbg_call!();
+    rux_dbg_call!();
     let mut index = of;
     while index < forms.len() - 1 {
         index += 1;
-        if !liz_texts::is_whitespace(&forms[index]) {
-            dbg_reav!(Some(index));
+        if !rux_texts::is_whitespace(&forms[index]) {
+            rux_dbg_reav!(Some(index));
         }
     }
-    dbg_reav!(None);
+    rux_dbg_reav!(None);
 }
 
 pub fn kit_last_some(forms: &Vec<String>) -> Option<usize> {
-    dbg_call!();
+    rux_dbg_call!();
     let mut index = forms.len();
     while index > 0 {
         index -= 1;
-        if !liz_texts::is_whitespace(&forms[index]) {
-            dbg_reav!(Some(index));
+        if !rux_texts::is_whitespace(&forms[index]) {
+            rux_dbg_reav!(Some(index));
         }
     }
-    dbg_reav!(None);
+    rux_dbg_reav!(None);
 }
 
 pub fn kit_change_all(forms: &mut Vec<String>, of: &str, to: &str) {
-    dbg_call!(of, to);
-    kit_change_all_ask(forms, of, to, |form| liz_texts::is_equals(form, of))
+    rux_dbg_call!(of, to);
+    kit_change_all_ask(forms, of, to, |form| rux_texts::is_equals(form, of))
 }
 
 pub fn kit_change_all_like(forms: &mut Vec<String>, of: &str, to: &str) {
-    dbg_call!(of, to);
-    kit_change_all_ask(forms, of, to, |form| liz_texts::is_likely(form, of))
+    rux_dbg_call!(of, to);
+    kit_change_all_ask(forms, of, to, |form| rux_texts::is_likely(form, of))
 }
 
 pub fn kit_change_all_ask<F: Fn(&str) -> bool>(
@@ -164,7 +165,7 @@ pub fn kit_change_all_ask<F: Fn(&str) -> bool>(
     to: &str,
     ask: F,
 ) {
-    dbg_call!(of, to);
+    rux_dbg_call!(of, to);
     let mut indexes = Vec::new();
     for (index, form) in forms.iter().enumerate() {
         if ask(form) {
@@ -177,7 +178,7 @@ pub fn kit_change_all_ask<F: Fn(&str) -> bool>(
 }
 
 pub fn kit_print_all(forms: &Vec<String>) {
-    dbg_call!();
+    rux_dbg_call!();
     print!("[");
     let mut first = true;
     for form in forms {
@@ -192,17 +193,17 @@ pub fn kit_print_all(forms: &Vec<String>) {
 }
 
 pub fn kit_build(forms: &Vec<String>) -> String {
-    dbg_call!();
+    rux_dbg_call!();
     let mut result = String::new();
     for form in forms {
         result.push_str(form);
     }
-    dbg_reav!(result);
+    rux_dbg_reav!(result);
 }
 
 pub fn kit_write(forms: &Vec<String>, path: &str) -> Result<(), LizError> {
-    dbg_call!(path);
+    rux_dbg_call!(path);
     let contents = kit_build(forms);
-    dbg_step!(contents);
-    liz_texts::write(path, contents).map_err(|err| dbg_bleb!(err))
+    rux_dbg_step!(contents);
+    rux_texts::write(path, contents).map_err(|err| rux_dbg_bleb!(err))
 }

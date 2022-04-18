@@ -1,75 +1,75 @@
 use regex::Regex;
 use rlua::UserData;
+use rubx::rux_texts;
+use rubx::{rux_dbg_call, rux_dbg_reav, rux_dbg_step, rux_dbg_tell};
 
-use crate::liz_debug::{dbg_call, dbg_reav, dbg_step, dbg_tell};
 use crate::liz_forms;
 use crate::liz_logic::{self, Sense};
-use crate::liz_texts;
 use crate::LizError;
 
 pub fn group_pair(left: GroupIf, right: GroupIf) -> GroupPair {
-    dbg_call!(left, right);
-    dbg_reav!(GroupPair { left, right });
+    rux_dbg_call!(left, right);
+    rux_dbg_reav!(GroupPair { left, right });
 }
 
 pub fn group_equals(term: String) -> GroupIf {
-    dbg_call!();
-    dbg_reav!(GroupIf::Equals(Sense::Same, term));
+    rux_dbg_call!();
+    rux_dbg_reav!(GroupIf::Equals(Sense::Same, term));
 }
 
 pub fn group_equals_not(term: String) -> GroupIf {
-    dbg_call!();
-    dbg_reav!(GroupIf::Equals(Sense::Swap, term));
+    rux_dbg_call!();
+    rux_dbg_reav!(GroupIf::Equals(Sense::Swap, term));
 }
 
 pub fn group_likely(term: String) -> GroupIf {
-    dbg_call!();
-    dbg_reav!(GroupIf::Likely(Sense::Same, term));
+    rux_dbg_call!();
+    rux_dbg_reav!(GroupIf::Likely(Sense::Same, term));
 }
 
 pub fn group_likely_not(term: String) -> GroupIf {
-    dbg_call!();
-    dbg_reav!(GroupIf::Likely(Sense::Swap, term));
+    rux_dbg_call!();
+    rux_dbg_reav!(GroupIf::Likely(Sense::Swap, term));
 }
 
 pub fn group_regex(phrase: String) -> GroupIf {
-    dbg_call!();
-    dbg_reav!(GroupIf::Regex(Sense::Same, phrase));
+    rux_dbg_call!();
+    rux_dbg_reav!(GroupIf::Regex(Sense::Same, phrase));
 }
 
 pub fn group_regex_not(regex: String) -> GroupIf {
-    dbg_call!();
-    dbg_reav!(GroupIf::Regex(Sense::Swap, regex));
+    rux_dbg_call!();
+    rux_dbg_reav!(GroupIf::Regex(Sense::Swap, regex));
 }
 
 pub fn group_any() -> GroupIf {
-    dbg_call!();
-    dbg_reav!(GroupIf::Imply(Sense::Same, GroupImply::Any));
+    rux_dbg_call!();
+    rux_dbg_reav!(GroupIf::Imply(Sense::Same, GroupImply::Any));
 }
 
 pub fn group_any_not() -> GroupIf {
-    dbg_call!();
-    dbg_reav!(GroupIf::Imply(Sense::Swap, GroupImply::Any));
+    rux_dbg_call!();
+    rux_dbg_reav!(GroupIf::Imply(Sense::Swap, GroupImply::Any));
 }
 
 pub fn group_white_space() -> GroupIf {
-    dbg_call!();
-    dbg_reav!(GroupIf::Imply(Sense::Same, GroupImply::WhiteSpace));
+    rux_dbg_call!();
+    rux_dbg_reav!(GroupIf::Imply(Sense::Same, GroupImply::WhiteSpace));
 }
 
 pub fn group_white_space_not() -> GroupIf {
-    dbg_call!();
-    dbg_reav!(GroupIf::Imply(Sense::Swap, GroupImply::WhiteSpace));
+    rux_dbg_call!();
+    rux_dbg_reav!(GroupIf::Imply(Sense::Swap, GroupImply::WhiteSpace));
 }
 
 pub fn group_punctuation() -> GroupIf {
-    dbg_call!();
-    dbg_reav!(GroupIf::Imply(Sense::Same, GroupImply::Punctuation));
+    rux_dbg_call!();
+    rux_dbg_reav!(GroupIf::Imply(Sense::Same, GroupImply::Punctuation));
 }
 
 pub fn group_punctuation_not() -> GroupIf {
-    dbg_call!();
-    dbg_reav!(GroupIf::Imply(Sense::Swap, GroupImply::Punctuation));
+    rux_dbg_call!();
+    rux_dbg_reav!(GroupIf::Imply(Sense::Swap, GroupImply::Punctuation));
 }
 
 pub fn rig_group_all(
@@ -77,8 +77,8 @@ pub fn rig_group_all(
     groupers: &Vec<(Box<dyn GroupTrait>, Box<dyn GroupTrait>)>,
     recursive: bool,
 ) -> Result<usize, LizError> {
-    dbg_call!(forms, groupers, recursive);
-    dbg_reav!(rig_group_on(
+    rux_dbg_call!(forms, groupers, recursive);
+    rux_dbg_reav!(rig_group_on(
         forms,
         0,
         liz_forms::kit_len(forms),
@@ -94,13 +94,13 @@ pub fn rig_group_on(
     groupers: &Vec<(Box<dyn GroupTrait>, Box<dyn GroupTrait>)>,
     recursive: bool,
 ) -> Result<usize, LizError> {
-    dbg_call!(forms, from, till, groupers, recursive);
+    rux_dbg_call!(forms, from, till, groupers, recursive);
     let range = liz_forms::kit_del_range(forms, from, till);
-    dbg_step!(range);
+    rux_dbg_step!(range);
     let mut helper = GroupHelper::new(range);
-    dbg_step!(helper);
+    rux_dbg_step!(helper);
     while let Some(term) = helper.advance() {
-        dbg_tell!(term);
+        rux_dbg_tell!(term);
         if !helper.has_accrued() {
             helper.accrue_term(term);
         } else {
@@ -130,7 +130,7 @@ pub fn rig_group_on(
     let results = helper.results;
     let result = results.len();
     liz_forms::kit_add_range(forms, from, results);
-    dbg_reav!(Ok(result));
+    rux_dbg_reav!(Ok(result));
 }
 
 #[derive(Debug, Clone, PartialEq)]
@@ -177,7 +177,7 @@ pub struct GroupEquals {
 
 impl GroupTrait for GroupEquals {
     fn checks(&self, term: &str) -> bool {
-        liz_logic::sense_apply(self.sense, liz_texts::is_equals(term, &self.equals))
+        liz_logic::sense_apply(self.sense, rux_texts::is_equals(term, &self.equals))
     }
 }
 
@@ -189,7 +189,7 @@ pub struct GroupLikely {
 
 impl GroupTrait for GroupLikely {
     fn checks(&self, term: &str) -> bool {
-        liz_logic::sense_apply(self.sense, liz_texts::is_likely(term, &self.likely))
+        liz_logic::sense_apply(self.sense, rux_texts::is_likely(term, &self.likely))
     }
 }
 
@@ -261,8 +261,8 @@ pub struct GroupHelper {
 
 impl GroupHelper {
     fn new(origins: Vec<String>) -> Self {
-        dbg_call!(origins);
-        dbg_reav!(Self {
+        rux_dbg_call!(origins);
+        rux_dbg_reav!(Self {
             origins,
             results: Vec::new(),
             accrued: None,
@@ -270,13 +270,13 @@ impl GroupHelper {
     }
 
     pub fn has_accrued(&self) -> bool {
-        dbg_call!();
-        dbg_reav!(self.accrued.is_some());
+        rux_dbg_call!();
+        rux_dbg_reav!(self.accrued.is_some());
     }
 
     pub fn get_accrued(&self) -> &str {
-        dbg_call!();
-        dbg_reav!(if let Some(ref accrued) = self.accrued {
+        rux_dbg_call!();
+        rux_dbg_reav!(if let Some(ref accrued) = self.accrued {
             accrued
         } else {
             ""
@@ -284,28 +284,28 @@ impl GroupHelper {
     }
 
     pub fn accrue_term(&mut self, term: String) {
-        dbg_call!(term);
+        rux_dbg_call!(term);
         if self.accrued.is_none() {
             self.accrued = Some(term);
         } else if let Some(ref mut existing) = self.accrued {
             existing.push_str(&term);
         }
-        dbg_step!(self.accrued);
+        rux_dbg_step!(self.accrued);
     }
 
     pub fn commit_accrued(&mut self) {
-        dbg_call!();
+        rux_dbg_call!();
         if let Some(ref accrued) = self.accrued {
-            dbg_step!(accrued);
+            rux_dbg_step!(accrued);
             self.results.push(accrued.clone());
-            dbg_step!(self.results);
+            rux_dbg_step!(self.results);
             self.accrued = None;
         }
     }
 
     pub fn advance(&mut self) -> Option<String> {
-        dbg_call!();
-        dbg_reav!(if !self.origins.is_empty() {
+        rux_dbg_call!();
+        rux_dbg_reav!(if !self.origins.is_empty() {
             Some(self.origins.remove(0))
         } else {
             None
@@ -316,11 +316,11 @@ impl GroupHelper {
 pub fn get_groupers(
     groups: Vec<GroupPair>,
 ) -> Result<Vec<(Box<dyn GroupTrait>, Box<dyn GroupTrait>)>, LizError> {
-    dbg_call!(groups);
+    rux_dbg_call!(groups);
     let mut result: Vec<(Box<dyn GroupTrait>, Box<dyn GroupTrait>)> =
         Vec::with_capacity(groups.len());
     for group in groups {
         result.push((group.left.get_grouper()?, group.right.get_grouper()?));
     }
-    dbg_reav!(Ok(result));
+    rux_dbg_reav!(Ok(result));
 }

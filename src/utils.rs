@@ -1,60 +1,60 @@
 use rlua::{Context, MultiValue, Table, Value as LuaValue};
+use rubx::{rux_dbg_erro, rux_dbg_step};
 use serde_json::Value as JsonValue;
 
-use crate::liz_debug::{dbg_erro, dbg_step};
 use crate::LizError;
 
 pub fn print_stack_dir(lane: Context) -> Result<(), LizError> {
-    dbg_step!();
-    let liz = get_liz(&lane).map_err(|err| dbg_erro!(err))?;
-    let stack: Table = liz.get("stack_dir").map_err(|err| dbg_erro!(err))?;
+    rux_dbg_step!();
+    let liz = get_liz(&lane).map_err(|err| rux_dbg_erro!(err))?;
+    let stack: Table = liz.get("stack_dir").map_err(|err| rux_dbg_erro!(err))?;
     let size = stack.raw_len();
     for index in 1..size + 1 {
-        let dir: String = stack.get(index).map_err(|err| dbg_erro!(err))?;
+        let dir: String = stack.get(index).map_err(|err| rux_dbg_erro!(err))?;
         println!("{}", dir);
     }
     Ok(())
 }
 
 pub fn put_stack_dir<'a>(lane: &Context<'a>, liz: &Table<'a>, dir: String) -> Result<(), LizError> {
-    dbg_step!(dir);
-    let contains = liz.contains_key("stack_dir").map_err(|err| dbg_erro!(err))?;
+    rux_dbg_step!(dir);
+    let contains = liz.contains_key("stack_dir").map_err(|err| rux_dbg_erro!(err))?;
     if !contains {
-        let stack = lane.create_table().map_err(|err| dbg_erro!(err))?;
-        liz.set("stack_dir", stack).map_err(|err| dbg_erro!(err))?;
+        let stack = lane.create_table().map_err(|err| rux_dbg_erro!(err))?;
+        liz.set("stack_dir", stack).map_err(|err| rux_dbg_erro!(err))?;
     }
-    let stack: Table = liz.get("stack_dir").map_err(|err| dbg_erro!(err))?;
+    let stack: Table = liz.get("stack_dir").map_err(|err| rux_dbg_erro!(err))?;
     let next = stack.raw_len() + 1;
-    stack.set(next, dir).map_err(|err| dbg_erro!(err))?;
+    stack.set(next, dir).map_err(|err| rux_dbg_erro!(err))?;
     Ok(())
 }
 
 pub fn liz_stacked_dir(liz: &Table) -> Result<String, LizError> {
-    dbg_step!();
-    let stack: Table = liz.get("stack_dir").map_err(|err| dbg_erro!(err))?;
+    rux_dbg_step!();
+    let stack: Table = liz.get("stack_dir").map_err(|err| rux_dbg_erro!(err))?;
     let last = stack.raw_len();
-    let result: String = stack.get(last).map_err(|err| dbg_erro!(err))?;
+    let result: String = stack.get(last).map_err(|err| rux_dbg_erro!(err))?;
     Ok(result)
 }
 
 pub fn get_stacked_dir(lane: Context) -> Result<String, LizError> {
-    dbg_step!();
-    let liz = get_liz(&lane).map_err(|err| dbg_erro!(err))?;
-    Ok(liz_stacked_dir(&liz).map_err(|err| dbg_erro!(err))?)
+    rux_dbg_step!();
+    let liz = get_liz(&lane).map_err(|err| rux_dbg_erro!(err))?;
+    Ok(liz_stacked_dir(&liz).map_err(|err| rux_dbg_erro!(err))?)
 }
 
 pub fn pop_stack_dir(liz: &Table) -> Result<(), LizError> {
-    dbg_step!();
-    let stack: Table = liz.get("stack_dir").map_err(|err| dbg_erro!(err))?;
+    rux_dbg_step!();
+    let stack: Table = liz.get("stack_dir").map_err(|err| rux_dbg_erro!(err))?;
     let last = stack.raw_len();
-    stack.set(last, rlua::Nil).map_err(|err| dbg_erro!(err))?;
+    stack.set(last, rlua::Nil).map_err(|err| rux_dbg_erro!(err))?;
     Ok(())
 }
 
 fn get_liz<'a>(lane: &Context<'a>) -> Result<Table<'a>, LizError> {
-    dbg_step!();
+    rux_dbg_step!();
     let globals = lane.globals();
-    let liz: Table = globals.get("Liz").map_err(|err| dbg_erro!(err))?;
+    let liz: Table = globals.get("Liz").map_err(|err| rux_dbg_erro!(err))?;
     Ok(liz)
 }
 
@@ -66,16 +66,16 @@ pub fn treat_error<T>(result: Result<T, LizError>) -> Result<T, rlua::Error> {
 }
 
 pub fn to_json_multi(values: MultiValue) -> Result<Vec<String>, LizError> {
-    dbg_step!(values);
+    rux_dbg_step!(values);
     let mut result: Vec<String> = Vec::new();
     for value in values {
-        result.push(to_json(value).map_err(|err| dbg_erro!(err))?);
+        result.push(to_json(value).map_err(|err| rux_dbg_erro!(err))?);
     }
     Ok(result)
 }
 
 pub fn to_json(value: LuaValue) -> Result<String, LizError> {
-    dbg_step!(value);
+    rux_dbg_step!(value);
     let result = match value {
         LuaValue::Nil => format!("null"),
         LuaValue::Boolean(data) => format!("{}", data),
@@ -84,7 +84,7 @@ pub fn to_json(value: LuaValue) -> Result<String, LizError> {
         LuaValue::String(data) => format!(
             "\"{}\"",
             data.to_str()
-                .map_err(|err| dbg_erro!(err))?
+                .map_err(|err| rux_dbg_erro!(err))?
                 .replace("\\", "\\\\")
                 .replace("\n", "\\n")
                 .replace("\r", "\\r")
@@ -95,7 +95,7 @@ pub fn to_json(value: LuaValue) -> Result<String, LizError> {
             let mut buffer = String::from("{");
             let mut first = true;
             for pair in data.pairs::<String, LuaValue>() {
-                let (key, item_value) = pair.map_err(|err| dbg_erro!(err))?;
+                let (key, item_value) = pair.map_err(|err| rux_dbg_erro!(err))?;
                 if first {
                     first = false;
                 } else {
@@ -105,7 +105,7 @@ pub fn to_json(value: LuaValue) -> Result<String, LizError> {
                 buffer.push_str(&key);
                 buffer.push('"');
                 buffer.push(':');
-                buffer.push_str(&to_json(item_value).map_err(|err| dbg_erro!(err))?);
+                buffer.push_str(&to_json(item_value).map_err(|err| rux_dbg_erro!(err))?);
             }
             buffer.push_str("}");
             buffer
@@ -120,16 +120,16 @@ pub fn to_json(value: LuaValue) -> Result<String, LizError> {
 }
 
 pub fn from_json<'a>(lane: Context<'a>, source: String) -> Result<LuaValue<'a>, LizError> {
-    dbg_step!(source);
+    rux_dbg_step!(source);
     if source.trim().is_empty() {
         return Ok(LuaValue::Nil);
     }
-    let json: JsonValue = serde_json::from_str(&source).map_err(|err| dbg_erro!(err))?;
+    let json: JsonValue = serde_json::from_str(&source).map_err(|err| rux_dbg_erro!(err))?;
     from_json_value(lane, json)
 }
 
 fn from_json_value<'a>(lane: Context<'a>, value: JsonValue) -> Result<LuaValue<'a>, LizError> {
-    dbg_step!(value);
+    rux_dbg_step!(value);
     let result = match value {
         JsonValue::Null => LuaValue::Nil,
         JsonValue::Bool(data) => LuaValue::Boolean(data),
@@ -143,24 +143,24 @@ fn from_json_value<'a>(lane: Context<'a>, value: JsonValue) -> Result<LuaValue<'
             }
         }
         JsonValue::String(data) => {
-            let data = lane.create_string(&data).map_err(|err| dbg_erro!(err))?;
+            let data = lane.create_string(&data).map_err(|err| rux_dbg_erro!(err))?;
             LuaValue::String(data)
         }
         JsonValue::Array(data) => {
-            let table = lane.create_table().map_err(|err| dbg_erro!(err))?;
+            let table = lane.create_table().map_err(|err| rux_dbg_erro!(err))?;
             for (index, item) in data.into_iter().enumerate() {
-                let item_value = from_json_value(lane, item).map_err(|err| dbg_erro!(err))?;
+                let item_value = from_json_value(lane, item).map_err(|err| rux_dbg_erro!(err))?;
                 table
                     .set(index + 1, item_value)
-                    .map_err(|err| dbg_erro!(err))?;
+                    .map_err(|err| rux_dbg_erro!(err))?;
             }
             LuaValue::Table(table)
         }
         JsonValue::Object(data) => {
-            let table = lane.create_table().map_err(|err| dbg_erro!(err))?;
+            let table = lane.create_table().map_err(|err| rux_dbg_erro!(err))?;
             for (name, item) in data {
-                let item_value = from_json_value(lane, item).map_err(|err| dbg_erro!(err))?;
-                table.set(name, item_value).map_err(|err| dbg_erro!(err))?;
+                let item_value = from_json_value(lane, item).map_err(|err| rux_dbg_erro!(err))?;
+                table.set(name, item_value).map_err(|err| rux_dbg_erro!(err))?;
             }
             LuaValue::Table(table)
         }

@@ -1,7 +1,8 @@
 use rlua::{Context, Table, UserData};
+use rubx::rux_paths;
+use rubx::{self, rux_dbg_call, rux_dbg_reav, rux_dbg_step};
+use rubx::{rux_dbg_bleb, rux_dbg_erro, rux_dbg_errs, rux_dbg_kind};
 
-use std::io::{Read, Write};
-use std::process::{Command, Stdio};
 use std::sync::atomic::{AtomicUsize, Ordering};
 use std::sync::Arc;
 use std::sync::RwLock;
@@ -9,67 +10,64 @@ use std::thread;
 use std::time::Duration;
 
 use crate::liz_codes;
-use crate::liz_debug::{self, dbg_call, dbg_reav, dbg_step};
-use crate::liz_debug::{dbg_bleb, dbg_erro, dbg_errs, dbg_kind};
-use crate::liz_paths;
 use crate::utils;
 use crate::LizError;
 
 pub fn run_wd(relative_path: &str, args: &Option<Vec<String>>) -> Result<Vec<String>, LizError> {
-    dbg_call!(relative_path);
-    let working_dir = liz_paths::wd().map_err(|err| dbg_bleb!(err))?;
-    dbg_step!(working_dir);
+    rux_dbg_call!(relative_path);
+    let working_dir = rux_paths::wd().map_err(|err| rux_dbg_bleb!(err))?;
+    rux_dbg_step!(working_dir);
     let full_path =
-        liz_paths::path_join(&working_dir, relative_path).map_err(|err| dbg_bleb!(err))?;
-    dbg_step!(full_path);
-    dbg_reav!(crate::run(&full_path, args).map_err(|err| dbg_bleb!(err)));
+        rux_paths::path_join(&working_dir, relative_path).map_err(|err| rux_dbg_bleb!(err))?;
+    rux_dbg_step!(full_path);
+    rux_dbg_reav!(crate::run(&full_path, args).map_err(|err| rux_dbg_bleb!(err)));
 }
 
 pub fn race_wd(lane: Context, relative_path: &str) -> Result<Vec<String>, LizError> {
-    dbg_call!(relative_path);
-    let working_dir = liz_paths::wd().map_err(|err| dbg_bleb!(err))?;
-    dbg_step!(working_dir);
+    rux_dbg_call!(relative_path);
+    let working_dir = rux_paths::wd().map_err(|err| rux_dbg_bleb!(err))?;
+    rux_dbg_step!(working_dir);
     let full_path =
-        liz_paths::path_join(&working_dir, relative_path).map_err(|err| dbg_bleb!(err))?;
-    dbg_step!(full_path);
-    dbg_reav!(crate::race_in(lane, &full_path).map_err(|err| dbg_bleb!(err)));
+        rux_paths::path_join(&working_dir, relative_path).map_err(|err| rux_dbg_bleb!(err))?;
+    rux_dbg_step!(full_path);
+    rux_dbg_reav!(crate::race_in(lane, &full_path).map_err(|err| rux_dbg_bleb!(err)));
 }
 
 pub fn spawn(lane: Context, path: &str, args: &Option<Vec<String>>) -> Result<Spawned, LizError> {
-    dbg_call!(path, args);
+    rux_dbg_call!(path, args);
     let globals = lane.globals();
-    let liz: Table = globals.get("Liz").map_err(|err| dbg_erro!(err))?;
+    let liz: Table = globals.get("Liz").map_err(|err| rux_dbg_erro!(err))?;
 
-    let suit_path = liz_codes::liz_suit_path(path).map_err(|err| dbg_bleb!(err))?;
-    dbg_step!(suit_path);
+    let suit_path = liz_codes::liz_suit_path(path).map_err(|err| rux_dbg_bleb!(err))?;
+    rux_dbg_step!(suit_path);
 
-    let suit_path = if liz_paths::is_relative(&suit_path) {
-        let stack_dir = utils::liz_stacked_dir(&liz).map_err(|err| dbg_bleb!(err))?;
-        liz_paths::path_join(&stack_dir, &suit_path).map_err(|err| dbg_bleb!(err))?
+    let suit_path = if rux_paths::is_relative(&suit_path) {
+        let stack_dir = utils::liz_stacked_dir(&liz).map_err(|err| rux_dbg_bleb!(err))?;
+        rux_paths::path_join(&stack_dir, &suit_path).map_err(|err| rux_dbg_bleb!(err))?
     } else {
         suit_path
     };
-    dbg_step!(suit_path);
+    rux_dbg_step!(suit_path);
 
-    let spawn_wd = liz_paths::wd().map_err(|err| dbg_bleb!(err))?;
-    dbg_step!(spawn_wd);
+    let spawn_wd = rux_paths::wd().map_err(|err| rux_dbg_bleb!(err))?;
+    rux_dbg_step!(spawn_wd);
 
-    let spawn_dir = liz_paths::path_parent(&suit_path).map_err(|err| dbg_bleb!(err))?;
-    dbg_step!(spawn_dir);
+    let spawn_dir = rux_paths::path_parent(&suit_path).map_err(|err| rux_dbg_bleb!(err))?;
+    rux_dbg_step!(spawn_dir);
 
-    let spawn_path = liz_paths::path_absolute(&suit_path).map_err(|err| dbg_bleb!(err))?;
-    dbg_step!(spawn_path);
+    let spawn_path = rux_paths::path_absolute(&suit_path).map_err(|err| rux_dbg_bleb!(err))?;
+    rux_dbg_step!(spawn_path);
 
     liz.set("spawn_wd", spawn_wd)
-        .map_err(|err| dbg_erro!(err))?;
+        .map_err(|err| rux_dbg_erro!(err))?;
     liz.set("spawn_dir", spawn_dir)
-        .map_err(|err| dbg_erro!(err))?;
+        .map_err(|err| rux_dbg_erro!(err))?;
     liz.set("spawn_path", spawn_path.clone())
-        .map_err(|err| dbg_erro!(err))?;
+        .map_err(|err| rux_dbg_erro!(err))?;
 
     let spawn_index = SPAWN_COUNT.fetch_add(1, Ordering::SeqCst);
     let spawn_name = format!("spawn{}", spawn_index);
-    dbg_step!(spawn_name);
+    rux_dbg_step!(spawn_name);
 
     let spawned = Spawned::new(spawn_path, args.clone());
     let spawned_clone = spawned.clone();
@@ -82,198 +80,43 @@ pub fn spawn(lane: Context, path: &str, args: &Option<Vec<String>>) -> Result<Sp
                 let mut lock = spawned_clone
                     .results
                     .write()
-                    .map_err(|err| dbg_erro!(err))
+                    .map_err(|err| rux_dbg_erro!(err))
                     .unwrap();
                 *lock = Some(returned);
             }
         })
-        .map_err(|err| dbg_erro!(err))?;
+        .map_err(|err| rux_dbg_erro!(err))?;
     let result = Ok(spawned);
-    dbg_reav!(result)
+    rux_dbg_reav!(result)
 }
 
 pub fn join(spawned: Spawned) -> Result<Vec<String>, LizError> {
-    dbg_call!(spawned);
-    dbg_reav!(spawned.join());
+    rux_dbg_call!(spawned);
+    rux_dbg_reav!(spawned.join());
 }
 
 pub fn join_all(spawneds: Vec<Spawned>) -> Result<Vec<Vec<String>>, LizError> {
-    dbg_call!(spawneds);
+    rux_dbg_call!(spawneds);
     let mut all_results: Vec<Vec<String>> = Vec::new();
     for spawned in spawneds {
-        let spawned_result = spawned.join().map_err(|err| dbg_bleb!(err))?;
-        dbg_step!(spawned_result);
+        let spawned_result = spawned.join().map_err(|err| rux_dbg_bleb!(err))?;
+        rux_dbg_step!(spawned_result);
         all_results.push(spawned_result);
     }
-    dbg_reav!(Ok(all_results));
+    rux_dbg_reav!(Ok(all_results));
 }
 
 pub fn wait(spawned: Spawned) -> Result<(), LizError> {
-    dbg_call!(spawned);
+    rux_dbg_call!(spawned);
     spawned.wait()
 }
 
 pub fn wait_all(spawneds: Vec<Spawned>) -> Result<(), LizError> {
-    dbg_call!(spawneds);
+    rux_dbg_call!(spawneds);
     for spawned in spawneds {
-        spawned.wait().map_err(|err| dbg_erro!(err))?
+        spawned.wait().map_err(|err| rux_dbg_erro!(err))?
     }
     Ok(())
-}
-
-pub fn cmd(
-    command: &str,
-    args: &[impl AsRef<str>],
-    dir: Option<impl AsRef<str>>,
-    print: Option<bool>,
-    throw: Option<bool>,
-) -> Result<(i32, String), LizError> {
-    dbg_call!(command, print, throw);
-    let mut cmd = Command::new(command);
-    let args = args
-        .iter()
-        .map(|arg| {
-            let arg = arg.as_ref();
-            cmd.arg(arg);
-            arg.into()
-        })
-        .collect::<Vec<&str>>();
-    dbg_step!(args);
-    let dir: String = if let Some(dir) = dir {
-        dir.as_ref().into()
-    } else {
-        ".".into()
-    };
-    dbg_step!(dir);
-    cmd.current_dir(&dir);
-    let mut child = cmd
-        .stdin(Stdio::null())
-        .stdout(Stdio::piped())
-        .stderr(Stdio::piped())
-        .spawn()
-        .map_err(|err| dbg_erro!(err, command, args, dir))?;
-    let mut output = String::new();
-    child
-        .stdout
-        .take()
-        .ok_or("Could not take on the child stdout")
-        .map_err(|err| dbg_erro!(err))?
-        .read_to_string(&mut output)
-        .map_err(|err| dbg_erro!(err))?;
-    dbg_step!(output);
-    child
-        .stderr
-        .take()
-        .ok_or("Could not take on the child stderr")
-        .map_err(|err| dbg_erro!(err))?
-        .read_to_string(&mut output)
-        .map_err(|err| dbg_erro!(err))?;
-    dbg_step!(output);
-    let output = output.trim();
-    let output = String::from(output);
-    dbg_step!(output);
-    let result = child
-        .wait()
-        .map_err(|err| dbg_erro!(err))?
-        .code()
-        .ok_or("Could not found the exit code")
-        .map_err(|err| dbg_erro!(err))?;
-    dbg_step!(result);
-    let print = if let Some(print) = print { print } else { true };
-    dbg_step!(print);
-    if print && !output.is_empty() {
-        println!("{}", output);
-    }
-    let throw = if let Some(throw) = throw { throw } else { true };
-    dbg_step!(throw);
-    if throw && result != 0 {
-        return Err(dbg_erro!(
-            "Result code from command is different than zero",
-            command,
-            result
-        ));
-    }
-    Ok((result, output))
-}
-
-pub fn sleep(millis: u64) {
-    dbg_call!(millis);
-    thread::sleep(Duration::from_millis(millis))
-}
-
-pub fn pause() -> Result<(), LizError> {
-    dbg_call!();
-    let mut stdin = std::io::stdin();
-    let mut stdout = std::io::stdout();
-    write!(stdout, "Press enter to continue...").map_err(|err| dbg_erro!(err))?;
-    stdout.flush()?;
-    let mut buffer = [0u8];
-    stdin.read(&mut buffer).map_err(|err| dbg_erro!(err))?;
-    Ok(())
-}
-
-pub fn exe_path() -> Result<String, LizError> {
-    dbg_call!();
-    dbg_reav!(Ok(format!(
-        "{}",
-        std::env::current_exe()
-            .map_err(|err| dbg_erro!(err))?
-            .display(),
-    )));
-}
-
-pub fn exe_dir() -> Result<String, LizError> {
-    dbg_call!();
-    let exe_path = exe_path().map_err(|err| dbg_bleb!(err))?;
-    dbg_reav!(Ok(
-        liz_paths::path_parent(&exe_path).map_err(|err| dbg_bleb!(err))?,
-    ));
-}
-
-pub fn exe_name() -> Result<String, LizError> {
-    dbg_call!();
-    let exe_path = exe_path().map_err(|err| dbg_bleb!(err))?;
-    dbg_reav!(Ok(liz_paths::path_name(&exe_path).into()));
-}
-
-pub fn exe_stem() -> Result<String, LizError> {
-    dbg_call!();
-    let exe_path = exe_path().map_err(|err| dbg_bleb!(err))?;
-    dbg_reav!(Ok(liz_paths::path_stem(&exe_path).into()));
-}
-
-pub fn exe_ext() -> &'static str {
-    dbg_call!();
-    dbg_reav!(std::env::consts::EXE_EXTENSION);
-}
-
-pub fn dot_exe_ext() -> String {
-    dbg_call!();
-    dbg_reav!(if std::env::consts::EXE_EXTENSION.is_empty() {
-        String::default()
-    } else {
-        format!(".{}", std::env::consts::EXE_EXTENSION)
-    });
-}
-
-pub fn get_os() -> &'static str {
-    dbg_call!();
-    dbg_reav!(std::env::consts::OS);
-}
-
-pub fn is_lin() -> bool {
-    dbg_call!();
-    dbg_reav!(std::env::consts::OS == "linux");
-}
-
-pub fn is_mac() -> bool {
-    dbg_call!();
-    dbg_reav!(std::env::consts::OS == "macos");
-}
-
-pub fn is_win() -> bool {
-    dbg_call!();
-    dbg_reav!(std::env::consts::OS == "windows");
 }
 
 static SPAWN_COUNT: AtomicUsize = AtomicUsize::new(1);
@@ -298,22 +141,22 @@ impl Spawned {
         let waiter = Duration::from_millis(10);
         loop {
             {
-                let lock = self.results.read().map_err(|err| dbg_erro!(err))?;
+                let lock = self.results.read().map_err(|err| rux_dbg_erro!(err))?;
                 if lock.is_some() {
                     break;
                 }
             }
             thread::sleep(waiter);
         }
-        let lock = self.results.read().map_err(|err| dbg_erro!(err))?;
+        let lock = self.results.read().map_err(|err| rux_dbg_erro!(err))?;
         if let Some(results) = &*lock {
             match results {
                 Ok(results) => Ok(results.clone()),
-                Err(err) => Err(dbg_erro!(err)),
+                Err(err) => Err(rux_dbg_erro!(err)),
             }
         } else {
-            dbg_kind!("WARN", "Could not get the results from the join");
-            Err(liz_debug::throw(dbg_errs!(
+            rux_dbg_kind!("WARN", "Could not get the results from the join");
+            Err(rubx::rux_debug::throw(rux_dbg_errs!(
                 "Could not get the results from the join"
             )))
         }
@@ -322,7 +165,7 @@ impl Spawned {
     fn wait(&self) -> Result<(), LizError> {
         loop {
             {
-                let lock = self.results.read().map_err(|err| dbg_erro!(err))?;
+                let lock = self.results.read().map_err(|err| rux_dbg_erro!(err))?;
                 if lock.is_some() {
                     break;
                 }

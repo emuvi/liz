@@ -1,23 +1,24 @@
 use rlua::{Context, Table};
+use rubx::rux_paths;
+use rubx::rux_fires;
+use rubx::{rux_dbg_bleb, rux_dbg_call, rux_dbg_reav, rux_dbg_step};
 
 use crate::liz_codes;
-use crate::liz_debug::{dbg_bleb, dbg_call, dbg_reav, dbg_step};
 use crate::liz_fires::{self, Spawned};
-use crate::liz_paths;
 use crate::utils;
 use crate::LizError;
 
 fn lane_suit_path<'a>(lane: Context<'a>, path: String) -> Result<String, LizError> {
-    dbg_call!(path);
-    let suit_path = liz_codes::liz_suit_path(&path).map_err(|err| dbg_bleb!(err))?;
-    dbg_step!(suit_path);
-    let suit_path = if liz_paths::is_relative(&suit_path) {
-        let stack_dir = utils::get_stacked_dir(lane).map_err(|err| dbg_bleb!(err))?;
-        liz_paths::path_join(&stack_dir, &suit_path).map_err(|err| dbg_bleb!(err))?
+    rux_dbg_call!(path);
+    let suit_path = liz_codes::liz_suit_path(&path).map_err(|err| rux_dbg_bleb!(err))?;
+    rux_dbg_step!(suit_path);
+    let suit_path = if rux_paths::is_relative(&suit_path) {
+        let stack_dir = utils::get_stacked_dir(lane).map_err(|err| rux_dbg_bleb!(err))?;
+        rux_paths::path_join(&stack_dir, &suit_path).map_err(|err| rux_dbg_bleb!(err))?
     } else {
         suit_path
     };
-    dbg_reav!(Ok(suit_path));
+    rux_dbg_reav!(Ok(suit_path));
 }
 
 pub fn inject_execs<'a>(lane: Context<'a>, liz: &Table<'a>) -> Result<(), LizError> {
@@ -26,7 +27,7 @@ pub fn inject_execs<'a>(lane: Context<'a>, liz: &Table<'a>) -> Result<(), LizErr
             Ok(lane_path) => lane_path,
             Err(err) => return Err(err),
         };
-        dbg_step!(lane_path);
+        rux_dbg_step!(lane_path);
         utils::treat_error(crate::run(&lane_path, &args))
     })?;
 
@@ -71,33 +72,33 @@ pub fn inject_execs<'a>(lane: Context<'a>, liz: &Table<'a>) -> Result<(), LizErr
             Option<bool>,
             Option<bool>,
         )| {
-            utils::treat_error(liz_fires::cmd(&name, args.as_slice(), dir, print, throw))
+            utils::treat_error(rux_fires::cmd(&name, args.as_slice(), dir, print, throw))
         },
     )?;
 
-    let sleep = lane.create_function(|_, millis: u64| Ok(liz_fires::sleep(millis)))?;
+    let sleep = lane.create_function(|_, millis: u64| Ok(rux_fires::sleep(millis)))?;
 
-    let pause = lane.create_function(|_, ()| utils::treat_error(liz_fires::pause()))?;
+    let pause = lane.create_function(|_, ()| utils::treat_error(rux_fires::pause()))?;
 
-    let exe_path = lane.create_function(|_, ()| utils::treat_error(liz_fires::exe_path()))?;
+    let exe_path = lane.create_function(|_, ()| utils::treat_error(rux_fires::exe_path()))?;
 
-    let exe_dir = lane.create_function(|_, ()| utils::treat_error(liz_fires::exe_dir()))?;
+    let exe_dir = lane.create_function(|_, ()| utils::treat_error(rux_fires::exe_dir()))?;
     
-    let exe_name = lane.create_function(|_, ()| utils::treat_error(liz_fires::exe_name()))?;
+    let exe_name = lane.create_function(|_, ()| utils::treat_error(rux_fires::exe_name()))?;
     
-    let exe_stem = lane.create_function(|_, ()| utils::treat_error(liz_fires::exe_stem()))?;
+    let exe_stem = lane.create_function(|_, ()| utils::treat_error(rux_fires::exe_stem()))?;
     
-    let exe_ext = lane.create_function(|_, ()| Ok(liz_fires::exe_ext()))?;
+    let exe_ext = lane.create_function(|_, ()| Ok(rux_fires::exe_ext()))?;
 
-    let dot_exe_ext = lane.create_function(|_, ()| Ok(liz_fires::dot_exe_ext()))?;
+    let dot_exe_ext = lane.create_function(|_, ()| Ok(rux_fires::dot_exe_ext()))?;
 
-    let get_os = lane.create_function(|_, ()| Ok(liz_fires::get_os()))?;
+    let get_os = lane.create_function(|_, ()| Ok(rux_fires::get_os()))?;
 
-    let is_lin = lane.create_function(|_, ()| Ok(liz_fires::is_lin()))?;
+    let is_lin = lane.create_function(|_, ()| Ok(rux_fires::is_lin()))?;
 
-    let is_mac = lane.create_function(|_, ()| Ok(liz_fires::is_mac()))?;
+    let is_mac = lane.create_function(|_, ()| Ok(rux_fires::is_mac()))?;
 
-    let is_win = lane.create_function(|_, ()| Ok(liz_fires::is_win()))?;
+    let is_win = lane.create_function(|_, ()| Ok(rux_fires::is_win()))?;
 
     liz.set("run", run)?;
     liz.set("eval", eval)?;
