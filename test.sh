@@ -1,2 +1,3 @@
 #!/bin/bash
-cargo install --debug --path .
+
+liz -lu .lizs/pointel/cmds/test
