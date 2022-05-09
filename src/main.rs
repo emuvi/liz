@@ -73,14 +73,14 @@ USAGE:
     liz [FLAGS] [PATH]... [-- ARGS] 
 
 FLAGS:
-    -V, --version       Prints the version information.
-    -v, --verbose       Prints the verbose information.
+    -V, --version       Prints version information.
+    -v, --verbose       Prints verbose information.
     -a, --archive       Saves the archive log on a file.
     -lu, --lizs-update  Updates the lizs scrips on each call.
-    -dc, --debug-calls  If liz has debug symbols, debugs the functions calls.
-    -dr, --debug-reavs  If liz has debug symbols, debugs the functions returns.
-    -ds, --debug-steps  If liz has debug symbols, debugs the functions operations.
-    -dt, --debug-tells  If liz has debug symbols, debugs the functions iterations.
+    -dc, --debug-calls  If has debug symbols, is debuged the functions calls.
+    -dr, --debug-reavs  If has debug symbols, is debuged the functions returns.
+    -ds, --debug-steps  If has debug symbols, is debuged the functions operations.
+    -dt, --debug-tells  If has debug symbols, is debuged the functions iterations.
     -h, --help          Prints this usage information.
 
 PATH:
