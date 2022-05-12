@@ -158,6 +158,11 @@ pub fn inject_paths<'a>(lane: Context<'a>, liz: &Table<'a>) -> Result<(), LizErr
             ))
         })?;
 
+    let path_env = lane.create_function(|_, ()| utils::treat_error(rux_paths::path_env()))?;
+
+    let path_env_dirs =
+        lane.create_function(|_, ()| utils::treat_error(rux_paths::path_env_dirs()))?;
+
     liz.set("has", has)?;
     liz.set("is_dir", is_dir)?;
     liz.set("is_file", is_file)?;
@@ -199,6 +204,8 @@ pub fn inject_paths<'a>(lane: Context<'a>, liz: &Table<'a>) -> Result<(), LizErr
     liz.set("path_list_files_ext_in", path_list_files_ext_in)?;
     liz.set("path_list_files_exts", path_list_files_exts)?;
     liz.set("path_list_files_exts_in", path_list_files_exts_in)?;
+    liz.set("path_env", path_env)?;
+    liz.set("path_env_dirs", path_env_dirs)?;
 
     Ok(())
 }
