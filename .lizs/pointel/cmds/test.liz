@@ -1,0 +1,70 @@
+#!/bin/liz
+
+local wd = Liz.wd()
+local project = Liz.path_name(wd)
+print("============================================================")
+print("Testing " .. project .. " ...")
+print("============================================================")
+
+if Liz.has("pre-test.liz") then
+    print("Running pre test...")
+    Liz.run_wd("pre-test.liz")
+    print("Done pre test")
+end
+
+Liz.run("build")
+
+local dev_path = Liz.path_parent_find(wd, "Devs")
+if dev_path == "" then
+    print("Could not found the Devs path.")
+    return
+end
+local tst_path = Liz.path_join(dev_path, "Test")
+local cmd_dest = Liz.path_join(tst_path, "cmd")
+local pro_dest = Liz.path_join(cmd_dest, project)
+
+local tooled_path = nil
+local check_tooled = Liz.os_sep() .. "Tooled"
+for _, path in pairs(Liz.path_env_dirs()) do
+    if Liz.contains(path, check_tooled) then
+        tooled_path = path
+        break
+    end
+end
+
+if Liz.has("CMakeLists.txt") then
+    local origin = "build/bin"
+    Liz.rm(pro_dest)
+    Liz.cp(origin, pro_dest)
+    if tooled_path then
+        Liz.cp(origin, tooled_path)
+    end
+end
+
+if Liz.has("Cargo.toml") then
+    local origin = "target/debug/" .. project .. Liz.dot_exe_ext()
+    local destiny = Liz.path_join(pro_dest, project .. Liz.dot_exe_ext())
+    Liz.rm(pro_dest)
+    Liz.mkdir(pro_dest)
+    Liz.cp(origin, destiny)
+    if tooled_path then
+        Liz.cp(origin, tooled_path)
+    end
+end
+
+if Liz.has("pom.xml") then
+    local origin = "build"
+    Liz.rm(pro_dest)
+    Liz.cp(origin, pro_dest)
+    if tooled_path then
+        Liz.cp(origin, tooled_path)
+    end
+end
+
+if Liz.has("pos-test.liz") then
+    print("Running post test...")
+    Liz.run_wd("pos-test.liz")
+    print("Done post test")
+end
+
+print("Done test command")
