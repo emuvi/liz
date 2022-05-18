@@ -1,7 +1,7 @@
 use rlua::{Context, Table, UserData};
 use rubx::rux_paths;
 use rubx::{self, rux_dbg_call, rux_dbg_reav, rux_dbg_step};
-use rubx::{rux_dbg_bleb, rux_dbg_erro, rux_dbg_errs, rux_dbg_kind};
+use rubx::{rux_dbg_bleb, rux_dbg_erro, rux_dbg_errs, rux_dbg_warn};
 
 use std::sync::atomic::{AtomicUsize, Ordering};
 use std::sync::Arc;
@@ -155,7 +155,7 @@ impl Spawned {
                 Err(err) => Err(rux_dbg_erro!(err)),
             }
         } else {
-            rux_dbg_kind!("WARN", "Could not get the results from the join");
+            rux_dbg_warn!("Could not get the results from the join");
             Err(rubx::rux_debug::throw(rux_dbg_errs!(
                 "Could not get the results from the join"
             )))
