@@ -9,30 +9,37 @@ if Liz.has("pre-build.liz") then
 end
 
 if Liz.has("CMakeLists.txt") then
-    print("Running cmake...")
+    print("Running cmake build...")
     if not Liz.has("build") then
         Liz.mkdir("build")
         Liz.cmd("cmake", { "-G", "Ninja", ".." }, "./build")
     end
     Liz.cmd("cmake", { "--build", "." }, "./build")
-    print("Done cmake")
+    print("Done cmake build")
 end
 
 if Liz.has("Cargo.toml") then
-    print("Running cargo...")
+    print("Running cargo build...")
     Liz.cmd("cargo", { "build" })
-    print("Done cargo")
+    print("Done cargo build")
+end
+
+if Liz.has("go.mod") then
+    print("Running go build...")
+    Liz.mkdir("build")
+    Liz.cmd("go", { "build", "-o", "build" })
+    print("Done go build")
 end
 
 if Liz.has("pom.xml") then
-    print("Running maven...")
+    print("Running maven build...")
     local mvn = "mvn"
     if Liz.is_win() then
         mvn = "mvn.cmd"
     end
     Liz.cmd(mvn, { "clean", "install" })
     Liz.cmd(mvn, { "source:jar", "install" })
-    print("Done maven")
+    print("Done maven build")
 end
 
 if Liz.has("pos-build.liz") then
