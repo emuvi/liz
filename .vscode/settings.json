@@ -1,3 +1,14 @@
 {
-  "cSpell.words": ["erro", "mkdir", "reav", "rlua", "rubx", "spawneds"]
+  "cSpell.words": [
+    "erro",
+    "mkdir",
+    "reav",
+    "rfind",
+    "rlua",
+    "rubx",
+    "spawneds",
+    "tocapital",
+    "tolower",
+    "toupper"
+  ]
 }
