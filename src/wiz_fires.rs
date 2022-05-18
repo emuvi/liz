@@ -1,6 +1,6 @@
 use rlua::{Context, Table};
-use rubx::rux_paths;
 use rubx::rux_fires;
+use rubx::rux_paths;
 use rubx::{rux_dbg_bleb, rux_dbg_call, rux_dbg_reav, rux_dbg_step};
 
 use crate::liz_codes;
@@ -37,9 +37,10 @@ pub fn inject_execs<'a>(lane: Context<'a>, liz: &Table<'a>) -> Result<(), LizErr
     let race =
         lane.create_function(|lane, path: String| utils::treat_error(crate::race_in(lane, &path)))?;
 
-    let run_wd = lane.create_function(|_, (relative_path, args): (String, Option<Vec<String>>)| {
-        utils::treat_error(liz_fires::run_wd(&relative_path, &args))
-    })?;
+    let run_wd =
+        lane.create_function(|_, (relative_path, args): (String, Option<Vec<String>>)| {
+            utils::treat_error(liz_fires::run_wd(&relative_path, &args))
+        })?;
 
     let race_wd = lane.create_function(|lane, relative_path: String| {
         utils::treat_error(liz_fires::race_wd(lane, &relative_path))
@@ -83,11 +84,11 @@ pub fn inject_execs<'a>(lane: Context<'a>, liz: &Table<'a>) -> Result<(), LizErr
     let exe_path = lane.create_function(|_, ()| utils::treat_error(rux_fires::exe_path()))?;
 
     let exe_dir = lane.create_function(|_, ()| utils::treat_error(rux_fires::exe_dir()))?;
-    
+
     let exe_name = lane.create_function(|_, ()| utils::treat_error(rux_fires::exe_name()))?;
-    
+
     let exe_stem = lane.create_function(|_, ()| utils::treat_error(rux_fires::exe_stem()))?;
-    
+
     let exe_ext = lane.create_function(|_, ()| Ok(rux_fires::exe_ext()))?;
 
     let dot_exe_ext = lane.create_function(|_, ()| Ok(rux_fires::dot_exe_ext()))?;
@@ -99,6 +100,10 @@ pub fn inject_execs<'a>(lane: Context<'a>, liz: &Table<'a>) -> Result<(), LizErr
     let is_mac = lane.create_function(|_, ()| Ok(rux_fires::is_mac()))?;
 
     let is_win = lane.create_function(|_, ()| Ok(rux_fires::is_win()))?;
+
+    let thread_id = lane.create_function(|_, ()| Ok(rux_fires::thread_id()))?;
+
+    let thread_display = lane.create_function(|_, ()| Ok(rux_fires::thread_display()))?;
 
     liz.set("run", run)?;
     liz.set("eval", eval)?;
@@ -123,6 +128,8 @@ pub fn inject_execs<'a>(lane: Context<'a>, liz: &Table<'a>) -> Result<(), LizErr
     liz.set("is_lin", is_lin)?;
     liz.set("is_mac", is_mac)?;
     liz.set("is_win", is_win)?;
+    liz.set("thread_display", thread_display)?;
+    liz.set("thread_id", thread_id)?;
 
     Ok(())
 }
