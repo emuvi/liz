@@ -30,9 +30,31 @@ pub fn inject_texts<'a>(lane: Context<'a>, liz: &Table<'a>) -> Result<(), LizErr
 
     let is_ascii = lane.create_function(|_, text: String| Ok(rux_texts::is_ascii(&text)))?;
 
+    let is_equals = lane.create_function(|_, (text, with): (String, String)| {
+        Ok(rux_texts::is_equals(&text, &with))
+    })?;
+
+    let is_equally = lane.create_function(|_, (text, with): (String, String)| {
+        Ok(rux_texts::is_equally(&text, &with))
+    })?;
+
     let is_likely = lane.create_function(|_, (text, with): (String, String)| {
         Ok(rux_texts::is_likely(&text, &with))
     })?;
+
+    let is_whitespace =
+        lane.create_function(|_, text: String| Ok(rux_texts::is_whitespace(&text)))?;
+
+    let is_linespace =
+        lane.create_function(|_, text: String| Ok(rux_texts::is_linespace(&text)))?;
+
+    let is_linebreak =
+        lane.create_function(|_, text: String| Ok(rux_texts::is_linebreak(&text)))?;
+
+    let is_brackets = lane.create_function(|_, text: String| Ok(rux_texts::is_brackets(&text)))?;
+
+    let is_quotation =
+        lane.create_function(|_, text: String| Ok(rux_texts::is_quotation(&text)))?;
 
     let tolower = lane.create_function(|_, text: String| Ok(rux_texts::tolower(&text)))?;
 
@@ -101,9 +123,28 @@ pub fn inject_texts<'a>(lane: Context<'a>, liz: &Table<'a>) -> Result<(), LizErr
         utils::treat_error(rux_texts::write_lines(&path, lines))
     })?;
 
+    let write_inputs =
+        lane.create_function(|_, path: String| utils::treat_error(rux_texts::write_inputs(&path)))?;
+
     let append_lines = lane.create_function(|_, (path, lines): (String, Vec<String>)| {
-        utils::treat_error(rux_texts::append_lines(&path, lines))
+        utils::treat_error(rux_texts::append_lines(&path, lines.as_slice()))
     })?;
+
+    let append_inputs = lane
+        .create_function(|_, path: String| utils::treat_error(rux_texts::append_inputs(&path)))?;
+
+    let find_bigger_line = lane.create_function(|_, lines: Vec<String>| {
+        Ok(rux_texts::find_bigger_line(&lines.as_slice()).map(String::from))
+    })?;
+
+    let find_smaller_line = lane.create_function(|_, lines: Vec<String>| {
+        Ok(rux_texts::find_smaller_line(&lines.as_slice()).map(String::from))
+    })?;
+
+    let read_setup =
+        lane.create_function(|_, path: String| utils::treat_error(rux_texts::read_setup(&path)))?;
+
+    let is_truthy = lane.create_function(|_, value: String| Ok(rux_texts::is_truthy(&value)))?;
 
     liz.set("ask", ask)?;
     liz.set("ask_int", ask_int)?;
@@ -114,7 +155,14 @@ pub fn inject_texts<'a>(lane: Context<'a>, liz: &Table<'a>) -> Result<(), LizErr
     liz.set("trim", trim)?;
     liz.set("is_empty", is_empty)?;
     liz.set("is_ascii", is_ascii)?;
+    liz.set("is_equals", is_equals)?;
+    liz.set("is_equally", is_equally)?;
     liz.set("is_likely", is_likely)?;
+    liz.set("is_whitespace", is_whitespace)?;
+    liz.set("is_linespace", is_linespace)?;
+    liz.set("is_linebreak", is_linebreak)?;
+    liz.set("is_brackets", is_brackets)?;
+    liz.set("is_quotation", is_quotation)?;
     liz.set("tolower", tolower)?;
     liz.set("toupper", toupper)?;
     liz.set("tocapital", tocapital)?;
@@ -134,7 +182,13 @@ pub fn inject_texts<'a>(lane: Context<'a>, liz: &Table<'a>) -> Result<(), LizErr
     liz.set("write", write)?;
     liz.set("append", append)?;
     liz.set("write_lines", write_lines)?;
+    liz.set("write_inputs", write_inputs)?;
     liz.set("append_lines", append_lines)?;
+    liz.set("append_inputs", append_inputs)?;
+    liz.set("find_bigger_line", find_bigger_line)?;
+    liz.set("find_smaller_line", find_smaller_line)?;
+    liz.set("read_setup", read_setup)?;
+    liz.set("is_truthy", is_truthy)?;
 
     Ok(())
 }
