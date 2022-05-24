@@ -81,7 +81,7 @@ pub fn inject_paths<'a>(lane: Context<'a>, liz: &Table<'a>) -> Result<(), LizErr
     })?;
 
     let path_ext_is_on = lane.create_function(|_, (path, exts): (String, Vec<String>)| {
-        Ok(rux_paths::path_ext_is_on(&path, exts))
+        Ok(rux_paths::path_ext_is_on(&path, &exts.as_slice()))
     })?;
 
     let path_absolute = lane
