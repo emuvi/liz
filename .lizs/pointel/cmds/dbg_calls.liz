@@ -1,4 +1,0 @@
-local path = "src/liz_parse.rs"
-local file = liz.read(path)
-local code = liz.code(file)
-code:print_all()
